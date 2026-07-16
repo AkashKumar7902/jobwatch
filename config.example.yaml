@@ -44,7 +44,7 @@ matcher:
         base_url: https://generativelanguage.googleapis.com/v1beta/openai
         model: gemini-2.5-flash
         api_key_env: JOBWATCH_LLM_API_KEY
-        max_tokens: 2000 # room for reasoning + the thorough explanation
+        max_tokens: 4000 # room for model reasoning + the thorough explanation
         profile: >-
           Early-career backend engineer with 1 year of professional software
           development experience, based in India (IST). Target roles: Backend

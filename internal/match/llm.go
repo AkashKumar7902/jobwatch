@@ -36,6 +36,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -212,17 +213,35 @@ func (l *llm) ask(job model.Job) (llmVerdict, error) {
 	return parseVerdict(completion.Choices[0].Message.Content)
 }
 
+var (
+	matchFieldRe  = regexp.MustCompile(`"match"\s*:\s*(true|false)`)
+	reasonFieldRe = regexp.MustCompile(`"reason"\s*:\s*"((?:[^"\\]|\\.)*)`)
+)
+
 // parseVerdict extracts the {"match":..., "reason":...} object from the
-// model's reply, tolerating surrounding prose or code fences.
+// model's reply, tolerating surrounding prose, code fences, and — because
+// long replies can be cut off at max_tokens mid-JSON — truncation. A
+// truncated reply still carries the model's actual decision; salvaging it
+// beats failing open on a verdict that was really "false".
 func parseVerdict(content string) (llmVerdict, error) {
 	start := strings.Index(content, "{")
 	end := strings.LastIndex(content, "}")
-	if start < 0 || end <= start {
-		return llmVerdict{}, fmt.Errorf("no JSON object in model reply: %q", truncateStr(content, 120))
+	if start >= 0 && end > start {
+		var v llmVerdict
+		if err := json.Unmarshal([]byte(content[start:end+1]), &v); err == nil {
+			return v, nil
+		}
 	}
-	var v llmVerdict
-	if err := json.Unmarshal([]byte(content[start:end+1]), &v); err != nil {
-		return llmVerdict{}, fmt.Errorf("parsing model reply: %w", err)
+	m := matchFieldRe.FindStringSubmatch(content)
+	if m == nil {
+		return llmVerdict{}, fmt.Errorf("no verdict in model reply: %q", truncateStr(content, 120))
+	}
+	v := llmVerdict{Match: m[1] == "true", Reason: "(explanation truncated by token limit)"}
+	if r := reasonFieldRe.FindStringSubmatch(content); r != nil {
+		var reason string
+		if err := json.Unmarshal([]byte(`"`+r[1]+`"`), &reason); err == nil && reason != "" {
+			v.Reason = truncateStr(reason, 500) + " …[truncated]"
+		}
 	}
 	return v, nil
 }

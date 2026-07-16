@@ -89,6 +89,14 @@ func TestLLMMatcher(t *testing.T) {
 	if res.Matched || !strings.Contains(res.Reason, "requires 7 years") {
 		t.Errorf("prose-wrapped verdict misparsed: %+v", res)
 	}
+
+	// A reply cut off at max_tokens still carries the decision — salvage
+	// it instead of failing open.
+	reply = `{"match": false, "reason": "The title 'Golang Software Engineer' maps to the target role but the posting states 3+ ye`
+	res = m.Match(llmJob)
+	if res.Matched || !strings.Contains(res.Reason, "Golang Software Engineer") {
+		t.Errorf("truncated verdict misparsed: %+v", res)
+	}
 }
 
 func TestLLMErrorPolicy(t *testing.T) {
