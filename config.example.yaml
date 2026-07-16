@@ -1,0 +1,98 @@
+# jobwatch configuration.
+# Copy to config.yaml, adjust the notifiers section, and run:
+#   jobwatch -seed     (first run: baseline, no emails)
+#   jobwatch           (every run after: emails newly appeared matches)
+#
+# Every company below was probed and its API verified live (2026-07-16),
+# starting from https://github.com/yanirs/established-remote.
+
+poll:
+  timeout_seconds: 30
+  concurrency: 6 # companies fetched in parallel
+
+# The matching rule. Swap `name` to change the algorithm entirely
+# (see internal/match/ for how to add one).
+matcher:
+  name: experience
+  params:
+    max_years: 1 # notify when the posting asks for <= 1 year of experience
+    notify_when_unlisted: false # postings that list nothing stay silent
+
+notifiers:
+  - name: console # always handy; cron mails stdout on its own
+  - name: email
+    params:
+      smtp_host: smtp.gmail.com
+      smtp_port: 587
+      username: your.address@gmail.com
+      password_env: JOBWATCH_SMTP_PASSWORD # export this before running
+      from: your.address@gmail.com
+      to: you@example.com
+
+store:
+  path: ~/.jobwatch/state.json
+
+companies:
+  # ---- Greenhouse ----
+  - {name: "Canonical", source: greenhouse, params: {board_token: canonical}}
+  - {name: "Cloudbeds", source: greenhouse, params: {board_token: cloudbeds}}
+  - {name: "ConsenSys", source: greenhouse, params: {board_token: consensys}}
+  - {name: "DataDog", source: greenhouse, params: {board_token: datadog}}
+  - {name: "Eyeo", source: greenhouse, params: {board_token: eyeo}}
+  - {name: "GitLab", source: greenhouse, params: {board_token: gitlab}}
+  - {name: "Gradle", source: greenhouse, params: {board_token: gradle}}
+  - {name: "Grafana Labs", source: greenhouse, params: {board_token: grafanalabs}}
+  - {name: "Jackson River", source: greenhouse, params: {board_token: togetherwork}} # part of Togetherwork; group-wide board
+  - {name: "Kentik", source: greenhouse, params: {board_token: kentik}}
+  - {name: "Mozilla", source: greenhouse, params: {board_token: mozilla}}
+  - {name: "Netlify", source: greenhouse, params: {board_token: netlify}} # also covers Gatsby (acquired)
+  - {name: "Platform.sh", source: greenhouse, params: {board_token: platformsh}}
+  - {name: "Remote", source: greenhouse, params: {board_token: remotecom}}
+  - {name: "SaasGroup", source: greenhouse, params: {board_token: saasgroup, region: eu}}
+  - {name: "Sourcegraph", source: greenhouse, params: {board_token: sourcegraph91}}
+  - {name: "Square", source: greenhouse, params: {board_token: block}} # Block: Square, Cash App
+  - {name: "Turing", source: greenhouse, params: {board_token: turing}}
+  - {name: "Upwork", source: greenhouse, params: {board_token: upwork}}
+  - {name: "Vercel", source: greenhouse, params: {board_token: vercel}}
+  - {name: "Wikimedia", source: greenhouse, params: {board_token: wikimedia}}
+  - {name: "Xapo", source: greenhouse, params: {board_token: xapo61}}
+
+  # ---- Lever ----
+  - {name: "Envato", source: lever, params: {site: envato-2}}
+  - {name: "Redox", source: lever, params: {site: redoxengine}}
+  - {name: "Sonatype", source: lever, params: {site: sonatype}}
+  - {name: "Superside", source: lever, params: {site: superside}}
+  - {name: "Toptal", source: lever, params: {site: toptal}}
+
+  # ---- Ashby ----
+  - {name: "Buffer", source: ashby, params: {board_name: buffer}}
+  - {name: "Help Scout", source: ashby, params: {board_name: helpscout}}
+  - {name: "Hubstaff", source: ashby, params: {board_name: hubstaff}}
+  - {name: "Kraken", source: ashby, params: {board_name: kraken.com}}
+  - {name: "Percona", source: ashby, params: {board_name: percona}}
+  - {name: "Zapier", source: ashby, params: {board_name: zapier}}
+
+  # ---- Workable ----
+  - {name: "AwesomeMotive", source: workable, params: {account: awesomemotive}}
+  - {name: "Olark", source: workable, params: {account: olark}}
+  - {name: "Shogun", source: workable, params: {account: getshogun}}
+  - {name: "Zyte", source: workable, params: {account: zyte}}
+
+  # ---- Recruitee ----
+  - {name: "madewithlove", source: recruitee, params: {company_slug: madewithlove}}
+  - {name: "MailerLite", source: recruitee, params: {company_slug: mailerlite}}
+  - {name: "Time Doctor", source: recruitee, params: {company_slug: timedoctor}}
+
+  # ---- BambooHR ----
+  - {name: "Bandcamp", source: bamboohr, params: {company_slug: songtradr}} # acquired by Songtradr
+  - {name: "Dribbble", source: bamboohr, params: {company_slug: dribbble}}
+  - {name: "Lullabot", source: bamboohr, params: {company_slug: lullabot}}
+
+  # ---- Workday ----
+  - {name: "DataRobot", source: workday, params: {host: datarobot.wd1.myworkdayjobs.com, tenant: datarobot, site: DataRobot_External_Careers}}
+  - {name: "RedHat", source: workday, params: {host: redhat.wd5.myworkdayjobs.com, tenant: redhat, site: jobs, max_postings: 250}}
+# Not included (no supported public JSON API as of 2026-07-16):
+#   37signals (XML feed only), Chef/Progress (Jobvite XML feed),
+#   Toggl (Ashby public API disabled), Spotify/Shopify/chess.com/Deel/
+#   DuckDuckGo/Elastic/... (custom JSON endpoints — each is one small
+#   source file away, see README "Extending"), Mobile Jazz (dead page).

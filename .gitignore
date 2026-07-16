@@ -1,0 +1,9 @@
+# local config carries email addresses / SMTP settings
+config.yaml
+
+# built binary
+/jobwatch
+
+# runtime state & logs
+state.json
+*.log
