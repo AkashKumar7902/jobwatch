@@ -115,6 +115,14 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		}
 
 		for _, job := range res.jobs {
+			// Matching can be slow (the llm matcher makes an API call per
+			// job); honor cancellation between jobs so Ctrl-C actually
+			// stops a long sweep instead of only stopping future fetches.
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
 			rec, seen := r.Store.Get(job.ID)
 			if seen {
 				processed := !rec.Matched || rec.Notified
