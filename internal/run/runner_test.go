@@ -154,6 +154,51 @@ func TestSeedPreservesPendingDelivery(t *testing.T) {
 	}
 }
 
+type lazySource struct {
+	fakeSource
+	detailCalls int
+	detailErr   error
+}
+
+func (l *lazySource) Detail(_ context.Context, job *model.Job) error {
+	l.detailCalls++
+	if l.detailErr != nil {
+		return l.detailErr
+	}
+	job.Description = "detailed description"
+	return nil
+}
+
+// Lazy-detail sources fetch full postings only for jobs being evaluated,
+// and a failed detail leaves the job unseen so it retries next run.
+func TestLazyDetailOnlyForEvaluatedJobs(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	src := &lazySource{fakeSource: fakeSource{jobs: []model.Job{testJob}}}
+	r.Sources = []source.Source{src}
+
+	src.detailErr = errors.New("detail endpoint 502")
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if _, seen := st.Get(testJob.ID); seen {
+		t.Fatal("job with failed detail must stay unseen for retry")
+	}
+
+	src.detailErr = nil
+	for i := 0; i < 2; i++ { // second run evaluates; third must skip
+		if err := r.RunOnce(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if src.detailCalls != 2 { // 1 failed + 1 successful; none on the skip run
+		t.Fatalf("detail calls = %d, want 2", src.detailCalls)
+	}
+	if len(n.batches) != 1 {
+		t.Fatalf("expected one delivery, got %v", n.batches)
+	}
+}
+
 // A rescan gives seeded backlog a fresh verdict and delivers it once.
 func TestRescanSweepsSeededBacklog(t *testing.T) {
 	n := &flakyNotifier{}

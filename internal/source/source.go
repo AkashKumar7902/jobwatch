@@ -141,6 +141,14 @@ func statePrefixFor(name string, p params.Map) string {
 	return ""
 }
 
+// Detailer is implemented by sources whose list endpoint lacks the full
+// posting (description, employment type). The runner calls Detail only for
+// jobs it actually evaluates — new or retried ones — so whole boards can be
+// listed completely without paying one request per posting per run.
+type Detailer interface {
+	Detail(ctx context.Context, job *model.Job) error
+}
+
 // detailResult preserves successfully normalized jobs when a board's detail
 // endpoint fails for only some postings. Callers can report the partial error
 // without discarding the healthy jobs.

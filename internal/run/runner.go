@@ -161,6 +161,19 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				continue
 			}
 
+			// Sources with lazy details (SmartRecruiters, BambooHR) list
+			// whole boards cheaply; fetch the full posting only now that
+			// we know this job actually needs evaluating.
+			if job.Description == "" {
+				if det, ok := res.src.(source.Detailer); ok {
+					if err := det.Detail(ctx, &job); err != nil {
+						// Not recorded as seen, so the next run retries it.
+						r.Log.Printf("detail %s — %s: %v (retried next run)", job.Company, job.Title, err)
+						continue
+					}
+				}
+			}
+
 			verdict := r.Matcher.Match(job)
 			if verdict.Matched {
 				srcMatched++

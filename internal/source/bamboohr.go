@@ -64,43 +64,43 @@ func (b *bambooHR) Fetch(ctx context.Context) ([]model.Job, error) {
 	}
 
 	jobs := make([]model.Job, 0, len(list.Result))
-	failed := 0
-	var firstErr error
 	for _, item := range list.Result {
-		var detail struct {
-			Result struct {
-				JobOpening struct {
-					Description string `json:"description"`
-					ShareURL    string `json:"jobOpeningShareUrl"`
-				} `json:"jobOpening"`
-			} `json:"result"`
-		}
-		detailURL := fmt.Sprintf("https://%s.bamboohr.com/careers/%s/detail", b.slug, item.ID)
-		if err := fetchJSON(ctx, b.client, http.MethodGet, detailURL, nil, &detail); err != nil {
-			failed++
-			if firstErr == nil {
-				firstErr = fmt.Errorf("posting %s (%s): %w", item.ID, item.JobOpeningName, err)
-			}
-			continue
-		}
-
 		loc := strings.Join(trimEmpty(item.ATSLocation.City, item.ATSLocation.State, item.ATSLocation.Country), ", ")
 		if item.IsRemote != nil && *item.IsRemote {
 			loc = strings.TrimSpace("Remote " + loc)
-		}
-		url := detail.Result.JobOpening.ShareURL
-		if url == "" {
-			url = fmt.Sprintf("https://%s.bamboohr.com/careers/%s", b.slug, item.ID)
 		}
 		jobs = append(jobs, model.Job{
 			ID:             fmt.Sprintf("bamboohr/%s/%s", b.slug, item.ID),
 			Company:        b.company,
 			Title:          item.JobOpeningName,
 			Location:       loc,
-			URL:            url,
+			URL:            fmt.Sprintf("https://%s.bamboohr.com/careers/%s", b.slug, item.ID),
 			EmploymentType: item.Employment,
-			Description:    htmltext.ToText(detail.Result.JobOpening.Description),
+			// Description arrives via Detail on demand.
 		})
 	}
-	return detailResult(jobs, failed, len(list.Result), firstErr)
+	return jobs, nil
+}
+
+// Detail fills the description (and nicer share URL) for one posting; the
+// posting id is the last segment of the job ID.
+func (b *bambooHR) Detail(ctx context.Context, job *model.Job) error {
+	id := job.ID[strings.LastIndexByte(job.ID, '/')+1:]
+	var detail struct {
+		Result struct {
+			JobOpening struct {
+				Description string `json:"description"`
+				ShareURL    string `json:"jobOpeningShareUrl"`
+			} `json:"jobOpening"`
+		} `json:"result"`
+	}
+	detailURL := fmt.Sprintf("https://%s.bamboohr.com/careers/%s/detail", b.slug, id)
+	if err := fetchJSON(ctx, b.client, http.MethodGet, detailURL, nil, &detail); err != nil {
+		return err
+	}
+	job.Description = htmltext.ToText(detail.Result.JobOpening.Description)
+	if u := detail.Result.JobOpening.ShareURL; u != "" {
+		job.URL = u
+	}
+	return nil
 }

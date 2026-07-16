@@ -22,6 +22,7 @@ package source
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 
 	"jobwatch/internal/htmltext"
@@ -45,7 +46,7 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
-		maxPostings, err := p.Int("max_postings", 200)
+		maxPostings, err := p.Int("max_postings", 500)
 		if err != nil {
 			return nil, err
 		}
@@ -76,6 +77,7 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 
 	// Page through the list.
 	var postings []posting
+	total := 0
 	for offset := 0; ; offset += workdayPageSize {
 		var page struct {
 			Total       int       `json:"total"`
@@ -85,6 +87,7 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 		if err := fetchJSON(ctx, w.client, http.MethodPost, w.base+"/jobs", body, &page); err != nil {
 			return nil, err
 		}
+		total = page.Total
 		postings = append(postings, page.JobPostings...)
 		if len(page.JobPostings) == 0 || offset+workdayPageSize >= page.Total || len(postings) >= w.maxPostings {
 			break
@@ -93,8 +96,14 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 	if len(postings) > w.maxPostings {
 		postings = postings[:w.maxPostings]
 	}
+	if total > len(postings) {
+		log.Printf("workday %s: evaluating %d of %d postings (max_postings cap)", w.company, len(postings), total)
+	}
 
-	// Descriptions live on the detail endpoint.
+	// Descriptions live on the detail endpoint. Workday stays eager: the
+	// stored job IDs are detail-endpoint GUIDs that the list doesn't
+	// carry, so listing lazily would change identities and re-alert
+	// every existing posting.
 	jobs := make([]model.Job, 0, len(postings))
 	failed := 0
 	var firstErr error
