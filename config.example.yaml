@@ -63,7 +63,8 @@ matcher:
           Match ONLY when both conditions hold. (1) The title is one of the
           target roles or an equivalent entry-level backend/platform/devops
           engineering role - reject senior, staff, lead, principal, manager,
-          and unrelated disciplines. (2) The posting explicitly states a
+          internships, contract/temporary roles, and unrelated disciplines,
+          even when other criteria fit. (2) The posting explicitly states a
           required experience level, and 1 year of experience falls INSIDE
           the stated range: "0-1 years", "1-3 years", "0-3 years", and "1+
           years" all fit; "2+ years", "3-5 years", or seniority wording
