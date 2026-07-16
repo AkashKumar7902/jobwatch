@@ -173,7 +173,13 @@ func (l *llm) ask(job model.Job) (llmVerdict, error) {
 		}
 		resp, err = l.client.Do(req)
 		if err != nil {
-			return llmVerdict{}, err
+			// Transport errors (timeouts, resets) are as transient as 5xx.
+			if attempt >= 4 {
+				return llmVerdict{}, err
+			}
+			log.Printf("llm matcher: %v, retrying in 5s (attempt %d/4)", err, attempt)
+			time.Sleep(5 * time.Second)
+			continue
 		}
 		raw, _ = io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 		resp.Body.Close()
