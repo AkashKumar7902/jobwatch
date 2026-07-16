@@ -97,6 +97,15 @@ func TestLLMMatcher(t *testing.T) {
 	if res.Matched || !strings.Contains(res.Reason, "Golang Software Engineer") {
 		t.Errorf("truncated verdict misparsed: %+v", res)
 	}
+
+	// Local reasoning models wrap chain-of-thought in <think> tags that
+	// may contain draft JSON — only the final verdict counts.
+	reply = "<think>Let me draft: {\"match\": true, \"reason\": \"hmm\"} — no wait, the posting needs 5 years.</think>\n" +
+		`{"match": false, "reason": "posting requires 5+ years"}`
+	res = m.Match(llmJob)
+	if res.Matched || !strings.Contains(res.Reason, "5+ years") {
+		t.Errorf("think-tag verdict misparsed: %+v", res)
+	}
 }
 
 func TestLLMErrorPolicy(t *testing.T) {

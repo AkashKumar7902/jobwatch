@@ -216,6 +216,9 @@ func (l *llm) ask(job model.Job) (llmVerdict, error) {
 var (
 	matchFieldRe  = regexp.MustCompile(`"match"\s*:\s*(true|false)`)
 	reasonFieldRe = regexp.MustCompile(`"reason"\s*:\s*"((?:[^"\\]|\\.)*)`)
+	// Local reasoning models (qwen3, deepseek-r1, ...) prepend their
+	// chain of thought in <think> tags, which may contain draft JSON.
+	thinkRe = regexp.MustCompile(`(?s)<think>.*?</think>`)
 )
 
 // parseVerdict extracts the {"match":..., "reason":...} object from the
@@ -224,6 +227,7 @@ var (
 // truncated reply still carries the model's actual decision; salvaging it
 // beats failing open on a verdict that was really "false".
 func parseVerdict(content string) (llmVerdict, error) {
+	content = thinkRe.ReplaceAllString(content, "")
 	start := strings.Index(content, "{")
 	end := strings.LastIndex(content, "}")
 	if start >= 0 && end > start {
