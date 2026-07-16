@@ -119,21 +119,8 @@ func (e *email) Notify(ctx context.Context, matches []Match) error {
 }
 
 func (e *email) compose(matches []Match) []byte {
-	subject := fmt.Sprintf("%s%d new matching job(s)", oneLine(e.prefix), len(matches))
-
-	var b strings.Builder
-	fmt.Fprintf(&b, "%d new job(s) matched your experience criteria.\n\n", len(matches))
-	for i, m := range matches {
-		// Job fields are remote-controlled text; keep them on one line so
-		// they can't inject structure into the message.
-		fmt.Fprintf(&b, "%d. %s - %s\n", i+1, oneLine(m.Job.Company), oneLine(m.Job.Title))
-		if m.Job.Location != "" {
-			fmt.Fprintf(&b, "   Location: %s\n", oneLine(m.Job.Location))
-		}
-		fmt.Fprintf(&b, "   Why: %s\n", oneLine(m.Reason))
-		fmt.Fprintf(&b, "   Apply: %s\n\n", oneLine(m.Job.URL))
-	}
-	b.WriteString("- jobwatch\n")
+	subject := OneLine(e.prefix) + Headline(matches)
+	body := Headline(matches) + " for your experience criteria.\n\n" + Text(matches) + "\n- jobwatch\n"
 
 	msg := strings.Join([]string{
 		"From: " + e.from,
@@ -144,21 +131,9 @@ func (e *email) compose(matches []Match) []byte {
 		"Content-Type: text/plain; charset=UTF-8",
 		"Content-Transfer-Encoding: 8bit",
 		"",
-		strings.ReplaceAll(b.String(), "\n", "\r\n"),
+		strings.ReplaceAll(body, "\n", "\r\n"),
 	}, "\r\n")
 	return []byte(msg)
-}
-
-// oneLine collapses whitespace (including CR/LF) and strips other control
-// characters, defusing header/structure injection from job data.
-func oneLine(s string) string {
-	s = strings.Map(func(r rune) rune {
-		if r < 0x20 || r == 0x7f {
-			return ' '
-		}
-		return r
-	}, s)
-	return strings.Join(strings.Fields(s), " ")
 }
 
 // send performs the SMTP conversation with an overall deadline, honoring

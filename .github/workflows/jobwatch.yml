@@ -52,6 +52,10 @@ jobs:
           JOBWATCH_SMTP_USERNAME: ${{ secrets.JOBWATCH_SMTP_USERNAME }}
           JOBWATCH_SMTP_PASSWORD: ${{ secrets.JOBWATCH_SMTP_PASSWORD }}
           JOBWATCH_EMAIL_TO: ${{ secrets.JOBWATCH_EMAIL_TO }}
+          # Extra channels: add the secret, then mirror it here and enable
+          # the matching notifier in config.example.yaml.
+          # JOBWATCH_SLACK_WEBHOOK: ${{ secrets.JOBWATCH_SLACK_WEBHOOK }}
+          # JOBWATCH_TELEGRAM_TOKEN: ${{ secrets.JOBWATCH_TELEGRAM_TOKEN }}
         run: |
           if [ -f state.json ]; then
             ./jobwatch -config config.example.yaml -state state.json

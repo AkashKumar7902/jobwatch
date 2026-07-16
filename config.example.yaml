@@ -30,7 +30,14 @@ notifiers:
       username: ${JOBWATCH_SMTP_USERNAME}
       password_env: JOBWATCH_SMTP_PASSWORD
       from: ${JOBWATCH_SMTP_USERNAME}
-      to: ${JOBWATCH_EMAIL_TO}
+      to: ${JOBWATCH_EMAIL_TO} # comma-separate for more recipients
+  # More channels — uncomment what you use (see README "Notifications"):
+  # - name: webhook
+  #   params: {url_env: JOBWATCH_SLACK_WEBHOOK, format: slack}
+  # - name: webhook
+  #   params: {url_env: JOBWATCH_DISCORD_WEBHOOK, format: discord}
+  # - name: telegram
+  #   params: {token_env: JOBWATCH_TELEGRAM_TOKEN, chat_id: "123456789"}
 
 store:
   path: ~/.jobwatch/state.json

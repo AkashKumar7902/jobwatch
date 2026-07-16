@@ -100,6 +100,31 @@ fails with a clear error and never blocks other companies:
 `config.example.yaml` ships with 45 remote-friendly companies, every one
 verified live.
 
+## Notifications
+
+Every channel under `notifiers:` receives every batch — stack as many as
+you like. More email recipients is just a comma-separated list:
+
+```yaml
+notifiers:
+  - name: email
+    params:
+      # ...smtp settings...
+      to: you@example.com, friend@example.com, other@example.com
+  - name: webhook # Slack: create an incoming webhook, paste its URL
+    params: {url_env: JOBWATCH_SLACK_WEBHOOK, format: slack}
+  - name: webhook # Discord: channel settings → integrations → webhook
+    params: {url_env: JOBWATCH_DISCORD_WEBHOOK, format: discord}
+  - name: telegram # bot via @BotFather; chat id via /getUpdates
+    params: {token_env: JOBWATCH_TELEGRAM_TOKEN, chat_id: "123456789"}
+  - name: webhook # anything else: your own endpoint gets structured JSON
+    params: {url: https://example.com/hook, format: json}
+```
+
+The `webhook` notifier's `format: text` also works for ntfy.sh-style
+plain-text endpoints. When running via GitHub Actions, add the matching
+secret and expose it in the workflow's `env:` block.
+
 ## Change what counts as a match
 
 ```yaml
@@ -133,7 +158,10 @@ name in the config.
 
 - **New job board (ATS)** → copy `internal/source/greenhouse.go` (~60 lines)
 - **New matching rule** → implement `Matcher` in `internal/match/`
-- **New channel** (Slack, Telegram, ...) → implement `Notifier` in `internal/notify/`
+- **New notification channel** → implement `Notifier` in `internal/notify/`.
+  Message formatting is already shared (`format.go` gives you `Headline`,
+  `Text`, and per-job `Block` renderings), so a new channel is delivery
+  code only — the console notifier is 12 lines, the generic webhook ~80.
 
 ## Good to know
 
