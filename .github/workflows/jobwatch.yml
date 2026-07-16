@@ -1,0 +1,77 @@
+# Runs jobwatch on a schedule so no computer of yours needs to stay on.
+#
+# State (which jobs were already seen/emailed) lives on a dedicated `state`
+# branch as a single force-pushed commit — runners are wiped between runs,
+# a branch is not. If the state branch doesn't exist yet (very first run),
+# the run seeds silently instead of emailing every currently open job.
+#
+# Required repository secrets (Settings → Secrets → Actions):
+#   JOBWATCH_SMTP_USERNAME  e.g. your Gmail address (also used as From)
+#   JOBWATCH_SMTP_PASSWORD  e.g. a Gmail app password
+#   JOBWATCH_EMAIL_TO       where the alerts go
+
+name: jobwatch
+
+on:
+  schedule:
+    - cron: "17 */2 * * *" # every 2 hours (UTC); minute 17 avoids the top-of-hour rush
+  workflow_dispatch: {} # allows manual runs from the Actions tab
+
+permissions:
+  contents: write # to push the state branch
+
+concurrency:
+  group: jobwatch-state # never let two runs race on the state branch
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Restore state from the state branch
+        run: |
+          if git fetch --depth 1 origin state 2>/dev/null; then
+            git show FETCH_HEAD:state.json > state.json
+            echo "restored state: $(wc -c < state.json) bytes"
+          else
+            echo "no state branch yet - this run will seed without emailing"
+          fi
+
+      - name: Build
+        run: go build -o jobwatch ./cmd/jobwatch
+
+      - name: Poll job boards
+        env:
+          JOBWATCH_SMTP_USERNAME: ${{ secrets.JOBWATCH_SMTP_USERNAME }}
+          JOBWATCH_SMTP_PASSWORD: ${{ secrets.JOBWATCH_SMTP_PASSWORD }}
+          JOBWATCH_EMAIL_TO: ${{ secrets.JOBWATCH_EMAIL_TO }}
+        run: |
+          if [ -f state.json ]; then
+            ./jobwatch -config config.example.yaml -state state.json
+          else
+            ./jobwatch -config config.example.yaml -state state.json -seed
+          fi
+
+      - name: Push state back
+        if: always() # a failed run may still have pending matches worth keeping
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ -f state.json ] || { echo "no state produced, nothing to push"; exit 0; }
+          dir=$(mktemp -d)
+          cp state.json "$dir/"
+          cd "$dir"
+          git init -q -b state
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add state.json
+          git commit -q -m "state @ $(date -u +%FT%TZ)"
+          git push -q --force \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" state

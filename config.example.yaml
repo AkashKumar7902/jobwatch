@@ -18,16 +18,19 @@ matcher:
     max_years: 1 # notify when the posting asks for <= 1 year of experience
     notify_when_unlisted: false # postings that list nothing stay silent
 
+# ${VAR} values are read from the environment (GitHub Secrets in CI).
+# Running locally you can either export the same variables or replace the
+# ${...} placeholders with literal values.
 notifiers:
   - name: console # always handy; cron mails stdout on its own
   - name: email
     params:
       smtp_host: smtp.gmail.com
       smtp_port: 587
-      username: your.address@gmail.com
-      password_env: JOBWATCH_SMTP_PASSWORD # export this before running
-      from: your.address@gmail.com
-      to: you@example.com
+      username: ${JOBWATCH_SMTP_USERNAME}
+      password_env: JOBWATCH_SMTP_PASSWORD
+      from: ${JOBWATCH_SMTP_USERNAME}
+      to: ${JOBWATCH_EMAIL_TO}
 
 store:
   path: ~/.jobwatch/state.json

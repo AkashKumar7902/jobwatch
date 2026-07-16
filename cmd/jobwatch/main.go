@@ -35,6 +35,7 @@ func main() {
 		interval   = flag.Duration("interval", 0, "poll repeatedly at this interval (e.g. 1h); 0 runs once and exits")
 		seed       = flag.Bool("seed", false, "record all current postings as seen without notifying (recommended first run)")
 		dryRun     = flag.Bool("dry-run", false, "evaluate and print matches to the console; send no email, save no state")
+		statePath  = flag.String("state", "", "override the state file location from config (store.path)")
 	)
 	flag.Parse()
 
@@ -46,7 +47,7 @@ func main() {
 		logger.Fatal("-seed cannot be combined with -dry-run: seeding is only useful when state is saved")
 	}
 
-	runner, err := build(*configPath, logger, *seed, *dryRun)
+	runner, err := build(*configPath, *statePath, logger, *seed, *dryRun)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -72,10 +73,13 @@ func main() {
 }
 
 // build assembles the runner from config: sources, matcher, notifiers, store.
-func build(configPath string, logger *log.Logger, seed, dryRun bool) (*run.Runner, error) {
+func build(configPath, statePath string, logger *log.Logger, seed, dryRun bool) (*run.Runner, error) {
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		return nil, err
+	}
+	if statePath != "" {
+		cfg.Store.Path = statePath
 	}
 
 	client := &http.Client{Timeout: time.Duration(cfg.Poll.TimeoutSeconds) * time.Second}

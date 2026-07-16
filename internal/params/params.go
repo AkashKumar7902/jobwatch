@@ -9,6 +9,8 @@ package params
 
 import (
 	"fmt"
+	"os"
+	"regexp"
 	"strconv"
 
 	"gopkg.in/yaml.v3"
@@ -37,9 +39,26 @@ func (m *Map) UnmarshalYAML(node *yaml.Node) error {
 		if v.Tag == "!!null" {
 			continue
 		}
-		(*m)[k.Value] = v.Value
+		(*m)[k.Value] = expandEnv(v.Value)
 	}
 	return nil
+}
+
+var envRefRe = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+// expandEnv replaces ${VAR} references with the environment value, letting
+// configs keep secrets and per-machine values out of the file (handy for
+// CI). References to UNSET variables are left as literal text so that
+// modes which never use them (e.g. -dry-run skipping the email notifier)
+// aren't blocked; the component that does use the value fails with the
+// literal ${VAR} visible in its error.
+func expandEnv(s string) string {
+	return envRefRe.ReplaceAllStringFunc(s, func(ref string) string {
+		if v, ok := os.LookupEnv(ref[2 : len(ref)-1]); ok {
+			return v
+		}
+		return ref
+	})
 }
 
 func kindName(k yaml.Kind) string {
