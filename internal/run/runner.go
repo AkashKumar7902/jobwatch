@@ -37,6 +37,11 @@ type Runner struct {
 	// historical job board.
 	SeedOnly bool
 
+	// SeedNewSources baselines boards that have never appeared in the state
+	// store, while known boards continue matching normally. It is safe to leave
+	// enabled so catalog additions do not cause a one-time notification blast.
+	SeedNewSources bool
+
 	// DryRun evaluates and reports but never persists state, so the same
 	// jobs are re-evaluated next run. Good for tuning the matcher.
 	DryRun bool
@@ -68,14 +73,42 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 
 	var matches []notify.Match
 	var matchedIDs []string
-	totalJobs, newJobs, retries, failures := 0, 0, 0, 0
+	totalJobs, newJobs, retries, failures, partials := 0, 0, 0, 0, 0
+	newSources, seededJobs := 0, 0
 	for _, res := range results {
 		if res.err != nil {
-			failures++
-			r.Log.Printf("fetch %s: %v", res.src.Company(), res.err)
-			continue
+			if len(res.jobs) == 0 {
+				failures++
+				r.Log.Printf("fetch %s: %v", res.src.Company(), res.err)
+				continue
+			}
+			partials++
+			r.Log.Printf("fetch %s (partial; keeping %d jobs): %v", res.src.Company(), len(res.jobs), res.err)
 		}
 		totalJobs += len(res.jobs)
+
+		seedSource := r.SeedOnly
+		if (r.SeedOnly || r.SeedNewSources) && !r.DryRun {
+			markerID := "__jobwatch_source__/" + source.Identity(res.src)
+			if !r.Store.Seen(markerID) {
+				knownSource := r.Store.HasPrefix(source.StatePrefix(res.src))
+				for _, job := range res.jobs {
+					if r.Store.Seen(job.ID) {
+						knownSource = true
+						break
+					}
+				}
+				if r.SeedNewSources && !r.SeedOnly && !knownSource {
+					seedSource = true
+					newSources++
+				}
+				r.Store.Add(markerID, store.Record{
+					FirstSeen: time.Now(),
+					Title:     "source: " + res.src.Company(),
+				})
+			}
+		}
+
 		for _, job := range res.jobs {
 			rec, seen := r.Store.Get(job.ID)
 			if seen && (!rec.Matched || rec.Notified) {
@@ -90,11 +123,16 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 
 			// Seeding never notifies, so evaluating would be wasted work —
 			// and with an llm matcher configured, wasted API spend.
-			if r.SeedOnly {
-				r.Store.Add(job.ID, store.Record{
-					FirstSeen: rec.FirstSeen,
-					Title:     job.Company + ": " + job.Title,
-				})
+			if seedSource {
+				// Never overwrite a pending delivery when somebody runs a seed
+				// against an existing state file.
+				if !seen {
+					seededJobs++
+					r.Store.Add(job.ID, store.Record{
+						FirstSeen: rec.FirstSeen,
+						Title:     job.Company + ": " + job.Title,
+					})
+				}
 				continue
 			}
 
@@ -121,8 +159,11 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		return a.Title < b.Title
 	})
 
-	r.Log.Printf("run complete: %d sources (%d failed), %d open jobs, %d new, %d matched (%d retried)",
-		len(r.Sources), failures, totalJobs, newJobs, len(matches), retries)
+	r.Log.Printf("run complete: %d sources (%d failed, %d partial), %d open jobs, %d new, %d matched (%d retried)",
+		len(r.Sources), failures, partials, totalJobs, newJobs, len(matches), retries)
+	if r.SeedNewSources && newSources > 0 {
+		r.Log.Printf("seeded %d new sources (%d current postings) without notifying", newSources, seededJobs)
+	}
 	if failures == len(r.Sources) && len(r.Sources) > 0 {
 		return fmt.Errorf("all %d sources failed to fetch", failures)
 	}
@@ -141,7 +182,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		return fmt.Errorf("saving state: %w", err)
 	}
 	if r.SeedOnly {
-		r.Log.Printf("seeded %d postings without notifying; future runs alert on new ones", newJobs)
+		r.Log.Printf("seeded %d postings without notifying; future runs alert on new ones", seededJobs)
 		return nil
 	}
 	if len(matches) == 0 {

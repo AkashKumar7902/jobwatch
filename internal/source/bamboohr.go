@@ -64,6 +64,8 @@ func (b *bambooHR) Fetch(ctx context.Context) ([]model.Job, error) {
 	}
 
 	jobs := make([]model.Job, 0, len(list.Result))
+	failed := 0
+	var firstErr error
 	for _, item := range list.Result {
 		var detail struct {
 			Result struct {
@@ -75,7 +77,11 @@ func (b *bambooHR) Fetch(ctx context.Context) ([]model.Job, error) {
 		}
 		detailURL := fmt.Sprintf("https://%s.bamboohr.com/careers/%s/detail", b.slug, item.ID)
 		if err := fetchJSON(ctx, b.client, http.MethodGet, detailURL, nil, &detail); err != nil {
-			return nil, fmt.Errorf("posting %s (%s): %w", item.ID, item.JobOpeningName, err)
+			failed++
+			if firstErr == nil {
+				firstErr = fmt.Errorf("posting %s (%s): %w", item.ID, item.JobOpeningName, err)
+			}
+			continue
 		}
 
 		loc := strings.Join(trimEmpty(item.ATSLocation.City, item.ATSLocation.State, item.ATSLocation.Country), ", ")
@@ -96,5 +102,5 @@ func (b *bambooHR) Fetch(ctx context.Context) ([]model.Job, error) {
 			Description:    htmltext.ToText(detail.Result.JobOpening.Description),
 		})
 	}
-	return jobs, nil
+	return detailResult(jobs, failed, len(list.Result), firstErr)
 }

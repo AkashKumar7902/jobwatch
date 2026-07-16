@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"sort"
+	"strings"
 
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -20,6 +21,39 @@ type Source interface {
 	Company() string
 	// Fetch returns all currently open jobs, normalized.
 	Fetch(ctx context.Context) ([]model.Job, error)
+}
+
+// identifiedSource adds a stable board identity to a Source. The identity is
+// derived from connection params only (never the display name or operational
+// limits), so renaming a company or changing max_postings does not make an
+// existing board look new.
+type identifiedSource struct {
+	Source
+	identity    string
+	statePrefix string
+}
+
+func (s *identifiedSource) Identity() string    { return s.identity }
+func (s *identifiedSource) StatePrefix() string { return s.statePrefix }
+
+// Identity returns the canonical ATS board identity for s. Sources created by
+// New always have one; the Company fallback keeps hand-written test sources
+// and third-party implementations compatible.
+func Identity(s Source) string {
+	if identified, ok := s.(interface{ Identity() string }); ok {
+		return identified.Identity()
+	}
+	return "custom/" + s.Company()
+}
+
+// StatePrefix returns the prefix used by this source's stable model.Job IDs.
+// It lets state migrations recognize an already-used board even when none of
+// its currently open postings overlap the latest fetch.
+func StatePrefix(s Source) string {
+	if identified, ok := s.(interface{ StatePrefix() string }); ok {
+		return identified.StatePrefix()
+	}
+	return ""
 }
 
 // Factory builds a Source for one company from its config entry.
@@ -42,7 +76,79 @@ func New(name, company string, p params.Map, client *http.Client) (Source, error
 	if !ok {
 		return nil, fmt.Errorf("unknown source type %q (available: %v)", name, Names())
 	}
-	return f(company, p, client)
+	s, err := f(company, p, client)
+	if err != nil {
+		return nil, err
+	}
+	return &identifiedSource{
+		Source: s, identity: identityFor(name, p), statePrefix: statePrefixFor(name, p),
+	}, nil
+}
+
+func identityFor(name string, p params.Map) string {
+	switch name {
+	case "greenhouse":
+		return fmt.Sprintf("greenhouse/%s/%s", p.GetDefault("region", "us"), p.Get("board_token"))
+	case "lever":
+		return fmt.Sprintf("lever/%s/%s", p.GetDefault("region", "us"), p.Get("site"))
+	case "ashby":
+		return "ashby/" + p.Get("board_name")
+	case "workable":
+		return "workable/" + p.Get("account")
+	case "recruitee":
+		return "recruitee/" + p.Get("company_slug")
+	case "smartrecruiters":
+		return "smartrecruiters/" + p.Get("company_id")
+	case "bamboohr":
+		return "bamboohr/" + p.Get("company_slug")
+	case "workday":
+		return fmt.Sprintf("workday/%s/%s/%s", p.Get("host"), p.Get("tenant"), p.Get("site"))
+	}
+
+	// Keep future externally registered sources deterministic too.
+	keys := make([]string, 0, len(p))
+	for key := range p {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	var parts []string
+	for _, key := range keys {
+		parts = append(parts, key+"="+p[key])
+	}
+	return name + "/" + strings.Join(parts, ",")
+}
+
+func statePrefixFor(name string, p params.Map) string {
+	switch name {
+	case "greenhouse":
+		return "greenhouse/" + p.Get("board_token") + "/"
+	case "lever":
+		return "lever/" + p.Get("site") + "/"
+	case "ashby":
+		return "ashby/" + p.Get("board_name") + "/"
+	case "workable":
+		return "workable/" + p.Get("account") + "/"
+	case "recruitee":
+		return "recruitee/" + p.Get("company_slug") + "/"
+	case "smartrecruiters":
+		return "smartrecruiters/" + p.Get("company_id") + "/"
+	case "bamboohr":
+		return "bamboohr/" + p.Get("company_slug") + "/"
+	case "workday":
+		base := fmt.Sprintf("https://%s/wday/cxs/%s/%s", p.Get("host"), p.Get("tenant"), p.Get("site"))
+		return "workday/" + base + "/"
+	}
+	return ""
+}
+
+// detailResult preserves successfully normalized jobs when a board's detail
+// endpoint fails for only some postings. Callers can report the partial error
+// without discarding the healthy jobs.
+func detailResult(jobs []model.Job, failed, total int, firstErr error) ([]model.Job, error) {
+	if failed == 0 {
+		return jobs, nil
+	}
+	return jobs, fmt.Errorf("%d of %d posting detail requests failed (first: %w)", failed, total, firstErr)
 }
 
 // Names lists registered source types, sorted, for error messages.

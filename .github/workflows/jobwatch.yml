@@ -3,7 +3,8 @@
 # State (which jobs were already seen/emailed) lives on a dedicated `state`
 # branch as a single force-pushed commit — runners are wiped between runs,
 # a branch is not. If the state branch doesn't exist yet (very first run),
-# the run seeds silently instead of emailing every currently open job.
+# the run seeds silently instead of emailing every currently open job. Later
+# catalog additions are seeded per source by -seed-new-sources.
 #
 # Required repository secrets (Settings → Secrets → Actions):
 #   JOBWATCH_SMTP_USERNAME  e.g. your Gmail address (also used as From)
@@ -45,7 +46,10 @@ jobs:
           fi
 
       - name: Build
-        run: go build -o jobwatch ./cmd/jobwatch
+        run: |
+          go test ./...
+          go vet ./...
+          go build -o jobwatch ./cmd/jobwatch
 
       - name: Poll job boards
         env:
@@ -58,7 +62,7 @@ jobs:
           # JOBWATCH_TELEGRAM_TOKEN: ${{ secrets.JOBWATCH_TELEGRAM_TOKEN }}
         run: |
           if [ -f state.json ]; then
-            ./jobwatch -config config.example.yaml -state state.json
+            ./jobwatch -config config.example.yaml -state state.json -seed-new-sources
           else
             ./jobwatch -config config.example.yaml -state state.json -seed
           fi

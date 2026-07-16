@@ -49,6 +49,9 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
+		if maxPostings <= 0 {
+			return nil, fmt.Errorf("param %q: expected a positive integer, got %d", "max_postings", maxPostings)
+		}
 		return &workday{
 			company: company, maxPostings: maxPostings, client: client,
 			base: fmt.Sprintf("https://%s/wday/cxs/%s/%s", host, tenant, site),
@@ -93,6 +96,8 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 
 	// Descriptions live on the detail endpoint.
 	jobs := make([]model.Job, 0, len(postings))
+	failed := 0
+	var firstErr error
 	for _, p := range postings {
 		var detail struct {
 			JobPostingInfo struct {
@@ -104,7 +109,11 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 			} `json:"jobPostingInfo"`
 		}
 		if err := fetchJSON(ctx, w.client, http.MethodGet, w.base+p.ExternalPath, nil, &detail); err != nil {
-			return nil, fmt.Errorf("posting %s: %w", p.ExternalPath, err)
+			failed++
+			if firstErr == nil {
+				firstErr = fmt.Errorf("posting %s: %w", p.ExternalPath, err)
+			}
+			continue
 		}
 		info := detail.JobPostingInfo
 
@@ -122,5 +131,5 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 			Description:    htmltext.ToText(info.JobDescription),
 		})
 	}
-	return jobs, nil
+	return detailResult(jobs, failed, len(postings), firstErr)
 }
