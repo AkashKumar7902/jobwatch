@@ -35,12 +35,16 @@ func main() {
 		interval   = flag.Duration("interval", 0, "poll repeatedly at this interval (e.g. 1h); 0 runs once and exits")
 		seed       = flag.Bool("seed", false, "record all current postings as seen without notifying (recommended first run)")
 		seedNew    = flag.Bool("seed-new-sources", false, "baseline only boards not previously recorded; known boards still notify")
+		rescan     = flag.Bool("rescan", false, "re-evaluate stored postings that were never notified (seeded backlog) with the current rules")
 		dryRun     = flag.Bool("dry-run", false, "evaluate and print matches to the console; send no email, save no state")
 		statePath  = flag.String("state", "", "override the state file location from config (store.path)")
 	)
 	flag.Parse()
 
 	logger := log.New(os.Stderr, "jobwatch ", log.LstdFlags)
+	if *rescan && (*seed || *seedNew || *interval > 0) {
+		logger.Fatal("-rescan is a one-shot sweep: combine it only with -dry-run or -state")
+	}
 	if *seed && *interval > 0 {
 		logger.Fatal("-seed cannot be combined with -interval: run once with -seed first, then start the watcher")
 	}
@@ -58,6 +62,7 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
+	runner.Rescan = *rescan
 	defer runner.Store.Close()
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

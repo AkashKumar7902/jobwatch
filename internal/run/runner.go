@@ -42,6 +42,11 @@ type Runner struct {
 	// enabled so catalog additions do not cause a one-time notification blast.
 	SeedNewSources bool
 
+	// Rescan re-evaluates every stored posting that was never notified —
+	// including seeded backlog — against the current matcher chain. Run it
+	// once after changing the rules to sweep the existing board contents.
+	Rescan bool
+
 	// DryRun evaluates and reports but never persists state, so the same
 	// jobs are re-evaluated next run. Good for tuning the matcher.
 	DryRun bool
@@ -111,8 +116,16 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 
 		for _, job := range res.jobs {
 			rec, seen := r.Store.Get(job.ID)
-			if seen && (!rec.Matched || rec.Notified) {
-				continue // fully processed in an earlier run
+			if seen {
+				processed := !rec.Matched || rec.Notified
+				if r.Rescan {
+					// A rescan only trusts the Notified flag; seeded and
+					// previously-unmatched postings get a fresh verdict.
+					processed = rec.Notified
+				}
+				if processed {
+					continue
+				}
 			}
 			if seen {
 				retries++ // matched earlier but delivery was never confirmed

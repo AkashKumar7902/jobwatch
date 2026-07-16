@@ -154,6 +154,37 @@ func TestSeedPreservesPendingDelivery(t *testing.T) {
 	}
 }
 
+// A rescan gives seeded backlog a fresh verdict and delivers it once.
+func TestRescanSweepsSeededBacklog(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, true, false)
+	r.Sources = testSources()
+
+	if err := r.RunOnce(context.Background()); err != nil { // seed
+		t.Fatal(err)
+	}
+	r.SeedOnly = false
+	r.Rescan = true
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 {
+		t.Fatalf("rescan should deliver the seeded match once, got %v", n.batches)
+	}
+	rec, _ := st.Get(testJob.ID)
+	if !rec.Matched || !rec.Notified {
+		t.Fatalf("rescanned match should be recorded delivered: %+v", rec)
+	}
+
+	r.Rescan = false
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 {
+		t.Fatalf("normal run after rescan must not re-deliver, got %d batches", len(n.batches))
+	}
+}
+
 func TestSeedNewSourcesBaselinesThenAlerts(t *testing.T) {
 	n := &flakyNotifier{}
 	r, st := newRunner(t, n, false, false)
