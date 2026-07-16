@@ -44,7 +44,11 @@ matcher:
         base_url: https://generativelanguage.googleapis.com/v1beta/openai
         model: gemini-2.5-flash
         api_key_env: JOBWATCH_LLM_API_KEY
-        max_tokens: 4000 # room for model reasoning + the thorough explanation
+        # Output ceiling, not input: billing is per token actually
+        # generated, so a high cap costs nothing on normal replies and
+        # only guards against runaway generations. 60000 sits just under
+        # gemini-2.5-flash's 65536 output limit — explanations never clip.
+        max_tokens: 60000
         profile: >-
           Early-career backend engineer with 1 year of professional software
           development experience, based in India (IST). Target roles: Backend
