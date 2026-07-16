@@ -14,7 +14,7 @@ name: jobwatch
 
 on:
   schedule:
-    - cron: "17 */2 * * *" # every 2 hours (UTC); minute 17 avoids the top-of-hour rush
+    - cron: "13,43 * * * *" # every 30 minutes (UTC); odd minutes avoid the on-the-hour rush
   workflow_dispatch: {} # allows manual runs from the Actions tab
 
 permissions:

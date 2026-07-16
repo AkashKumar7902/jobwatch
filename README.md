@@ -45,7 +45,7 @@ Skipping `-seed` on the first run would email you every job currently open.
 ## Run it on a schedule
 
 **Easiest: GitHub Actions (no computer needed).** The repo ships a workflow
-(`.github/workflows/jobwatch.yml`) that polls every 2 hours. Enable it by
+(`.github/workflows/jobwatch.yml`) that polls every 30 minutes. Enable it by
 setting three repository secrets:
 
 ```sh
