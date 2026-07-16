@@ -21,9 +21,34 @@ func build(t *testing.T, spec Spec) Matcher {
 var entryEngineerSpec = Spec{
 	Name: "all",
 	Of: []Spec{
-		{Name: "experience", Params: params.Map{"max_years": "1"}},
+		{Name: "experience", Params: params.Map{"years": "1"}},
 		{Name: "keywords", Params: params.Map{"field": "title", "include": "engineer, developer", "exclude": "senior, staff, principal, lead, manager"}},
 	},
+}
+
+func TestEmploymentMatcher(t *testing.T) {
+	m := build(t, Spec{Name: "employment", Params: params.Map{"types": "full-time"}})
+
+	for label, want := range map[string]bool{
+		"Full-time":          true,
+		"FullTime":           true,
+		"Full Time":          true,
+		"fulltime_permanent": true,
+		"Part-time":          false,
+		"Contract":           false,
+		"Intern":             false,
+		"":                   true, // unknown passes by default
+	} {
+		got := m.Match(model.Job{Title: "Engineer", EmploymentType: label})
+		if got.Matched != want {
+			t.Errorf("employment %q: Match() = %v, want %v (reason: %s)", label, got.Matched, want, got.Reason)
+		}
+	}
+
+	strict := build(t, Spec{Name: "employment", Params: params.Map{"types": "full-time", "match_when_unknown": "false"}})
+	if strict.Match(model.Job{}).Matched {
+		t.Error("unknown employment type should fail when match_when_unknown=false")
+	}
 }
 
 func TestAllCombinator(t *testing.T) {

@@ -42,12 +42,13 @@ func (r *recruitee) Company() string { return r.company }
 func (r *recruitee) Fetch(ctx context.Context) ([]model.Job, error) {
 	var payload struct {
 		Offers []struct {
-			ID           int64  `json:"id"`
-			Title        string `json:"title"`
-			CareersURL   string `json:"careers_url"`
-			Location     string `json:"location"`
-			Description  string `json:"description"`  // HTML
-			Requirements string `json:"requirements"` // HTML
+			ID             int64  `json:"id"`
+			Title          string `json:"title"`
+			CareersURL     string `json:"careers_url"`
+			Location       string `json:"location"`
+			EmploymentType string `json:"employment_type_code"` // e.g. "fulltime_permanent"
+			Description    string `json:"description"`          // HTML
+			Requirements   string `json:"requirements"`         // HTML
 		} `json:"offers"`
 	}
 	url := fmt.Sprintf("https://%s.recruitee.com/api/offers/", r.slug)
@@ -62,12 +63,13 @@ func (r *recruitee) Fetch(ctx context.Context) ([]model.Job, error) {
 			desc += "\n\nRequirements\n" + htmltext.ToText(o.Requirements)
 		}
 		jobs = append(jobs, model.Job{
-			ID:          fmt.Sprintf("recruitee/%s/%d", r.slug, o.ID),
-			Company:     r.company,
-			Title:       o.Title,
-			Location:    o.Location,
-			URL:         o.CareersURL,
-			Description: desc,
+			ID:             fmt.Sprintf("recruitee/%s/%d", r.slug, o.ID),
+			Company:        r.company,
+			Title:          o.Title,
+			Location:       o.Location,
+			URL:            o.CareersURL,
+			EmploymentType: o.EmploymentType,
+			Description:    desc,
 		})
 	}
 	return jobs, nil

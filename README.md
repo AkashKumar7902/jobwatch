@@ -134,8 +134,10 @@ and `not` to express exactly what you want, in config only:
 matcher:
   name: all # every condition must hold
   of:
-    - name: experience # <= 1 year of listed experience
-      params: {max_years: 1}
+    - name: experience # your 1 year fits the posting's stated range
+      params: {years: 1}
+    - name: employment # full-time roles only
+      params: {types: "full-time"}
     - name: keywords # engineering roles only, nothing senior
       params:
         field: title
@@ -151,15 +153,26 @@ Built-in matchers:
 
 | Matcher      | What it checks                                                            |
 | ------------ | ------------------------------------------------------------------------- |
-| `experience` | Listed experience requirement ≤ `max_years` ("1+ years", "0-2 years", "6 months", "entry level", "fresher"...) |
+| `experience` | YOUR `years` falls inside the range the posting states — "0-1", "1-3", "1+", "up to 2 years", "6-18 months", "entry level"... |
+| `employment` | ATS-reported employment type is in `types:` (full-time, contract, intern...) |
 | `keywords`   | `include`/`exclude` term lists against `field:` title, description, location, or any (case-insensitive, whole-word) |
 | `recency`    | Posting published within `max_days` (skips stale evergreen ads)            |
+| `llm`        | A language model judges fit against your `profile:` — works with any OpenAI-compatible endpoint (OpenAI, Anthropic, Groq, local Ollama); see config.example.yaml |
 | `all` `any` `not` | Combine other matchers under `of:`                                    |
 
-The experience matcher ignores decoys like "founded 10 years ago" or "in
-your first 3 months", and when a posting lists several figures the lowest
-wins — so you never miss a borderline entry-level job. Every notification
-shows the exact snippet and rule that matched.
+The `llm` matcher costs one API call per new job that reaches it, so place
+it last under `all` — earlier matchers veto first, and `-seed` never calls
+it. If the endpoint is down it matches by default (`on_error: match`), so
+an outage produces extra email rather than silently lost jobs.
+
+The experience matcher parses each mention into a range: "1-3 years" is
+[1, 3], "2+ years" or a bare "2 years" is a floor [2, ∞), "up to 2 years"
+is [0, 2]. With `years: 1`, "0-1", "1-3", and "1+" all match while "2+"
+and "3-5" don't — and a "0-1 years" posting correctly rejects someone
+configured with `years: 3`. It ignores decoys ("founded 10 years ago",
+"in your first 3 months"), and a posting with several mentions matches if
+your years fit ANY of them. Every notification shows the exact snippet
+and rule that matched.
 
 ## Flags
 

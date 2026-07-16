@@ -52,8 +52,9 @@ func (w *workable) Fetch(ctx context.Context) ([]model.Job, error) {
 			Country     string `json:"country"`
 			City        string `json:"city"`
 			Telecommute bool   `json:"telecommuting"`
-			PublishedOn string `json:"published_on"` // "2006-01-02"
-			Description string `json:"description"`  // HTML, present with details=true
+			Employment  string `json:"employment_type"` // often empty
+			PublishedOn string `json:"published_on"`    // "2006-01-02"
+			Description string `json:"description"`     // HTML, present with details=true
 		} `json:"jobs"`
 	}
 	url := fmt.Sprintf("https://apply.workable.com/api/v1/widget/accounts/%s?details=true", w.account)
@@ -69,13 +70,14 @@ func (w *workable) Fetch(ctx context.Context) ([]model.Job, error) {
 		}
 		postedAt, _ := time.Parse("2006-01-02", j.PublishedOn)
 		jobs = append(jobs, model.Job{
-			ID:          fmt.Sprintf("workable/%s/%s", w.account, j.Shortcode),
-			Company:     w.company,
-			Title:       j.Title,
-			Location:    loc,
-			URL:         j.URL,
-			Description: htmltext.ToText(j.Description),
-			PostedAt:    postedAt,
+			ID:             fmt.Sprintf("workable/%s/%s", w.account, j.Shortcode),
+			Company:        w.company,
+			Title:          j.Title,
+			Location:       loc,
+			URL:            j.URL,
+			EmploymentType: j.Employment,
+			Description:    htmltext.ToText(j.Description),
+			PostedAt:       postedAt,
 		})
 	}
 	return jobs, nil

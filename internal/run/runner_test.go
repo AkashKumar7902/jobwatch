@@ -95,8 +95,8 @@ func TestFailedDeliveryRetriesThenStops(t *testing.T) {
 	}
 }
 
-// Seeding records matches as already-notified: nothing is delivered now or
-// on later runs.
+// Seeding records jobs as baseline without evaluating or notifying:
+// nothing is delivered now or on later runs.
 func TestSeedSuppressesDeliveryForever(t *testing.T) {
 	n := &flakyNotifier{}
 	r, st := newRunner(t, n, true, false)
@@ -105,9 +105,9 @@ func TestSeedSuppressesDeliveryForever(t *testing.T) {
 	if err := r.RunOnce(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	rec, _ := st.Get(testJob.ID)
-	if !rec.Notified {
-		t.Fatalf("seeded match should be marked notified: %+v", rec)
+	rec, ok := st.Get(testJob.ID)
+	if !ok || rec.Matched || rec.Notified {
+		t.Fatalf("seeded job should be recorded unevaluated: %+v (ok=%v)", rec, ok)
 	}
 
 	r.SeedOnly = false

@@ -13,22 +13,33 @@ poll:
 # The matching rule. Matchers compose via all/any/not — see README
 # "Change what counts as a match" for the full catalog.
 matcher:
-  name: experience
-  params:
-    max_years: 1 # notify when the posting asks for <= 1 year of experience
-    notify_when_unlisted: false # postings that list nothing stay silent
-# Tighter alternative (uncomment and delete the block above): entry-level
-# AND engineering-titled AND nothing senior — cuts ~90% of the noise.
-# matcher:
-#   name: all
-#   of:
-#     - name: experience
-#       params: {max_years: 1}
-#     - name: keywords
-#       params:
-#         field: title
-#         include: "engineer, engineering, developer, sre, devops, software, backend, frontend, full stack, data, ml, ai"
-#         exclude: "senior, staff, principal, lead, manager, director, head, vp"
+  name: all
+  of:
+    # Your experience must fall INSIDE the range the posting states:
+    # with years: 1 -> "0-1", "1-3", "0-3", "1+" match; "2+", "3-5" don't.
+    - name: experience
+      params:
+        years: 1
+        notify_when_unlisted: true # postings that list no experience also notify
+    # Full-time roles only (ATSes that don't state a type still pass).
+    - name: employment
+      params: {types: "full-time"}
+# Tighter still (add under `of:` above): engineering titles, nothing senior.
+#   - name: keywords
+#     params:
+#       field: title
+#       include: "engineer, engineering, developer, sre, devops, software, backend, frontend, full stack, data, ml, ai"
+#       exclude: "senior, staff, principal, lead, manager, director, head, vp"
+# Or let a language model judge fit against your profile. Works with any
+# OpenAI-compatible endpoint (OpenAI, Anthropic, Groq, OpenRouter, local
+# Ollama). Keep it LAST under `of:` so cheap matchers filter first and the
+# LLM is only called for jobs that already passed them.
+#   - name: llm
+#     params:
+#       profile: "Backend engineer with 1 year of Go/Python experience, based in India, needs remote roles open to India"
+#       base_url: https://api.openai.com/v1 # or http://localhost:11434/v1 for free local Ollama
+#       model: gpt-4o-mini
+#       api_key_env: OPENAI_API_KEY # omit for keyless endpoints
 
 # ${VAR} values are read from the environment (GitHub Secrets in CI).
 # Running locally you can either export the same variables or replace the

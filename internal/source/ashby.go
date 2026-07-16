@@ -51,6 +51,7 @@ func (a *ashby) Fetch(ctx context.Context) ([]model.Job, error) {
 			JobURL          string `json:"jobUrl"`
 			PublishedAt     string `json:"publishedAt"`
 			IsListed        bool   `json:"isListed"`
+			EmploymentType  string `json:"employmentType"`
 			DescriptionHTML string `json:"descriptionHtml"`
 		} `json:"jobs"`
 	}
@@ -66,13 +67,14 @@ func (a *ashby) Fetch(ctx context.Context) ([]model.Job, error) {
 		}
 		postedAt, _ := time.Parse(time.RFC3339, j.PublishedAt) // zero on parse failure
 		jobs = append(jobs, model.Job{
-			ID:          fmt.Sprintf("ashby/%s/%s", a.board, j.ID),
-			Company:     a.company,
-			Title:       j.Title,
-			Location:    j.Location,
-			URL:         j.JobURL,
-			Description: htmltext.ToText(j.DescriptionHTML),
-			PostedAt:    postedAt,
+			ID:             fmt.Sprintf("ashby/%s/%s", a.board, j.ID),
+			Company:        a.company,
+			Title:          j.Title,
+			Location:       j.Location,
+			URL:            j.JobURL,
+			EmploymentType: j.EmploymentType,
+			Description:    htmltext.ToText(j.DescriptionHTML),
+			PostedAt:       postedAt,
 		})
 	}
 	return jobs, nil

@@ -17,6 +17,11 @@ type Job struct {
 	Location string
 	URL      string
 
+	// EmploymentType is the ATS's own label ("Full-time", "FullTime",
+	// "fulltime_permanent", "Contract", ...). Empty when the ATS doesn't
+	// expose one (Greenhouse never does).
+	EmploymentType string
+
 	// Description is the full posting text with HTML stripped.
 	// Matchers run against Title + Description.
 	Description string

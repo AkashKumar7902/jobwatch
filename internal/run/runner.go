@@ -88,6 +88,16 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				rec.FirstSeen = time.Now()
 			}
 
+			// Seeding never notifies, so evaluating would be wasted work —
+			// and with an llm matcher configured, wasted API spend.
+			if r.SeedOnly {
+				r.Store.Add(job.ID, store.Record{
+					FirstSeen: rec.FirstSeen,
+					Title:     job.Company + ": " + job.Title,
+				})
+				continue
+			}
+
 			verdict := r.Matcher.Match(job)
 			if verdict.Matched {
 				matches = append(matches, notify.Match{Job: job, Reason: verdict.Reason})
@@ -98,8 +108,6 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 					FirstSeen: rec.FirstSeen,
 					Title:     job.Company + ": " + job.Title,
 					Matched:   verdict.Matched,
-					// Seeded matches are baseline, never delivered.
-					Notified: verdict.Matched && r.SeedOnly,
 				})
 			}
 		}

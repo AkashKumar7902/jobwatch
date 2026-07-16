@@ -49,6 +49,7 @@ func (b *bambooHR) Fetch(ctx context.Context) ([]model.Job, error) {
 		Result []struct {
 			ID             string `json:"id"`
 			JobOpeningName string `json:"jobOpeningName"`
+			Employment     string `json:"employmentStatusLabel"` // e.g. "Full Time"
 			ATSLocation    struct {
 				City    string `json:"city"`
 				State   string `json:"state"`
@@ -86,12 +87,13 @@ func (b *bambooHR) Fetch(ctx context.Context) ([]model.Job, error) {
 			url = fmt.Sprintf("https://%s.bamboohr.com/careers/%s", b.slug, item.ID)
 		}
 		jobs = append(jobs, model.Job{
-			ID:          fmt.Sprintf("bamboohr/%s/%s", b.slug, item.ID),
-			Company:     b.company,
-			Title:       item.JobOpeningName,
-			Location:    loc,
-			URL:         url,
-			Description: htmltext.ToText(detail.Result.JobOpening.Description),
+			ID:             fmt.Sprintf("bamboohr/%s/%s", b.slug, item.ID),
+			Company:        b.company,
+			Title:          item.JobOpeningName,
+			Location:       loc,
+			URL:            url,
+			EmploymentType: item.Employment,
+			Description:    htmltext.ToText(detail.Result.JobOpening.Description),
 		})
 	}
 	return jobs, nil

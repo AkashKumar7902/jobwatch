@@ -99,6 +99,7 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 				ID             string `json:"id"`
 				JobDescription string `json:"jobDescription"`
 				Location       string `json:"location"`
+				TimeType       string `json:"timeType"` // e.g. "Full time"
 				ExternalURL    string `json:"externalUrl"`
 			} `json:"jobPostingInfo"`
 		}
@@ -112,12 +113,13 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 			id = p.ExternalPath
 		}
 		jobs = append(jobs, model.Job{
-			ID:          fmt.Sprintf("workday/%s/%s", w.base, id),
-			Company:     w.company,
-			Title:       p.Title,
-			Location:    info.Location,
-			URL:         info.ExternalURL,
-			Description: htmltext.ToText(info.JobDescription),
+			ID:             fmt.Sprintf("workday/%s/%s", w.base, id),
+			Company:        w.company,
+			Title:          p.Title,
+			Location:       info.Location,
+			URL:            info.ExternalURL,
+			EmploymentType: info.TimeType,
+			Description:    htmltext.ToText(info.JobDescription),
 		})
 	}
 	return jobs, nil

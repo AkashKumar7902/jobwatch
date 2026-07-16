@@ -88,8 +88,11 @@ func (s *smartRecruiters) Fetch(ctx context.Context) ([]model.Job, error) {
 	jobs := make([]model.Job, 0, len(postings))
 	for _, p := range postings {
 		var detail struct {
-			ApplyURL string `json:"applyUrl"`
-			JobAd    struct {
+			ApplyURL         string `json:"applyUrl"`
+			TypeOfEmployment struct {
+				Label string `json:"label"` // e.g. "Full-time"
+			} `json:"typeOfEmployment"`
+			JobAd struct {
 				Sections map[string]struct {
 					Title string `json:"title"`
 					Text  string `json:"text"`
@@ -119,13 +122,14 @@ func (s *smartRecruiters) Fetch(ctx context.Context) ([]model.Job, error) {
 		}
 		postedAt, _ := time.Parse(time.RFC3339, p.ReleasedDate)
 		jobs = append(jobs, model.Job{
-			ID:          fmt.Sprintf("smartrecruiters/%s/%s", s.id, p.ID),
-			Company:     s.company,
-			Title:       p.Name,
-			Location:    loc,
-			URL:         jobURL,
-			Description: strings.TrimSpace(desc.String()),
-			PostedAt:    postedAt,
+			ID:             fmt.Sprintf("smartrecruiters/%s/%s", s.id, p.ID),
+			Company:        s.company,
+			Title:          p.Name,
+			Location:       loc,
+			URL:            jobURL,
+			EmploymentType: detail.TypeOfEmployment.Label,
+			Description:    strings.TrimSpace(desc.String()),
+			PostedAt:       postedAt,
 		})
 	}
 	return jobs, nil

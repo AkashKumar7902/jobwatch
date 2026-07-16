@@ -58,7 +58,8 @@ func (l *lever) Fetch(ctx context.Context) ([]model.Job, error) {
 		HostedURL  string `json:"hostedUrl"`
 		CreatedAt  int64  `json:"createdAt"` // unix millis
 		Categories struct {
-			Location string `json:"location"`
+			Location   string `json:"location"`
+			Commitment string `json:"commitment"` // e.g. "Full-Time"
 		} `json:"categories"`
 		DescriptionPlain string `json:"descriptionPlain"`
 		AdditionalPlain  string `json:"additionalPlain"`
@@ -84,13 +85,14 @@ func (l *lever) Fetch(ctx context.Context) ([]model.Job, error) {
 			desc.WriteString("\n\n" + p.AdditionalPlain)
 		}
 		jobs = append(jobs, model.Job{
-			ID:          fmt.Sprintf("lever/%s/%s", l.site, p.ID),
-			Company:     l.company,
-			Title:       p.Text,
-			Location:    p.Categories.Location,
-			URL:         p.HostedURL,
-			Description: desc.String(),
-			PostedAt:    time.UnixMilli(p.CreatedAt),
+			ID:             fmt.Sprintf("lever/%s/%s", l.site, p.ID),
+			Company:        l.company,
+			Title:          p.Text,
+			Location:       p.Categories.Location,
+			URL:            p.HostedURL,
+			EmploymentType: p.Categories.Commitment,
+			Description:    desc.String(),
+			PostedAt:       time.UnixMilli(p.CreatedAt),
 		})
 	}
 	return jobs, nil
