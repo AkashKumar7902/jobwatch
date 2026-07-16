@@ -15,14 +15,26 @@ import (
 	"jobwatch/internal/store"
 )
 
-type fakeSource struct{ jobs []model.Job }
+type fakeSource struct {
+	identity    string
+	statePrefix string
+	jobs        []model.Job
+	err         error
+}
 
-func (f *fakeSource) Company() string                                { return "acme" }
-func (f *fakeSource) Fetch(_ context.Context) ([]model.Job, error) { return f.jobs, nil }
+func (f *fakeSource) Company() string                              { return "acme" }
+func (f *fakeSource) Fetch(_ context.Context) ([]model.Job, error) { return f.jobs, f.err }
+func (f *fakeSource) Identity() string {
+	if f.identity == "" {
+		return "test/acme"
+	}
+	return f.identity
+}
+func (f *fakeSource) StatePrefix() string { return f.statePrefix }
 
 type matchAll struct{}
 
-func (matchAll) Name() string                  { return "all" }
+func (matchAll) Name() string                 { return "all" }
 func (matchAll) Match(model.Job) match.Result { return match.Result{Matched: true, Reason: "test"} }
 
 // flakyNotifier fails until failuresLeft hits zero, then succeeds.
@@ -116,6 +128,93 @@ func TestSeedSuppressesDeliveryForever(t *testing.T) {
 	}
 	if len(n.batches) != 0 {
 		t.Fatalf("seeded jobs must never be delivered, got %v", n.batches)
+	}
+}
+
+func TestSeedPreservesPendingDelivery(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, true, false)
+	r.Sources = testSources()
+	st.Add(testJob.ID, store.Record{Matched: true})
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	rec, _ := st.Get(testJob.ID)
+	if !rec.Matched || rec.Notified {
+		t.Fatalf("seed must preserve pending delivery, got %+v", rec)
+	}
+
+	r.SeedOnly = false
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 {
+		t.Fatalf("pending job should deliver after seed, got %v", n.batches)
+	}
+}
+
+func TestSeedNewSourcesBaselinesThenAlerts(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	src := &fakeSource{identity: "test/new-board", jobs: []model.Job{testJob}}
+	r.Sources = []source.Source{src}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 0 {
+		t.Fatalf("current jobs from a new source must be seeded, got %v", n.batches)
+	}
+	if _, ok := st.Get(testJob.ID); !ok {
+		t.Fatal("seeded posting was not stored")
+	}
+
+	src.jobs = append(src.jobs, model.Job{
+		ID: "test/acme/2", Company: "Acme", Title: "Another Junior Dev", URL: "https://x/2",
+	})
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 || n.batches[0][0].Job.ID != "test/acme/2" {
+		t.Fatalf("later posting from a seeded source should alert once, got %v", n.batches)
+	}
+}
+
+func TestSeedNewSourcesDoesNotSuppressKnownBoard(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	st.Add("test/acme/closed", store.Record{Title: "historical posting"})
+	newJob := model.Job{ID: "test/acme/2", Company: "Acme", Title: "New Junior Dev", URL: "https://x/2"}
+	r.Sources = []source.Source{&fakeSource{
+		identity:    "test/existing-board",
+		statePrefix: "test/acme/",
+		jobs:        []model.Job{newJob},
+	}}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 || n.batches[0][0].Job.ID != newJob.ID {
+		t.Fatalf("new posting on known board should not be seeded, got %v", n.batches)
+	}
+}
+
+func TestPartialSourceResultsAreProcessed(t *testing.T) {
+	n := &flakyNotifier{}
+	r, _ := newRunner(t, n, false, false)
+	r.Sources = []source.Source{&fakeSource{
+		jobs: []model.Job{testJob},
+		err:  errors.New("one detail endpoint returned 502"),
+	}}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 {
+		t.Fatalf("healthy jobs from partial source should deliver, got %v", n.batches)
 	}
 }
 

@@ -41,6 +41,8 @@ export JOBWATCH_SMTP_PASSWORD='your app password'
 ```
 
 Skipping `-seed` on the first run would email you every job currently open.
+When adding boards to an existing state file, use `-seed-new-sources`: it
+baselines only those boards while existing boards continue alerting normally.
 
 ## Run it on a schedule
 
@@ -56,8 +58,9 @@ gh workflow run jobwatch               # optional: trigger the first run now
 ```
 
 The first run seeds automatically (no email blast); seen-job state is kept
-on a `state` branch between runs. Change the cadence by editing the `cron:`
-line (times are UTC).
+on a `state` branch between runs. Later catalog additions are also baselined
+per board, without suppressing alerts from boards already being watched.
+Change the cadence by editing the `cron:` line (times are UTC).
 
 **Or locally**, pick one:
 
@@ -90,15 +93,18 @@ job or "Apply" link:
 | `jobs.smartrecruiters.com/Acme`          | `source: smartrecruiters, params: {company_id: Acme}`              |
 | `acme.wd5.myworkdayjobs.com/en-US/jobs`  | `source: workday, params: {host: acme.wd5.myworkdayjobs.com, tenant: acme, site: jobs}` |
 
-Not sure? Guess the company name in lowercase and test it — a wrong token
-fails with a clear error and never blocks other companies:
+Do not rely on a company-name guess: follow an Apply link to the exact ATS
+identity, then test it. A wrong token fails clearly and never blocks the other
+companies:
 
 ```sh
 ./jobwatch -dry-run    # prints matches, sends nothing, saves nothing
 ```
 
-`config.example.yaml` ships with 45 remote-friendly companies, every one
-verified live.
+`config.example.yaml` ships with 184 verified ATS boards. Of those, 139 were
+added after auditing every row in moreThanFAANGM; the checked URL, disposition,
+exact API identity, job count, and exclusion reason for all 483 source links
+are recorded in [`catalog/morethanfaangm-audit.tsv`](catalog/morethanfaangm-audit.tsv).
 
 ## Notifications
 
@@ -176,12 +182,13 @@ and rule that matched.
 
 ## Flags
 
-| Flag           | What it does                                              |
-| -------------- | --------------------------------------------------------- |
-| `-seed`        | Remember all current jobs without emailing (first run)     |
-| `-dry-run`     | Print matches, send nothing, save nothing                  |
-| `-interval 1h` | Keep running, poll on that interval (default: run once)    |
-| `-config path` | Use another config file (default `config.yaml`)            |
+| Flag                | What it does                                                       |
+| ------------------- | ------------------------------------------------------------------ |
+| `-seed`             | Remember all current jobs without emailing (first run)              |
+| `-seed-new-sources` | Baseline only never-seen boards; known boards keep alerting         |
+| `-dry-run`          | Print matches, send nothing, save nothing                           |
+| `-interval 1h`      | Keep running, poll on that interval (default: run once)             |
+| `-config path`      | Use another config file (default `config.yaml`)                     |
 
 ## Extending (one file each, nothing else changes)
 

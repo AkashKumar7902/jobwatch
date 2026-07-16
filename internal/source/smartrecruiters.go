@@ -38,6 +38,9 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
+		if maxPostings <= 0 {
+			return nil, fmt.Errorf("param %q: expected a positive integer, got %d", "max_postings", maxPostings)
+		}
 		return &smartRecruiters{company: company, id: id, maxPostings: maxPostings, client: client}, nil
 	})
 }
@@ -86,6 +89,8 @@ func (s *smartRecruiters) Fetch(ctx context.Context) ([]model.Job, error) {
 
 	// The description lives on the detail endpoint.
 	jobs := make([]model.Job, 0, len(postings))
+	failed := 0
+	var firstErr error
 	for _, p := range postings {
 		var detail struct {
 			ApplyURL         string `json:"applyUrl"`
@@ -101,7 +106,11 @@ func (s *smartRecruiters) Fetch(ctx context.Context) ([]model.Job, error) {
 		}
 		url := fmt.Sprintf("https://api.smartrecruiters.com/v1/companies/%s/postings/%s", s.id, p.ID)
 		if err := fetchJSON(ctx, s.client, http.MethodGet, url, nil, &detail); err != nil {
-			return nil, fmt.Errorf("posting %s (%s): %w", p.ID, p.Name, err)
+			failed++
+			if firstErr == nil {
+				firstErr = fmt.Errorf("posting %s (%s): %w", p.ID, p.Name, err)
+			}
+			continue
 		}
 
 		var desc strings.Builder
@@ -132,5 +141,5 @@ func (s *smartRecruiters) Fetch(ctx context.Context) ([]model.Job, error) {
 			PostedAt:       postedAt,
 		})
 	}
-	return jobs, nil
+	return detailResult(jobs, failed, len(postings), firstErr)
 }

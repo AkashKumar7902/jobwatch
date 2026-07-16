@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -77,6 +78,21 @@ func (s *Store) Get(id string) (Record, bool) {
 func (s *Store) Seen(id string) bool {
 	_, ok := s.recs[id]
 	return ok
+}
+
+// HasPrefix reports whether any stored ID begins with prefix. It is used only
+// for catalog migration, where historical job IDs prove a source was already
+// watched even if its current openings have completely changed.
+func (s *Store) HasPrefix(prefix string) bool {
+	if prefix == "" {
+		return false
+	}
+	for id := range s.recs {
+		if strings.HasPrefix(id, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // Add records a posting. It overwrites any previous record.

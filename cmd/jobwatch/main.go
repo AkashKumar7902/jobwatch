@@ -34,6 +34,7 @@ func main() {
 		configPath = flag.String("config", "config.yaml", "path to config file")
 		interval   = flag.Duration("interval", 0, "poll repeatedly at this interval (e.g. 1h); 0 runs once and exits")
 		seed       = flag.Bool("seed", false, "record all current postings as seen without notifying (recommended first run)")
+		seedNew    = flag.Bool("seed-new-sources", false, "baseline only boards not previously recorded; known boards still notify")
 		dryRun     = flag.Bool("dry-run", false, "evaluate and print matches to the console; send no email, save no state")
 		statePath  = flag.String("state", "", "override the state file location from config (store.path)")
 	)
@@ -46,8 +47,14 @@ func main() {
 	if *seed && *dryRun {
 		logger.Fatal("-seed cannot be combined with -dry-run: seeding is only useful when state is saved")
 	}
+	if *seed && *seedNew {
+		logger.Fatal("-seed cannot be combined with -seed-new-sources")
+	}
+	if *seedNew && *dryRun {
+		logger.Fatal("-seed-new-sources cannot be combined with -dry-run: seeding is only useful when state is saved")
+	}
 
-	runner, err := build(*configPath, *statePath, logger, *seed, *dryRun)
+	runner, err := build(*configPath, *statePath, logger, *seed, *seedNew, *dryRun)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -83,7 +90,7 @@ func matcherSpec(p config.Plugin) match.Spec {
 }
 
 // build assembles the runner from config: sources, matcher, notifiers, store.
-func build(configPath, statePath string, logger *log.Logger, seed, dryRun bool) (*run.Runner, error) {
+func build(configPath, statePath string, logger *log.Logger, seed, seedNew, dryRun bool) (*run.Runner, error) {
 	cfg, err := config.Load(configPath)
 	if err != nil {
 		return nil, err
@@ -95,11 +102,17 @@ func build(configPath, statePath string, logger *log.Logger, seed, dryRun bool) 
 	client := &http.Client{Timeout: time.Duration(cfg.Poll.TimeoutSeconds) * time.Second}
 
 	var sources []source.Source
+	identities := make(map[string]string)
 	for _, c := range cfg.Companies {
 		s, err := source.New(c.Source, c.Name, c.Params, client)
 		if err != nil {
 			return nil, fmt.Errorf("company %q: %w", c.Name, err)
 		}
+		identity := source.Identity(s)
+		if previous, exists := identities[identity]; exists {
+			return nil, fmt.Errorf("company %q duplicates ATS board %q already used by %q", c.Name, identity, previous)
+		}
+		identities[identity] = c.Name
 		sources = append(sources, s)
 	}
 
@@ -132,13 +145,14 @@ func build(configPath, statePath string, logger *log.Logger, seed, dryRun bool) 
 	}
 
 	return &run.Runner{
-		Sources:     sources,
-		Matcher:     matcher,
-		Notifiers:   notifiers,
-		Store:       st,
-		Log:         logger,
-		Concurrency: cfg.Poll.Concurrency,
-		SeedOnly:    seed,
-		DryRun:      dryRun,
+		Sources:        sources,
+		Matcher:        matcher,
+		Notifiers:      notifiers,
+		Store:          st,
+		Log:            logger,
+		Concurrency:    cfg.Poll.Concurrency,
+		SeedOnly:       seed,
+		SeedNewSources: seedNew,
+		DryRun:         dryRun,
 	}, nil
 }
