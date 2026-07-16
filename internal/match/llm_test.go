@@ -69,6 +69,20 @@ func TestLLMMatcher(t *testing.T) {
 			t.Errorf("prompt missing %q", want)
 		}
 	}
+	if gotBody["max_tokens"].(float64) != 700 {
+		t.Errorf("default max_tokens = %v, want 700", gotBody["max_tokens"])
+	}
+
+	// instructions and max_tokens flow through to the request.
+	tuned := newLLM(t, srv.URL, params.Map{"instructions": "Skip postings with no stated experience.", "max_tokens": "900"})
+	tuned.Match(llmJob)
+	sysMsg := gotBody["messages"].([]any)[0].(map[string]any)["content"].(string)
+	if !strings.Contains(sysMsg, "Skip postings with no stated experience.") {
+		t.Errorf("instructions not in system prompt: %q", sysMsg)
+	}
+	if gotBody["max_tokens"].(float64) != 900 {
+		t.Errorf("max_tokens = %v, want 900", gotBody["max_tokens"])
+	}
 
 	reply = `Sure! Here is my verdict:` + "\n```json\n" + `{"match": false, "reason": "requires 7 years"}` + "\n```"
 	res = m.Match(llmJob)
@@ -79,7 +93,7 @@ func TestLLMMatcher(t *testing.T) {
 
 func TestLLMErrorPolicy(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		http.Error(w, `{"error":"rate limited"}`, http.StatusTooManyRequests)
+		http.Error(w, `{"error":"bad key"}`, http.StatusUnauthorized) // non-retryable
 	}))
 	defer srv.Close()
 
@@ -90,6 +104,26 @@ func TestLLMErrorPolicy(t *testing.T) {
 	failClosed := newLLM(t, srv.URL, params.Map{"on_error": "skip"})
 	if res := failClosed.Match(llmJob); res.Matched {
 		t.Errorf("on_error=skip should fail closed, got %+v", res)
+	}
+}
+
+func TestLLMRetriesRateLimits(t *testing.T) {
+	attempts := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		attempts++
+		if attempts == 1 {
+			w.Header().Set("Retry-After", "1")
+			http.Error(w, `{"error":"rate limited"}`, http.StatusTooManyRequests)
+			return
+		}
+		fmt.Fprint(w, completionReply(`{"match": true, "reason": "fits"}`))
+	}))
+	defer srv.Close()
+
+	m := newLLM(t, srv.URL, nil)
+	res := m.Match(llmJob)
+	if !res.Matched || attempts != 2 {
+		t.Errorf("expected success after one retry, got %+v after %d attempts", res, attempts)
 	}
 }
 

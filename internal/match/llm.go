@@ -75,13 +75,23 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
+		maxTokens, err := p.Int("max_tokens", 700)
+		if err != nil {
+			return nil, err
+		}
+		system := llmSystemPrompt
+		if extra := strings.TrimSpace(p.Get("instructions")); extra != "" {
+			system += "\n\nAdditional matching rules from the user (these override the defaults above where they conflict):\n" + extra
+		}
 		return &llm{
 			profile:      profile,
+			system:       system,
 			endpoint:     strings.TrimSuffix(baseURL, "/") + "/chat/completions",
 			model:        modelName,
 			apiKey:       apiKey,
 			matchOnError: onError == "match",
 			maxDescChars: maxDescChars,
+			maxTokens:    maxTokens,
 			client:       &http.Client{Timeout: 90 * time.Second},
 		}, nil
 	})
@@ -89,17 +99,19 @@ func init() {
 
 type llm struct {
 	profile      string
+	system       string
 	endpoint     string
 	model        string
 	apiKey       string
 	matchOnError bool
 	maxDescChars int
+	maxTokens    int
 	client       *http.Client
 }
 
 func (l *llm) Name() string { return "llm" }
 
-const llmSystemPrompt = `You judge whether a job posting fits a candidate. Consider role fit, seniority, stated experience requirements, employment type, and location/timezone eligibility. Be practical: a posting the candidate could reasonably be hired for is a fit; a posting clearly above their level or closed to their location is not. Respond with ONLY a JSON object: {"match": true|false, "reason": "<one short sentence>"}`
+const llmSystemPrompt = `You judge whether a job posting fits a candidate. Consider role fit, seniority, stated experience requirements, employment type, and location/timezone eligibility. Be practical: a posting the candidate could reasonably be hired for is a fit; a posting clearly above their level or closed to their location is not. Respond with ONLY a JSON object: {"match": true|false, "reason": "<why>"}`
 
 func (l *llm) Match(job model.Job) Result {
 	verdict, err := l.ask(job)
@@ -136,32 +148,52 @@ func (l *llm) ask(job model.Job) (llmVerdict, error) {
 	body, err := json.Marshal(map[string]any{
 		"model": l.model,
 		"messages": []map[string]string{
-			{"role": "system", "content": llmSystemPrompt},
+			{"role": "system", "content": l.system},
 			{"role": "user", "content": user.String()},
 		},
-		"max_tokens": 300,
+		"max_tokens": l.maxTokens,
 	})
 	if err != nil {
 		return llmVerdict{}, err
 	}
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, l.endpoint, bytes.NewReader(body))
-	if err != nil {
-		return llmVerdict{}, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	if l.apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+l.apiKey)
-	}
-
-	resp, err := l.client.Do(req)
-	if err != nil {
-		return llmVerdict{}, err
-	}
-	defer resp.Body.Close()
-	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if resp.StatusCode != http.StatusOK {
-		return llmVerdict{}, fmt.Errorf("%s returned %s: %s", l.endpoint, resp.Status, truncateStr(string(bytes.TrimSpace(raw)), 200))
+	// Rate limits are routine on free tiers (Gemini free: ~10 req/min), so
+	// retry 429s and transient 5xx with a pause instead of failing open.
+	var resp *http.Response
+	var raw []byte
+	for attempt := 1; ; attempt++ {
+		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, l.endpoint, bytes.NewReader(body))
+		if err != nil {
+			return llmVerdict{}, err
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if l.apiKey != "" {
+			req.Header.Set("Authorization", "Bearer "+l.apiKey)
+		}
+		resp, err = l.client.Do(req)
+		if err != nil {
+			return llmVerdict{}, err
+		}
+		raw, _ = io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+		resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			break
+		}
+		retryable := resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500
+		if !retryable || attempt >= 4 {
+			return llmVerdict{}, fmt.Errorf("%s returned %s: %s", l.endpoint, resp.Status, truncateStr(string(bytes.TrimSpace(raw)), 200))
+		}
+		wait := 20 * time.Second
+		if resp.StatusCode >= 500 {
+			wait = 5 * time.Second
+		}
+		if s := resp.Header.Get("Retry-After"); s != "" {
+			if secs, err := time.ParseDuration(s + "s"); err == nil && secs > 0 && secs < 2*time.Minute {
+				wait = secs
+			}
+		}
+		log.Printf("llm matcher: %s, retrying in %s (attempt %d/4)", resp.Status, wait, attempt)
+		time.Sleep(wait)
 	}
 
 	var completion struct {

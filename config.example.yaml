@@ -26,22 +26,43 @@ matcher:
     # Full-time roles only (ATSes that don't state a type still pass).
     - name: employment
       params: {types: "full-time"}
-# Tighter still (add under `of:` above): engineering titles, nothing senior.
+    # Final judge: a language model reviews every job the rules above let
+    # through. Any OpenAI-compatible endpoint works (OpenAI, Anthropic,
+    # Groq, OpenRouter, local Ollama); this uses Google Gemini. Keep it
+    # LAST under `of:` — cheap matchers veto first, so the LLM is only
+    # called for jobs that already passed them, and -seed never calls it.
+    - name: llm
+      params:
+        base_url: https://generativelanguage.googleapis.com/v1beta/openai
+        model: gemini-2.5-flash
+        api_key_env: JOBWATCH_LLM_API_KEY
+        max_tokens: 2000 # room for reasoning + the thorough explanation
+        profile: >-
+          Early-career backend engineer with 1 year of professional software
+          development experience, based in India (IST). Target roles: Backend
+          Engineer, Backend Software Engineer, Software Engineer - Backend,
+          Software Development Engineer I (SDE 1), Software Engineer I,
+          Software Engineer, Software Developer - Backend, Associate Software
+          Engineer, Associate Software Developer, Junior Backend Engineer,
+          Platform Engineer, DevOps Engineer, or equivalent titles.
+        instructions: >-
+          Match ONLY when both conditions hold. (1) The title is one of the
+          target roles or an equivalent entry-level backend/platform/devops
+          engineering role - reject senior, staff, lead, principal, manager,
+          and unrelated disciplines. (2) The posting explicitly states a
+          required experience level, and 1 year of experience falls INSIDE
+          the stated range: "0-1 years", "1-3 years", "0-3 years", and "1+
+          years" all fit; "2+ years", "3-5 years", or seniority wording
+          implying more do not. If the posting does not mention any required
+          years of experience at all, do NOT match - skip it. In the reason,
+          explain thoroughly: quote the exact experience wording from the
+          posting, state the range it implies, say why 1 year is inside or
+          outside that range, and how the title maps to the target roles.
+# Optional extra pre-filter (add under `of:` before llm) to cut LLM calls:
 #   - name: keywords
 #     params:
 #       field: title
-#       include: "engineer, engineering, developer, sre, devops, software, backend, frontend, full stack, data, ml, ai"
-#       exclude: "senior, staff, principal, lead, manager, director, head, vp"
-# Or let a language model judge fit against your profile. Works with any
-# OpenAI-compatible endpoint (OpenAI, Anthropic, Groq, OpenRouter, local
-# Ollama). Keep it LAST under `of:` so cheap matchers filter first and the
-# LLM is only called for jobs that already passed them.
-#   - name: llm
-#     params:
-#       profile: "Backend engineer with 1 year of Go/Python experience, based in India, needs remote roles open to India"
-#       base_url: https://api.openai.com/v1 # or http://localhost:11434/v1 for free local Ollama
-#       model: gpt-4o-mini
-#       api_key_env: OPENAI_API_KEY # omit for keyless endpoints
+#       include: "engineer, engineering, developer, sde, sre, devops, software, backend, platform"
 
 # ${VAR} values are read from the environment (GitHub Secrets in CI).
 # Running locally you can either export the same variables or replace the
