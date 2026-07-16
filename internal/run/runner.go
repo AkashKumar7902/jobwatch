@@ -59,6 +59,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		src  source.Source
 		jobs []model.Job
 		err  error
+		dur  time.Duration
 	}
 	results := make([]fetched, len(r.Sources))
 
@@ -70,8 +71,9 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
+			start := time.Now()
 			jobs, err := s.Fetch(ctx)
-			results[i] = fetched{src: s, jobs: jobs, err: err}
+			results[i] = fetched{src: s, jobs: jobs, err: err, dur: time.Since(start).Round(time.Millisecond)}
 		}(i, s)
 	}
 	wg.Wait()
@@ -114,6 +116,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			}
 		}
 
+		srcNew, srcMatched := 0, 0
 		for _, job := range res.jobs {
 			// Matching can be slow (the llm matcher makes an API call per
 			// job); honor cancellation between jobs so Ctrl-C actually
@@ -139,6 +142,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				retries++ // matched earlier but delivery was never confirmed
 			} else {
 				newJobs++
+				srcNew++
 				rec.FirstSeen = time.Now()
 			}
 
@@ -159,8 +163,12 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 
 			verdict := r.Matcher.Match(job)
 			if verdict.Matched {
+				srcMatched++
 				matches = append(matches, notify.Match{Job: job, Reason: verdict.Reason})
 				matchedIDs = append(matchedIDs, job.ID)
+				r.Log.Printf("MATCH   %s — %s (%s): %s", job.Company, job.Title, job.Location, clip(verdict.Reason, 300))
+			} else {
+				r.Log.Printf("no-match %s — %s: %s", job.Company, job.Title, clip(verdict.Reason, 180))
 			}
 			if !r.DryRun {
 				r.Store.Add(job.ID, store.Record{
@@ -170,6 +178,10 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				})
 			}
 		}
+		// One line per board keeps CI logs scannable: what was fetched,
+		// how long it took, and whether anything new turned up.
+		r.Log.Printf("fetch %s: %d open jobs in %s (%d new, %d matched)",
+			res.src.Company(), len(res.jobs), res.dur, srcNew, srcMatched)
 	}
 
 	sort.Slice(matches, func(i, j int) bool {
@@ -202,6 +214,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 	if err := r.Store.Save(); err != nil {
 		return fmt.Errorf("saving state: %w", err)
 	}
+	r.Log.Printf("state saved: %d records", r.Store.Len())
 	if r.SeedOnly {
 		r.Log.Printf("seeded %d postings without notifying; future runs alert on new ones", seededJobs)
 		return nil
@@ -227,11 +240,21 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 // the same batch again on retry (documented at-least-once behavior).
 func (r *Runner) deliver(ctx context.Context, matches []notify.Match) error {
 	for _, n := range r.Notifiers {
+		start := time.Now()
 		if err := n.Notify(ctx, matches); err != nil {
 			return fmt.Errorf("notifier %s failed (matches stay pending, retried next run): %w", n.Name(), err)
 		}
+		r.Log.Printf("notify %s: delivered %d match(es) in %s", n.Name(), len(matches), time.Since(start).Round(time.Millisecond))
 	}
 	return nil
+}
+
+// clip shortens s for log lines.
+func clip(s string, n int) string {
+	if len(s) <= n {
+		return s
+	}
+	return s[:n] + "…"
 }
 
 // RunEvery calls RunOnce immediately and then repeatedly, waiting interval

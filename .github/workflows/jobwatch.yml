@@ -62,11 +62,35 @@ jobs:
           # JOBWATCH_SLACK_WEBHOOK: ${{ secrets.JOBWATCH_SLACK_WEBHOOK }}
           # JOBWATCH_TELEGRAM_TOKEN: ${{ secrets.JOBWATCH_TELEGRAM_TOKEN }}
         run: |
+          set -o pipefail
           if [ -f state.json ]; then
-            ./jobwatch -config config.example.yaml -state state.json -seed-new-sources
+            ./jobwatch -config config.example.yaml -state state.json -seed-new-sources 2>&1 | tee run.log
           else
-            ./jobwatch -config config.example.yaml -state state.json -seed
+            ./jobwatch -config config.example.yaml -state state.json -seed 2>&1 | tee run.log
           fi
+
+      - name: Publish run summary
+        if: always()
+        run: |
+          [ -f run.log ] || exit 0
+          {
+            echo "### jobwatch run"
+            echo '```'
+            grep -E "^jobwatch .*(starting|run complete|seeded|state saved|notify )" run.log | sed 's/^jobwatch //' | tail -8
+            echo '```'
+            if grep -q "MATCH " run.log; then
+              echo "### Matches"
+              grep "MATCH " run.log | sed -E 's/^jobwatch [0-9\/]+ [0-9:]+ MATCH +/- /' | head -40
+            else
+              echo "_No new matches this run._"
+            fi
+            if grep -qE "fetch .+\([1-9][0-9]* new" run.log; then
+              echo "### Boards with new postings"
+              echo '```'
+              grep -E "fetch .+\([1-9][0-9]* new" run.log | sed -E 's/^jobwatch [0-9\/]+ [0-9:]+ //' | head -30
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Push state back
         if: always() # a failed run may still have pending matches worth keeping

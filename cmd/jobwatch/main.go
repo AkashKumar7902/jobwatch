@@ -18,6 +18,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -84,6 +85,19 @@ func main() {
 	}
 }
 
+// describeMatcher renders the configured matcher tree as e.g.
+// "all(experience, employment, keywords, llm)" for the startup log line.
+func describeMatcher(p config.Plugin) string {
+	if len(p.Of) == 0 {
+		return p.Name
+	}
+	var kids []string
+	for _, child := range p.Of {
+		kids = append(kids, describeMatcher(child))
+	}
+	return p.Name + "(" + strings.Join(kids, ", ") + ")"
+}
+
 // matcherSpec converts the config's matcher block (possibly a nested
 // combinator tree) into the match package's Spec.
 func matcherSpec(p config.Plugin) match.Spec {
@@ -148,6 +162,13 @@ func build(configPath, statePath string, logger *log.Logger, seed, seedNew, dryR
 	if err != nil {
 		return nil, fmt.Errorf("opening state store: %w", err)
 	}
+
+	var notifierNames []string
+	for _, n := range notifiers {
+		notifierNames = append(notifierNames, n.Name())
+	}
+	logger.Printf("starting: %d companies | matcher %s | notifiers %v | state %s (%d records)",
+		len(sources), describeMatcher(cfg.Matcher), notifierNames, cfg.Store.Path, st.Len())
 
 	return &run.Runner{
 		Sources:        sources,
