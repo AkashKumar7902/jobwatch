@@ -127,19 +127,39 @@ secret and expose it in the workflow's `env:` block.
 
 ## Change what counts as a match
 
+Matchers are composable building blocks — combine them with `all`, `any`,
+and `not` to express exactly what you want, in config only:
+
 ```yaml
 matcher:
-  name: experience
-  params:
-    max_years: 1                # raise to 2, 3, ... for more senior roles
-    notify_when_unlisted: false # true = also email jobs that list no experience
+  name: all # every condition must hold
+  of:
+    - name: experience # <= 1 year of listed experience
+      params: {max_years: 1}
+    - name: keywords # engineering roles only, nothing senior
+      params:
+        field: title
+        include: "engineer, developer, sre, devops"
+        exclude: "senior, staff, principal, lead, manager, director"
+    - name: not # skip US-locked postings
+      of:
+        - name: keywords
+          params: {field: location, include: "US only, United States"}
 ```
 
-The matcher reads each posting for phrases like `1+ years`, `0-2 years`,
-`6 months`, `one to three years`, `entry level`, `fresher`, `new grad` — and
-ignores decoys like "founded 10 years ago" or "in your first 3 months".
-When a posting lists several figures, the lowest wins, so you never miss a
-borderline entry-level job. Every email shows the exact snippet that matched.
+Built-in matchers:
+
+| Matcher      | What it checks                                                            |
+| ------------ | ------------------------------------------------------------------------- |
+| `experience` | Listed experience requirement ≤ `max_years` ("1+ years", "0-2 years", "6 months", "entry level", "fresher"...) |
+| `keywords`   | `include`/`exclude` term lists against `field:` title, description, location, or any (case-insensitive, whole-word) |
+| `recency`    | Posting published within `max_days` (skips stale evergreen ads)            |
+| `all` `any` `not` | Combine other matchers under `of:`                                    |
+
+The experience matcher ignores decoys like "founded 10 years ago" or "in
+your first 3 months", and when a posting lists several figures the lowest
+wins — so you never miss a borderline entry-level job. Every notification
+shows the exact snippet and rule that matched.
 
 ## Flags
 

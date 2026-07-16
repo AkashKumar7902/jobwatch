@@ -41,10 +41,13 @@ type Company struct {
 	Params params.Map `yaml:"params"` // source-specific settings
 }
 
-// Plugin selects a registered matcher or notifier by name.
+// Plugin selects a registered matcher or notifier by name. Matchers may
+// nest child matchers under "of" (combinators like all/any/not);
+// notifiers never use it.
 type Plugin struct {
 	Name   string     `yaml:"name"`
 	Params params.Map `yaml:"params"`
+	Of     []Plugin   `yaml:"of"`
 }
 
 // Load reads, validates and applies defaults to the config at path.

@@ -72,6 +72,16 @@ func main() {
 	}
 }
 
+// matcherSpec converts the config's matcher block (possibly a nested
+// combinator tree) into the match package's Spec.
+func matcherSpec(p config.Plugin) match.Spec {
+	s := match.Spec{Name: p.Name, Params: p.Params}
+	for _, child := range p.Of {
+		s.Of = append(s.Of, matcherSpec(child))
+	}
+	return s
+}
+
 // build assembles the runner from config: sources, matcher, notifiers, store.
 func build(configPath, statePath string, logger *log.Logger, seed, dryRun bool) (*run.Runner, error) {
 	cfg, err := config.Load(configPath)
@@ -93,7 +103,7 @@ func build(configPath, statePath string, logger *log.Logger, seed, dryRun bool) 
 		sources = append(sources, s)
 	}
 
-	matcher, err := match.New(cfg.Matcher.Name, cfg.Matcher.Params)
+	matcher, err := match.Build(matcherSpec(cfg.Matcher))
 	if err != nil {
 		return nil, fmt.Errorf("matcher: %w", err)
 	}

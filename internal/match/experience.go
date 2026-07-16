@@ -28,7 +28,10 @@ import (
 )
 
 func init() {
-	Register("experience", func(p params.Map) (Matcher, error) {
+	Register("experience", func(p params.Map, children []Matcher) (Matcher, error) {
+		if err := RequireNoChildren("experience", children); err != nil {
+			return nil, err
+		}
 		maxYears, err := p.Float("max_years", 1)
 		if err != nil {
 			return nil, err

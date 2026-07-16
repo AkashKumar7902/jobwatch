@@ -10,13 +10,25 @@ poll:
   timeout_seconds: 30
   concurrency: 6 # companies fetched in parallel
 
-# The matching rule. Swap `name` to change the algorithm entirely
-# (see internal/match/ for how to add one).
+# The matching rule. Matchers compose via all/any/not — see README
+# "Change what counts as a match" for the full catalog.
 matcher:
   name: experience
   params:
     max_years: 1 # notify when the posting asks for <= 1 year of experience
     notify_when_unlisted: false # postings that list nothing stay silent
+# Tighter alternative (uncomment and delete the block above): entry-level
+# AND engineering-titled AND nothing senior — cuts ~90% of the noise.
+# matcher:
+#   name: all
+#   of:
+#     - name: experience
+#       params: {max_years: 1}
+#     - name: keywords
+#       params:
+#         field: title
+#         include: "engineer, engineering, developer, sre, devops, software, backend, frontend, full stack, data, ml, ai"
+#         exclude: "senior, staff, principal, lead, manager, director, head, vp"
 
 # ${VAR} values are read from the environment (GitHub Secrets in CI).
 # Running locally you can either export the same variables or replace the
