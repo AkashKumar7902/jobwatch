@@ -56,7 +56,9 @@ matcher:
           Software Development Engineer I (SDE 1), Software Engineer I,
           Software Engineer, Software Developer - Backend, Associate Software
           Engineer, Associate Software Developer, Junior Backend Engineer,
-          Platform Engineer, DevOps Engineer, or equivalent titles.
+          Platform Engineer, DevOps Engineer, Site Reliability Engineer
+          (SRE), Infrastructure Engineer, Cloud Engineer, or equivalent
+          titles.
         instructions: >-
           Match ONLY when both conditions hold. (1) The title is one of the
           target roles or an equivalent entry-level backend/platform/devops
