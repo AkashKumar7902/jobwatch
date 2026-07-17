@@ -234,17 +234,17 @@ companies:
 
   # ---- SmartRecruiters ----
   # Large boards are capped to the newest 20 postings so scheduled runs stay bounded.
-  - {name: "Bosch", source: smartrecruiters, params: {company_id: "BoschGroup", max_postings: 20}}
-  - {name: "ClearGlass", source: smartrecruiters, params: {company_id: "ClearGlassAnalyticsLimited", max_postings: 20}}
-  - {name: "Eurofins", source: smartrecruiters, params: {company_id: "Eurofins", max_postings: 20}}
-  - {name: "FreeCharge", source: smartrecruiters, params: {company_id: "FreeCharge", max_postings: 20}}
-  - {name: "Freshworks", source: smartrecruiters, params: {company_id: "Freshworks", max_postings: 20}}
-  - {name: "Grab", source: smartrecruiters, params: {company_id: "Grab", max_postings: 20}}
-  - {name: "ServiceNow", source: smartrecruiters, params: {company_id: "ServiceNow", max_postings: 20}}
-  - {name: "Shipsy", source: smartrecruiters, params: {company_id: "Shipsy", max_postings: 20}}
-  - {name: "Swiggy", source: smartrecruiters, params: {company_id: "Swiggy", max_postings: 20}}
-  - {name: "Visa (SmartRecruiters)", source: smartrecruiters, params: {company_id: "Visa", max_postings: 20}}
-  - {name: "Western Digital", source: smartrecruiters, params: {company_id: "WesternDigital", max_postings: 20}}
+  - {name: "Bosch", source: smartrecruiters, params: {company_id: "BoschGroup", max_postings: 6000}}
+  - {name: "ClearGlass", source: smartrecruiters, params: {company_id: "ClearGlassAnalyticsLimited"}}
+  - {name: "Eurofins", source: smartrecruiters, params: {company_id: "Eurofins", max_postings: 4000}}
+  - {name: "FreeCharge", source: smartrecruiters, params: {company_id: "FreeCharge"}}
+  - {name: "Freshworks", source: smartrecruiters, params: {company_id: "Freshworks"}}
+  - {name: "Grab", source: smartrecruiters, params: {company_id: "Grab"}}
+  - {name: "ServiceNow", source: smartrecruiters, params: {company_id: "ServiceNow"}}
+  - {name: "Shipsy", source: smartrecruiters, params: {company_id: "Shipsy"}}
+  - {name: "Swiggy", source: smartrecruiters, params: {company_id: "Swiggy"}}
+  - {name: "Visa (SmartRecruiters)", source: smartrecruiters, params: {company_id: "Visa"}}
+  - {name: "Western Digital", source: smartrecruiters, params: {company_id: "WesternDigital"}}
 
   # ---- BambooHR ----
   - {name: "Bandcamp", source: bamboohr, params: {company_slug: songtradr}} # acquired by Songtradr
@@ -252,63 +252,63 @@ companies:
   - {name: "Lullabot", source: bamboohr, params: {company_slug: lullabot}}
 
   # ---- Workday ----
-  - {name: "DataRobot", source: workday, params: {host: datarobot.wd1.myworkdayjobs.com, tenant: datarobot, site: DataRobot_External_Careers, max_postings: 20}}
-  - {name: "RedHat", source: workday, params: {host: redhat.wd5.myworkdayjobs.com, tenant: redhat, site: jobs, max_postings: 20}}
+  - {name: "DataRobot", source: workday, params: {host: datarobot.wd1.myworkdayjobs.com, tenant: datarobot, site: DataRobot_External_Careers}}
+  - {name: "RedHat", source: workday, params: {host: redhat.wd5.myworkdayjobs.com, tenant: redhat, site: jobs}}
 
   # Imported from moreThanFAANGM; see catalog/morethanfaangm-audit.tsv.
-  - {name: "Accenture", source: workday, params: {host: "accenture.wd103.myworkdayjobs.com", tenant: "accenture", site: "AccentureCareers", max_postings: 20}}
-  - {name: "Adobe", source: workday, params: {host: "adobe.wd5.myworkdayjobs.com", tenant: "adobe", site: "external_experienced", max_postings: 20}}
-  - {name: "Airbus", source: workday, params: {host: "ag.wd3.myworkdayjobs.com", tenant: "ag", site: "Airbus", max_postings: 20}}
-  - {name: "Amadeus", source: workday, params: {host: "amadeus.wd502.myworkdayjobs.com", tenant: "amadeus", site: "jobs", max_postings: 20}}
-  - {name: "Analog Devices", source: workday, params: {host: "analogdevices.wd1.myworkdayjobs.com", tenant: "analogdevices", site: "External", max_postings: 20}}
-  - {name: "Applied Materials", source: workday, params: {host: "amat.wd1.myworkdayjobs.com", tenant: "amat", site: "External", max_postings: 20}}
-  - {name: "Aptiv", source: workday, params: {host: "aptiv.wd5.myworkdayjobs.com", tenant: "aptiv", site: "APTIV_CAREERS", max_postings: 20}}
-  - {name: "Athena Health", source: workday, params: {host: "athenahealth.wd1.myworkdayjobs.com", tenant: "athenahealth", site: "External", max_postings: 20}}
-  - {name: "Barclays", source: workday, params: {host: "barclays.wd3.myworkdayjobs.com", tenant: "barclays", site: "External_Career_Site_Barclays", max_postings: 20}}
-  - {name: "BlackBerry", source: workday, params: {host: "bb.wd3.myworkdayjobs.com", tenant: "bb", site: "BlackBerry", max_postings: 20}}
-  - {name: "Blue Origin", source: workday, params: {host: "blueorigin.wd5.myworkdayjobs.com", tenant: "blueorigin", site: "BlueOrigin", max_postings: 20}}
-  - {name: "Boeing", source: workday, params: {host: "boeing.wd1.myworkdayjobs.com", tenant: "boeing", site: "EXTERNAL_CAREERS", max_postings: 20}}
-  - {name: "Broadcom", source: workday, params: {host: "broadcom.wd1.myworkdayjobs.com", tenant: "broadcom", site: "External_Career", max_postings: 20}}
-  - {name: "BrowserStack", source: workday, params: {host: "browserstack.wd3.myworkdayjobs.com", tenant: "browserstack", site: "External", max_postings: 20}}
-  - {name: "Cadence", source: workday, params: {host: "cadence.wd1.myworkdayjobs.com", tenant: "cadence", site: "External_Careers", max_postings: 20}}
-  - {name: "Capital One", source: workday, params: {host: "capitalone.wd12.myworkdayjobs.com", tenant: "capitalone", site: "Capital_One", max_postings: 20}}
-  - {name: "Citi", source: workday, params: {host: "citi.wd5.myworkdayjobs.com", tenant: "citi", site: "2", max_postings: 20}}
-  - {name: "Cloudera", source: workday, params: {host: "cloudera.wd5.myworkdayjobs.com", tenant: "cloudera", site: "External_Career", max_postings: 20}}
-  - {name: "CrowdStrike", source: workday, params: {host: "crowdstrike.wd5.myworkdayjobs.com", tenant: "crowdstrike", site: "crowdstrikecareers", max_postings: 20}}
-  - {name: "DBS", source: workday, params: {host: "dbs.wd3.myworkdayjobs.com", tenant: "dbs", site: "DBS_Careers", max_postings: 20}}
-  - {name: "DuPont", source: workday, params: {host: "dupont.wd5.myworkdayjobs.com", tenant: "dupont", site: "Jobs", max_postings: 20}}
-  - {name: "Equinix", source: workday, params: {host: "equinix.wd1.myworkdayjobs.com", tenant: "equinix", site: "external", max_postings: 20}}
-  - {name: "Expedia", source: workday, params: {host: "expedia.wd108.myworkdayjobs.com", tenant: "expedia", site: "search", max_postings: 20}}
-  - {name: "F5", source: workday, params: {host: "ffive.wd5.myworkdayjobs.com", tenant: "ffive", site: "f5jobs", max_postings: 20}}
-  - {name: "FactSet", source: workday, params: {host: "factset.wd108.myworkdayjobs.com", tenant: "factset", site: "FactSetCareers", max_postings: 20}}
-  - {name: "FICO", source: workday, params: {host: "fico.wd1.myworkdayjobs.com", tenant: "fico", site: "External", max_postings: 20}}
-  - {name: "Fidelity Investments", source: workday, params: {host: "fmr.wd1.myworkdayjobs.com", tenant: "fmr", site: "FidelityCareers", max_postings: 20}}
-  - {name: "Fiserv", source: workday, params: {host: "fiserv.wd5.myworkdayjobs.com", tenant: "fiserv", site: "EXT", max_postings: 20}}
-  - {name: "Fractal", source: workday, params: {host: "fractal.wd1.myworkdayjobs.com", tenant: "fractal", site: "Careers", max_postings: 20}}
-  - {name: "GE HealthCare", source: workday, params: {host: "gehc.wd5.myworkdayjobs.com", tenant: "gehc", site: "GEHC_ExternalSite", max_postings: 20}}
-  - {name: "GE Vernova", source: workday, params: {host: "gevernova.wd5.myworkdayjobs.com", tenant: "gevernova", site: "Vernova_ExternalSite", max_postings: 20}}
-  - {name: "Genpact", source: workday, params: {host: "genpact.wd108.myworkdayjobs.com", tenant: "genpact", site: "External_Careers", max_postings: 20}}
-  - {name: "HP", source: workday, params: {host: "hp.wd5.myworkdayjobs.com", tenant: "hp", site: "ExternalCareerSite", max_postings: 20}}
-  - {name: "HPE (Juniper)", source: workday, params: {host: "hpe.wd5.myworkdayjobs.com", tenant: "hpe", site: "Jobsathpe", max_postings: 20}}
-  - {name: "Intel", source: workday, params: {host: "intel.wd1.myworkdayjobs.com", tenant: "intel", site: "External", max_postings: 20}}
-  - {name: "JioStar (formerly Hotstar)", source: workday, params: {host: "jiostar.wd102.myworkdayjobs.com", tenant: "jiostar", site: "JioStar", max_postings: 20}}
-  - {name: "Kantar", source: workday, params: {host: "kantar.wd3.myworkdayjobs.com", tenant: "kantar", site: "KANTAR", max_postings: 20}}
-  - {name: "KLA", source: workday, params: {host: "kla.wd1.myworkdayjobs.com", tenant: "kla", site: "Search", max_postings: 20}}
-  - {name: "Mastercard", source: workday, params: {host: "mastercard.wd1.myworkdayjobs.com", tenant: "mastercard", site: "CorporateCareers", max_postings: 20}}
-  - {name: "Micron", source: workday, params: {host: "micron.wd1.myworkdayjobs.com", tenant: "micron", site: "External", max_postings: 20}}
-  - {name: "Nasdaq", source: workday, params: {host: "nasdaq.wd1.myworkdayjobs.com", tenant: "nasdaq", site: "Global_External_Site", max_postings: 20}}
-  - {name: "NCR Voyix", source: workday, params: {host: "ncr.wd1.myworkdayjobs.com", tenant: "ncr", site: "ext_apac", max_postings: 20}}
-  - {name: "Nike (nke)", source: workday, params: {host: "nike.wd1.myworkdayjobs.com", tenant: "nike", site: "nke", max_postings: 20}}
-  - {name: "Nike (nke2)", source: workday, params: {host: "nike.wd1.myworkdayjobs.com", tenant: "nike", site: "nke2", max_postings: 20}}
-  - {name: "Palo Alto Networks", source: workday, params: {host: "paloaltonetworks.wd5.myworkdayjobs.com", tenant: "paloaltonetworks", site: "panwexternalcareers", max_postings: 20}}
-  - {name: "Quantiphi", source: workday, params: {host: "quantiphi.wd1.myworkdayjobs.com", tenant: "quantiphi", site: "Careers_at_Quantiphi", max_postings: 20}}
-  - {name: "Sabre", source: workday, params: {host: "sabre.wd1.myworkdayjobs.com", tenant: "sabre", site: "SabreJobs", max_postings: 20}}
-  - {name: "Sony", source: workday, params: {host: "sonyglobal.wd1.myworkdayjobs.com", tenant: "sonyglobal", site: "SonyGlobalCareers", max_postings: 20}}
-  - {name: "Sprinklr", source: workday, params: {host: "sprinklr.wd1.myworkdayjobs.com", tenant: "sprinklr", site: "careers", max_postings: 20}}
-  - {name: "Target", source: workday, params: {host: "target.wd5.myworkdayjobs.com", tenant: "target", site: "targetcareers", max_postings: 20}}
-  - {name: "Unisys", source: workday, params: {host: "unisys.wd5.myworkdayjobs.com", tenant: "unisys", site: "External", max_postings: 20}}
-  - {name: "Visa (Workday)", source: workday, params: {host: "visa.wd5.myworkdayjobs.com", tenant: "visa", site: "Visa", max_postings: 20}}
-  - {name: "Warner Bros. Discovery", source: workday, params: {host: "warnerbros.wd5.myworkdayjobs.com", tenant: "warnerbros", site: "global", max_postings: 20}}
+  - {name: "Accenture", source: workday, params: {host: "accenture.wd103.myworkdayjobs.com", tenant: "accenture", site: "AccentureCareers"}}
+  - {name: "Adobe", source: workday, params: {host: "adobe.wd5.myworkdayjobs.com", tenant: "adobe", site: "external_experienced"}}
+  - {name: "Airbus", source: workday, params: {host: "ag.wd3.myworkdayjobs.com", tenant: "ag", site: "Airbus"}}
+  - {name: "Amadeus", source: workday, params: {host: "amadeus.wd502.myworkdayjobs.com", tenant: "amadeus", site: "jobs"}}
+  - {name: "Analog Devices", source: workday, params: {host: "analogdevices.wd1.myworkdayjobs.com", tenant: "analogdevices", site: "External"}}
+  - {name: "Applied Materials", source: workday, params: {host: "amat.wd1.myworkdayjobs.com", tenant: "amat", site: "External"}}
+  - {name: "Aptiv", source: workday, params: {host: "aptiv.wd5.myworkdayjobs.com", tenant: "aptiv", site: "APTIV_CAREERS"}}
+  - {name: "Athena Health", source: workday, params: {host: "athenahealth.wd1.myworkdayjobs.com", tenant: "athenahealth", site: "External"}}
+  - {name: "Barclays", source: workday, params: {host: "barclays.wd3.myworkdayjobs.com", tenant: "barclays", site: "External_Career_Site_Barclays"}}
+  - {name: "BlackBerry", source: workday, params: {host: "bb.wd3.myworkdayjobs.com", tenant: "bb", site: "BlackBerry"}}
+  - {name: "Blue Origin", source: workday, params: {host: "blueorigin.wd5.myworkdayjobs.com", tenant: "blueorigin", site: "BlueOrigin"}}
+  - {name: "Boeing", source: workday, params: {host: "boeing.wd1.myworkdayjobs.com", tenant: "boeing", site: "EXTERNAL_CAREERS"}}
+  - {name: "Broadcom", source: workday, params: {host: "broadcom.wd1.myworkdayjobs.com", tenant: "broadcom", site: "External_Career"}}
+  - {name: "BrowserStack", source: workday, params: {host: "browserstack.wd3.myworkdayjobs.com", tenant: "browserstack", site: "External"}}
+  - {name: "Cadence", source: workday, params: {host: "cadence.wd1.myworkdayjobs.com", tenant: "cadence", site: "External_Careers"}}
+  - {name: "Capital One", source: workday, params: {host: "capitalone.wd12.myworkdayjobs.com", tenant: "capitalone", site: "Capital_One"}}
+  - {name: "Citi", source: workday, params: {host: "citi.wd5.myworkdayjobs.com", tenant: "citi", site: "2"}}
+  - {name: "Cloudera", source: workday, params: {host: "cloudera.wd5.myworkdayjobs.com", tenant: "cloudera", site: "External_Career"}}
+  - {name: "CrowdStrike", source: workday, params: {host: "crowdstrike.wd5.myworkdayjobs.com", tenant: "crowdstrike", site: "crowdstrikecareers"}}
+  - {name: "DBS", source: workday, params: {host: "dbs.wd3.myworkdayjobs.com", tenant: "dbs", site: "DBS_Careers"}}
+  - {name: "DuPont", source: workday, params: {host: "dupont.wd5.myworkdayjobs.com", tenant: "dupont", site: "Jobs"}}
+  - {name: "Equinix", source: workday, params: {host: "equinix.wd1.myworkdayjobs.com", tenant: "equinix", site: "external"}}
+  - {name: "Expedia", source: workday, params: {host: "expedia.wd108.myworkdayjobs.com", tenant: "expedia", site: "search"}}
+  - {name: "F5", source: workday, params: {host: "ffive.wd5.myworkdayjobs.com", tenant: "ffive", site: "f5jobs"}}
+  - {name: "FactSet", source: workday, params: {host: "factset.wd108.myworkdayjobs.com", tenant: "factset", site: "FactSetCareers"}}
+  - {name: "FICO", source: workday, params: {host: "fico.wd1.myworkdayjobs.com", tenant: "fico", site: "External"}}
+  - {name: "Fidelity Investments", source: workday, params: {host: "fmr.wd1.myworkdayjobs.com", tenant: "fmr", site: "FidelityCareers"}}
+  - {name: "Fiserv", source: workday, params: {host: "fiserv.wd5.myworkdayjobs.com", tenant: "fiserv", site: "EXT"}}
+  - {name: "Fractal", source: workday, params: {host: "fractal.wd1.myworkdayjobs.com", tenant: "fractal", site: "Careers"}}
+  - {name: "GE HealthCare", source: workday, params: {host: "gehc.wd5.myworkdayjobs.com", tenant: "gehc", site: "GEHC_ExternalSite"}}
+  - {name: "GE Vernova", source: workday, params: {host: "gevernova.wd5.myworkdayjobs.com", tenant: "gevernova", site: "Vernova_ExternalSite"}}
+  - {name: "Genpact", source: workday, params: {host: "genpact.wd108.myworkdayjobs.com", tenant: "genpact", site: "External_Careers"}}
+  - {name: "HP", source: workday, params: {host: "hp.wd5.myworkdayjobs.com", tenant: "hp", site: "ExternalCareerSite"}}
+  - {name: "HPE (Juniper)", source: workday, params: {host: "hpe.wd5.myworkdayjobs.com", tenant: "hpe", site: "Jobsathpe"}}
+  - {name: "Intel", source: workday, params: {host: "intel.wd1.myworkdayjobs.com", tenant: "intel", site: "External"}}
+  - {name: "JioStar (formerly Hotstar)", source: workday, params: {host: "jiostar.wd102.myworkdayjobs.com", tenant: "jiostar", site: "JioStar"}}
+  - {name: "Kantar", source: workday, params: {host: "kantar.wd3.myworkdayjobs.com", tenant: "kantar", site: "KANTAR"}}
+  - {name: "KLA", source: workday, params: {host: "kla.wd1.myworkdayjobs.com", tenant: "kla", site: "Search"}}
+  - {name: "Mastercard", source: workday, params: {host: "mastercard.wd1.myworkdayjobs.com", tenant: "mastercard", site: "CorporateCareers"}}
+  - {name: "Micron", source: workday, params: {host: "micron.wd1.myworkdayjobs.com", tenant: "micron", site: "External"}}
+  - {name: "Nasdaq", source: workday, params: {host: "nasdaq.wd1.myworkdayjobs.com", tenant: "nasdaq", site: "Global_External_Site"}}
+  - {name: "NCR Voyix", source: workday, params: {host: "ncr.wd1.myworkdayjobs.com", tenant: "ncr", site: "ext_apac"}}
+  - {name: "Nike (nke)", source: workday, params: {host: "nike.wd1.myworkdayjobs.com", tenant: "nike", site: "nke"}}
+  - {name: "Nike (nke2)", source: workday, params: {host: "nike.wd1.myworkdayjobs.com", tenant: "nike", site: "nke2"}}
+  - {name: "Palo Alto Networks", source: workday, params: {host: "paloaltonetworks.wd5.myworkdayjobs.com", tenant: "paloaltonetworks", site: "panwexternalcareers"}}
+  - {name: "Quantiphi", source: workday, params: {host: "quantiphi.wd1.myworkdayjobs.com", tenant: "quantiphi", site: "Careers_at_Quantiphi"}}
+  - {name: "Sabre", source: workday, params: {host: "sabre.wd1.myworkdayjobs.com", tenant: "sabre", site: "SabreJobs"}}
+  - {name: "Sony", source: workday, params: {host: "sonyglobal.wd1.myworkdayjobs.com", tenant: "sonyglobal", site: "SonyGlobalCareers"}}
+  - {name: "Sprinklr", source: workday, params: {host: "sprinklr.wd1.myworkdayjobs.com", tenant: "sprinklr", site: "careers"}}
+  - {name: "Target", source: workday, params: {host: "target.wd5.myworkdayjobs.com", tenant: "target", site: "targetcareers"}}
+  - {name: "Unisys", source: workday, params: {host: "unisys.wd5.myworkdayjobs.com", tenant: "unisys", site: "External"}}
+  - {name: "Visa (Workday)", source: workday, params: {host: "visa.wd5.myworkdayjobs.com", tenant: "visa", site: "Visa"}}
+  - {name: "Warner Bros. Discovery", source: workday, params: {host: "warnerbros.wd5.myworkdayjobs.com", tenant: "warnerbros", site: "global"}}
 # Not included (no supported public JSON API as of 2026-07-16):
 #   37signals (XML feed only), Chef/Progress (Jobvite XML feed),
 #   Toggl (Ashby public API disabled), Spotify/Shopify/chess.com/Deel/
