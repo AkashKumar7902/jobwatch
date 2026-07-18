@@ -149,16 +149,6 @@ type Detailer interface {
 	Detail(ctx context.Context, job *model.Job) error
 }
 
-// detailResult preserves successfully normalized jobs when a board's detail
-// endpoint fails for only some postings. Callers can report the partial error
-// without discarding the healthy jobs.
-func detailResult(jobs []model.Job, failed, total int, firstErr error) ([]model.Job, error) {
-	if failed == 0 {
-		return jobs, nil
-	}
-	return jobs, fmt.Errorf("%d of %d posting detail requests failed (first: %w)", failed, total, firstErr)
-}
-
 // Names lists registered source types, sorted, for error messages.
 func Names() []string {
 	names := make([]string, 0, len(registry))

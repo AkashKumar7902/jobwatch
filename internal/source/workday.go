@@ -11,19 +11,23 @@ package source
 // Config (all three parts appear in the board URL,
 // e.g. https://redhat.wd5.myworkdayjobs.com/jobs):
 //
+// This source implements Detailer: Fetch lists the whole board cheaply and
+// the runner requests details only for postings it actually evaluates.
+//
 //	- name: RedHat
 //	  source: workday
 //	  params:
 //	    host: redhat.wd5.myworkdayjobs.com
 //	    tenant: redhat
 //	    site: jobs
-//	    max_postings: 200    # optional cap on detail requests
+//	    max_postings: 500    # optional cap on list paging
 
 import (
 	"context"
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
@@ -71,8 +75,9 @@ func (w *workday) Company() string { return w.company }
 
 func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 	type posting struct {
-		Title        string `json:"title"`
-		ExternalPath string `json:"externalPath"`
+		Title         string `json:"title"`
+		ExternalPath  string `json:"externalPath"`
+		LocationsText string `json:"locationsText"`
 	}
 
 	// Page through the list.
@@ -97,48 +102,50 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 		postings = postings[:w.maxPostings]
 	}
 	if total > len(postings) {
-		log.Printf("workday %s: evaluating %d of %d postings (max_postings cap)", w.company, len(postings), total)
+		log.Printf("workday %s: listing %d of %d postings (max_postings cap)", w.company, len(postings), total)
 	}
 
-	// Descriptions live on the detail endpoint. Workday stays eager: the
-	// stored job IDs are detail-endpoint GUIDs that the list doesn't
-	// carry, so listing lazily would change identities and re-alert
-	// every existing posting.
 	jobs := make([]model.Job, 0, len(postings))
-	failed := 0
-	var firstErr error
 	for _, p := range postings {
-		var detail struct {
-			JobPostingInfo struct {
-				ID             string `json:"id"`
-				JobDescription string `json:"jobDescription"`
-				Location       string `json:"location"`
-				TimeType       string `json:"timeType"` // e.g. "Full time"
-				ExternalURL    string `json:"externalUrl"`
-			} `json:"jobPostingInfo"`
-		}
-		if err := fetchJSON(ctx, w.client, http.MethodGet, w.base+p.ExternalPath, nil, &detail); err != nil {
-			failed++
-			if firstErr == nil {
-				firstErr = fmt.Errorf("posting %s: %w", p.ExternalPath, err)
-			}
-			continue
-		}
-		info := detail.JobPostingInfo
-
-		id := info.ID
-		if id == "" {
-			id = p.ExternalPath
-		}
 		jobs = append(jobs, model.Job{
-			ID:             fmt.Sprintf("workday/%s/%s", w.base, id),
-			Company:        w.company,
-			Title:          p.Title,
-			Location:       info.Location,
-			URL:            info.ExternalURL,
-			EmploymentType: info.TimeType,
-			Description:    htmltext.ToText(info.JobDescription),
+			// externalPath (starts with "/job/...") carries the stable req
+			// ID, so it works as the identity without a detail request.
+			ID:       "workday/" + w.base + p.ExternalPath,
+			Company:  w.company,
+			Title:    p.Title,
+			Location: p.LocationsText,
+			URL:      w.base + p.ExternalPath,
+			// Description and EmploymentType arrive via Detail on demand.
 		})
 	}
-	return detailResult(jobs, failed, len(postings), firstErr)
+	return jobs, nil
+}
+
+// Detail fills the description, employment type, and canonical URL for one
+// posting. Fetching details lazily matters enormously at fleet scale:
+// eager mode meant ~500 GETs per board per run, which Workday's WAF
+// answered with 429s and HTML challenges across ~50 boards.
+func (w *workday) Detail(ctx context.Context, job *model.Job) error {
+	externalPath := strings.TrimPrefix(job.ID, "workday/"+w.base)
+	var detail struct {
+		JobPostingInfo struct {
+			JobDescription string `json:"jobDescription"`
+			Location       string `json:"location"`
+			TimeType       string `json:"timeType"` // e.g. "Full time"
+			ExternalURL    string `json:"externalUrl"`
+		} `json:"jobPostingInfo"`
+	}
+	if err := fetchJSON(ctx, w.client, http.MethodGet, w.base+externalPath, nil, &detail); err != nil {
+		return err
+	}
+	info := detail.JobPostingInfo
+	job.Description = htmltext.ToText(info.JobDescription)
+	job.EmploymentType = info.TimeType
+	if info.Location != "" {
+		job.Location = info.Location
+	}
+	if info.ExternalURL != "" {
+		job.URL = info.ExternalURL
+	}
+	return nil
 }

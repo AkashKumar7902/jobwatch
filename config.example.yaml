@@ -26,14 +26,16 @@ matcher:
     # Full-time roles only (ATSes that don't state a type still pass).
     - name: employment
       params: {types: "full-time"}
-    # Cheap title prefilter mirroring the llm's own role rule — it cuts
-    # LLM calls ~5x by vetoing non-engineering titles before they cost an
-    # API call. Seniority is deliberately NOT filtered here; the llm
-    # judges that with full context.
+    # Cheap title prefilter mirroring the llm's own role rules — it vetoes
+    # non-engineering titles and unambiguous seniority tokens before they
+    # cost an API call (log analysis showed 53% of LLM calls were spent
+    # rejecting Senior/Staff/Lead/... titles). Ambiguous levels like
+    # "Engineer II" still go to the llm for judgment.
     - name: keywords
       params:
         field: title
         include: "engineer, engineering, developer, sde, sre, devops, software, backend, platform, infrastructure"
+        exclude: "senior, sr, staff, principal, lead, director, head, vp, manager, mgr, intern, internship, architect"
     # Final judge: a language model reviews every job the rules above let
     # through. Any OpenAI-compatible endpoint works (OpenAI, Anthropic,
     # Groq, OpenRouter, local Ollama); this uses Google Gemini. Keep it
