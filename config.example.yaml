@@ -155,7 +155,7 @@ companies:
   - {name: "Groupon", source: greenhouse, params: {board_token: "groupon"}}
   - {name: "Groww", source: greenhouse, params: {board_token: "groww"}}
   - {name: "HackerRank", source: greenhouse, params: {board_token: "hackerrank"}}
-  - {name: "HubSpot", source: greenhouse, params: {board_token: "hubspot"}}
+  - {name: "HubSpot", source: greenhouse, params: {board_token: "hubspotjobs"}}
   - {name: "LogicMonitor", source: greenhouse, params: {board_token: "logicmonitor"}}
   - {name: "Netcracker", source: greenhouse, params: {board_token: "netcracker"}}
   - {name: "Observe.ai", source: greenhouse, params: {board_token: "observeai"}}
