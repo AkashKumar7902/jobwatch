@@ -267,6 +267,7 @@ companies:
   - {name: "Amadeus", source: workday, params: {host: "amadeus.wd502.myworkdayjobs.com", tenant: "amadeus", site: "jobs"}}
   - {name: "Analog Devices", source: workday, params: {host: "analogdevices.wd1.myworkdayjobs.com", tenant: "analogdevices", site: "External"}}
   - {name: "Applied Materials", source: workday, params: {host: "amat.wd1.myworkdayjobs.com", tenant: "amat", site: "External"}}
+  - {name: "Adtran", source: workday, params: {host: "adtran.wd3.myworkdayjobs.com", tenant: "adtran", site: "ADTRAN"}}
   - {name: "Arctic Wolf", source: workday, params: {host: "arcticwolf.wd1.myworkdayjobs.com", tenant: "arcticwolf", site: "External"}}
   - {name: "Aptiv", source: workday, params: {host: "aptiv.wd5.myworkdayjobs.com", tenant: "aptiv", site: "APTIV_CAREERS"}}
   - {name: "Athena Health", source: workday, params: {host: "athenahealth.wd1.myworkdayjobs.com", tenant: "athenahealth", site: "External"}}
