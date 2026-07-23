@@ -253,6 +253,9 @@ companies:
   - {name: "Dribbble", source: bamboohr, params: {company_slug: dribbble}}
   - {name: "Lullabot", source: bamboohr, params: {company_slug: lullabot}}
 
+  # ---- Wayfair (custom: Avature-backed, served via wayfair.com JSON proxy) ----
+  - {name: "Wayfair", source: wayfair}
+
   # ---- Workday ----
   - {name: "DataRobot", source: workday, params: {host: datarobot.wd1.myworkdayjobs.com, tenant: datarobot, site: DataRobot_External_Careers}}
   - {name: "RedHat", source: workday, params: {host: redhat.wd5.myworkdayjobs.com, tenant: redhat, site: jobs}}

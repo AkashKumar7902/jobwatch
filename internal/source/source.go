@@ -103,6 +103,8 @@ func identityFor(name string, p params.Map) string {
 		return "bamboohr/" + p.Get("company_slug")
 	case "workday":
 		return fmt.Sprintf("workday/%s/%s/%s", p.Get("host"), p.Get("tenant"), p.Get("site"))
+	case "wayfair":
+		return "wayfair"
 	}
 
 	// Keep future externally registered sources deterministic too.
@@ -137,6 +139,8 @@ func statePrefixFor(name string, p params.Map) string {
 	case "workday":
 		base := fmt.Sprintf("https://%s/wday/cxs/%s/%s", p.Get("host"), p.Get("tenant"), p.Get("site"))
 		return "workday/" + base + "/"
+	case "wayfair":
+		return "wayfair/"
 	}
 	return ""
 }
