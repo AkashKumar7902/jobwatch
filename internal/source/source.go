@@ -36,6 +36,19 @@ type identifiedSource struct {
 func (s *identifiedSource) Identity() string    { return s.identity }
 func (s *identifiedSource) StatePrefix() string { return s.statePrefix }
 
+// Detail forwards the optional Detailer interface through the wrapper.
+// Embedding only promotes the Source interface's methods, so without this
+// the runner's `src.(Detailer)` assertion would fail for every wrapped
+// source and lazy-detail boards would evaluate jobs with empty
+// descriptions. Non-Detailer sources no-op (their Fetch already fills
+// descriptions, so the runner never calls this for them).
+func (s *identifiedSource) Detail(ctx context.Context, job *model.Job) error {
+	if d, ok := s.Source.(Detailer); ok {
+		return d.Detail(ctx, job)
+	}
+	return nil
+}
+
 // Identity returns the canonical ATS board identity for s. Sources created by
 // New always have one; the Company fallback keeps hand-written test sources
 // and third-party implementations compatible.
@@ -105,6 +118,8 @@ func identityFor(name string, p params.Map) string {
 		return fmt.Sprintf("workday/%s/%s/%s", p.Get("host"), p.Get("tenant"), p.Get("site"))
 	case "wayfair":
 		return "wayfair"
+	case "talentbrew":
+		return "talentbrew/" + p.Get("host")
 	}
 
 	// Keep future externally registered sources deterministic too.
@@ -141,6 +156,8 @@ func statePrefixFor(name string, p params.Map) string {
 		return "workday/" + base + "/"
 	case "wayfair":
 		return "wayfair/"
+	case "talentbrew":
+		return "talentbrew/" + p.Get("host") + "/"
 	}
 	return ""
 }

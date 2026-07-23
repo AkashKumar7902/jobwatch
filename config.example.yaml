@@ -256,6 +256,9 @@ companies:
   # ---- Wayfair (custom: Avature-backed, served via wayfair.com JSON proxy) ----
   - {name: "Wayfair", source: wayfair}
 
+  # ---- Radancy TalentBrew ----
+  - {name: "Moody's", source: talentbrew, params: {host: careers.moodys.com}}
+
   # ---- Workday ----
   - {name: "DataRobot", source: workday, params: {host: datarobot.wd1.myworkdayjobs.com, tenant: datarobot, site: DataRobot_External_Careers}}
   - {name: "RedHat", source: workday, params: {host: redhat.wd5.myworkdayjobs.com, tenant: redhat, site: jobs}}
@@ -269,6 +272,7 @@ companies:
   - {name: "Applied Materials", source: workday, params: {host: "amat.wd1.myworkdayjobs.com", tenant: "amat", site: "External"}}
   - {name: "Adtran", source: workday, params: {host: "adtran.wd3.myworkdayjobs.com", tenant: "adtran", site: "ADTRAN"}}
   - {name: "Arctic Wolf", source: workday, params: {host: "arcticwolf.wd1.myworkdayjobs.com", tenant: "arcticwolf", site: "External"}}
+  - {name: "Priceline", source: workday, params: {host: "priceline.wd1.myworkdayjobs.com", tenant: "priceline", site: "Priceline"}}
   - {name: "Aptiv", source: workday, params: {host: "aptiv.wd5.myworkdayjobs.com", tenant: "aptiv", site: "APTIV_CAREERS"}}
   - {name: "Athena Health", source: workday, params: {host: "athenahealth.wd1.myworkdayjobs.com", tenant: "athenahealth", site: "External"}}
   - {name: "Barclays", source: workday, params: {host: "barclays.wd3.myworkdayjobs.com", tenant: "barclays", site: "External_Career_Site_Barclays"}}
