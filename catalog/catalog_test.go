@@ -101,8 +101,8 @@ func TestEveryValidatedBoardIsConfiguredOnce(t *testing.T) {
 		}
 		configured[id] = company.Name
 	}
-	if len(configured) != 184 {
-		t.Fatalf("configured source count = %d, want 184", len(configured))
+	if len(configured) != 185 {
+		t.Fatalf("configured source count = %d, want 185", len(configured))
 	}
 
 	for _, row := range readAudit(t) {
