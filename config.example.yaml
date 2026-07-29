@@ -178,6 +178,7 @@ companies:
 
   # ---- Lever ----
   - {name: "Envato", source: lever, params: {site: envato-2}}
+  - {name: "JumpCloud", source: lever, params: {site: jumpcloud}}
   - {name: "Redox", source: lever, params: {site: redoxengine}}
   - {name: "Sonatype", source: lever, params: {site: sonatype}}
   - {name: "Superside", source: lever, params: {site: superside}}
