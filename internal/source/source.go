@@ -110,6 +110,8 @@ func identityFor(name string, p params.Map) string {
 		return "workable/" + p.Get("account")
 	case "recruitee":
 		return "recruitee/" + p.Get("company_slug")
+	case "rippling":
+		return "rippling/" + p.Get("board_slug")
 	case "smartrecruiters":
 		return "smartrecruiters/" + p.Get("company_id")
 	case "bamboohr":
@@ -147,6 +149,8 @@ func statePrefixFor(name string, p params.Map) string {
 		return "workable/" + p.Get("account") + "/"
 	case "recruitee":
 		return "recruitee/" + p.Get("company_slug") + "/"
+	case "rippling":
+		return "rippling/" + p.Get("board_slug") + "/"
 	case "smartrecruiters":
 		return "smartrecruiters/" + p.Get("company_id") + "/"
 	case "bamboohr":

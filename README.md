@@ -4,7 +4,8 @@ Emails you when a company posts a job asking for **0–1 years of experience**.
 
 It polls company job boards directly through their ATS APIs (Greenhouse, Lever,
 Ashby, Workable, Recruitee, SmartRecruiters, BambooHR, Workday) — plain JSON
-over HTTP, no browser, no scraping. Each job is emailed at most once.
+over HTTP, no browser, no scraping. Rippling Recruiting boards are supported
+too. Each job is emailed at most once.
 
 ```
 fetch job boards → keep unseen jobs → match experience rule → email you
@@ -91,6 +92,7 @@ job or "Apply" link:
 | `acme.recruitee.com`                     | `source: recruitee, params: {company_slug: acme}`                  |
 | `acme.bamboohr.com/careers`              | `source: bamboohr, params: {company_slug: acme}`                   |
 | `jobs.smartrecruiters.com/Acme`          | `source: smartrecruiters, params: {company_id: Acme}`              |
+| `ats.rippling.com/acme/jobs/...`         | `source: rippling, params: {board_slug: acme}`                     |
 | `acme.wd5.myworkdayjobs.com/en-US/jobs`  | `source: workday, params: {host: acme.wd5.myworkdayjobs.com, tenant: acme, site: jobs}` |
 
 Do not rely on a company-name guess: follow an Apply link to the exact ATS
@@ -101,7 +103,7 @@ companies:
 ./jobwatch -dry-run    # prints matches, sends nothing, saves nothing
 ```
 
-`config.example.yaml` ships with 184 verified ATS boards. Of those, 139 were
+`config.example.yaml` ships with 191 verified ATS boards. Of those, 140 were
 added after auditing every row in moreThanFAANGM; the checked URL, disposition,
 exact API identity, job count, and exclusion reason for all 483 source links
 are recorded in [`catalog/morethanfaangm-audit.tsv`](catalog/morethanfaangm-audit.tsv).

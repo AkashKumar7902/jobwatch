@@ -56,9 +56,9 @@ func readAudit(t *testing.T) []auditRow {
 
 func TestAuditAccountsForEveryUpstreamRow(t *testing.T) {
 	want := map[string]int{
-		"validated_supported": 137,
+		"validated_supported": 138,
 		"duplicate":           9,
-		"unsupported":         261,
+		"unsupported":         260,
 		"dead":                36,
 		"manual_review":       39,
 		"not_a_company":       1,
@@ -101,8 +101,8 @@ func TestEveryValidatedBoardIsConfiguredOnce(t *testing.T) {
 		}
 		configured[id] = company.Name
 	}
-	if len(configured) != 190 {
-		t.Fatalf("configured source count = %d, want 190", len(configured))
+	if len(configured) != 191 {
+		t.Fatalf("configured source count = %d, want 191", len(configured))
 	}
 
 	for _, row := range readAudit(t) {

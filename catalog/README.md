@@ -8,12 +8,15 @@ The source README advertises 481 companies but contains 483 links: 481 unique
 company names, one exact Ninjacart duplicate, and one maintainer/contact link.
 Each row was checked on 2026-07-16 by resolving the supplied URL, identifying
 the current ATS from first-party evidence, and probing any supported public API.
+Rows promoted after that audit record their later verification in the row
+evidence.
 
-The final audit contains 137 validated rows (139 distinct boards because Nike
-and Visa each expose two), 9 duplicates, 261 unsupported systems, 36 dead
-links/boards, 39 manual-review cases, and 1 non-company maintainer link. The
-139 validated identities are present in `config.example.yaml`; combined with
-the original catalog, Jobwatch now polls 184 unique ATS boards.
+The audit now contains 138 validated rows (140 distinct boards because Nike
+and Visa each expose two), 9 duplicates, 260 unsupported systems, 36 dead
+links/boards, 39 manual-review cases, and 1 non-company maintainer link.
+Rippling was promoted after a first-party API recheck on 2026-07-29. All 140
+validated identities are present in `config.example.yaml`; alongside 51 other
+boards verified when they were added, Jobwatch now polls 191 unique ATS boards.
 
 Dispositions mean:
 

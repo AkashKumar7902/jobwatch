@@ -3,9 +3,10 @@
 #   jobwatch -seed     (first run: baseline, no emails)
 #   jobwatch           (every run after: emails newly appeared matches)
 #
-# Every company below was probed and its API verified live (2026-07-16).
+# The original catalog was probed and its APIs verified live on 2026-07-16;
+# later additions were verified when they were added.
 # The initial set came from https://github.com/yanirs/established-remote;
-# 139 boards were imported from moreThanFAANGM after auditing all 483 links.
+# 140 boards were imported from moreThanFAANGM after auditing all 483 links.
 # See catalog/morethanfaangm-audit.tsv for the evidence and exclusions.
 
 poll:
@@ -234,6 +235,10 @@ companies:
   - {name: "madewithlove", source: recruitee, params: {company_slug: madewithlove}}
   - {name: "MailerLite", source: recruitee, params: {company_slug: mailerlite}}
   - {name: "Time Doctor", source: recruitee, params: {company_slug: timedoctor}}
+
+  # ---- Rippling Recruiting ----
+  # Verified after the original audit; see catalog/morethanfaangm-audit.tsv.
+  - {name: "Rippling", source: rippling, params: {board_slug: rippling}}
 
   # ---- SmartRecruiters ----
   # Large boards are capped to the newest 20 postings so scheduled runs stay bounded.
