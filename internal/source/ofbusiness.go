@@ -18,6 +18,7 @@ import (
 	"mime"
 	"net/http"
 	"net/url"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,12 +30,17 @@ import (
 )
 
 const (
-	ofBusinessSiteBase  = "https://www.ofbcareers.com"
-	ofBusinessBodyLimit = 4 << 20
-	ofBusinessMaxJobs   = 1_000
-	ofBusinessMaxPages  = 250
-	ofBusinessMaxPage   = 100
+	ofBusinessSiteBase         = "https://www.ofbcareers.com"
+	ofBusinessBodyLimit        = 4 << 20
+	ofBusinessMaxJobs          = 1_000
+	ofBusinessMaxPages         = 250
+	ofBusinessMaxPage          = 100
+	ofBusinessPlaceholderID    = "088aba40-d05e-4272-b075-c3a3c55e55fd"
+	ofBusinessPlaceholderOwner = "525fa184-f33d-4c0b-a3a7-783be3a8de5a"
+	ofBusinessPlaceholderDate  = "2025-07-31T13:46:00.534Z"
 )
+
+var ofBusinessTitleRE = regexp.MustCompile(`(?is)<title(?:\s[^>]*)?>(.*?)</title>`)
 
 func init() {
 	Register("ofbusiness", func(company string, p params.Map, client *http.Client) (Source, error) {
@@ -113,8 +119,12 @@ type ofBusinessCategory struct {
 
 type ofBusinessPosting struct {
 	ID                      string              `json:"_id"`
+	Owner                   string              `json:"_owner"`
 	CreatedDate             *ofBusinessDate     `json:"_createdDate"`
 	UpdatedDate             *ofBusinessDate     `json:"_updatedDate"`
+	EmpID                   string              `json:"empId"`
+	JobCode                 int                 `json:"jobCode"`
+	AllJobsPath             string              `json:"link-jobs-1-all"`
 	JobTitle                string              `json:"jobTitle"`
 	Location                string              `json:"location"`
 	JobType                 string              `json:"jobType"`
@@ -154,6 +164,7 @@ func (s *ofBusiness) Fetch(ctx context.Context) ([]model.Job, error) {
 		totalPages    = -1
 		pageQueryKey  string
 		placeholders  int
+		postingsByID  = make(map[string]ofBusinessPosting)
 	)
 	for pageNumber := 1; ; pageNumber++ {
 		body, err := s.fetchHTML(ctx, endpoint, categoryURL)
@@ -273,27 +284,16 @@ func (s *ofBusiness) Fetch(ctx context.Context) ([]model.Job, error) {
 			seen[recordID] = struct{}{}
 
 			if posting.isPlaceholder() {
-				createdAt, err := parseOfBusinessDate(posting.CreatedDate)
-				if err != nil {
+				if err := validateOfBusinessPlaceholder(posting); err != nil {
 					return nil, fmt.Errorf(
-						"ofbusiness: page %d item %d placeholder %q has invalid _createdDate: %w",
+						"ofbusiness: page %d item %d placeholder %q: %w",
 						pageNumber, index, recordID, err,
-					)
-				}
-				updatedAt, err := parseOfBusinessDate(posting.UpdatedDate)
-				if err != nil {
-					return nil, fmt.Errorf(
-						"ofbusiness: page %d item %d placeholder %q has invalid _updatedDate: %w",
-						pageNumber, index, recordID, err,
-					)
-				}
-				if updatedAt.Before(createdAt) {
-					return nil, fmt.Errorf(
-						"ofbusiness: page %d item %d placeholder %q was updated before creation",
-						pageNumber, index, recordID,
 					)
 				}
 				placeholders++
+				if placeholders > 1 {
+					return nil, fmt.Errorf("ofbusiness: collection contains more than one empty placeholder")
+				}
 				continue
 			}
 			job, err := s.normalizePosting(posting)
@@ -303,6 +303,7 @@ func (s *ofBusiness) Fetch(ctx context.Context) ([]model.Job, error) {
 					pageNumber, index, recordID, err,
 				)
 			}
+			postingsByID[job.ID] = posting
 			jobs = append(jobs, job)
 		}
 
@@ -358,14 +359,16 @@ func (s *ofBusiness) Fetch(ctx context.Context) ([]model.Job, error) {
 			len(seen), expectedTotal,
 		)
 	}
-	if expectedTotal > 0 && placeholders == expectedTotal {
-		return nil, fmt.Errorf("ofbusiness: every collection record is an empty placeholder")
+	actionable, err := s.resolveDuplicateDetailURLs(ctx, jobs, postingsByID)
+	if err != nil {
+		return nil, err
 	}
-	return jobs, nil
+	return actionable, nil
 }
 
 func (p ofBusinessPosting) isPlaceholder() bool {
-	return strings.TrimSpace(p.JobTitle) == "" &&
+	return strings.TrimSpace(p.EmpID) == "" &&
+		strings.TrimSpace(p.JobTitle) == "" &&
 		strings.TrimSpace(p.Location) == "" &&
 		strings.TrimSpace(p.JobType) == "" &&
 		strings.TrimSpace(p.ExperienceRequiredRange) == "" &&
@@ -377,7 +380,167 @@ func (p ofBusinessPosting) isPlaceholder() bool {
 		p.Category == nil
 }
 
+func validateOfBusinessPlaceholder(posting ofBusinessPosting) error {
+	if posting.ID != ofBusinessPlaceholderID ||
+		posting.Owner != ofBusinessPlaceholderOwner ||
+		posting.JobCode != 202401 ||
+		posting.AllJobsPath != "/jobs-1/" {
+		return fmt.Errorf("does not match the one validated CMS shell")
+	}
+	createdAt, err := parseOfBusinessDate(posting.CreatedDate)
+	if err != nil {
+		return fmt.Errorf("invalid _createdDate: %w", err)
+	}
+	updatedAt, err := parseOfBusinessDate(posting.UpdatedDate)
+	if err != nil {
+		return fmt.Errorf("invalid _updatedDate: %w", err)
+	}
+	if posting.CreatedDate.Date != ofBusinessPlaceholderDate ||
+		posting.UpdatedDate.Date != ofBusinessPlaceholderDate ||
+		!createdAt.Equal(updatedAt) {
+		return fmt.Errorf(
+			"timestamps %s/%s do not match the validated CMS shell",
+			createdAt.Format(time.RFC3339Nano), updatedAt.Format(time.RFC3339Nano),
+		)
+	}
+	return nil
+}
+
+type ofBusinessDetailIdentity struct {
+	title      string
+	location   string
+	experience string
+}
+
+func (s *ofBusiness) resolveDuplicateDetailURLs(
+	ctx context.Context,
+	jobs []model.Job,
+	postingsByID map[string]ofBusinessPosting,
+) ([]model.Job, error) {
+	indexesByURL := make(map[string][]int)
+	for index, job := range jobs {
+		indexesByURL[job.URL] = append(indexesByURL[job.URL], index)
+	}
+	keep := make([]bool, len(jobs))
+	for index := range keep {
+		keep[index] = true
+	}
+	for detailURL, indexes := range indexesByURL {
+		if len(indexes) == 1 {
+			continue
+		}
+		identity, err := s.fetchDetailIdentity(ctx, detailURL)
+		if err != nil {
+			return nil, fmt.Errorf("ofbusiness: resolving duplicate detail URL %s: %w", detailURL, err)
+		}
+		matched := -1
+		for _, index := range indexes {
+			posting, ok := postingsByID[jobs[index].ID]
+			if !ok {
+				return nil, fmt.Errorf("ofbusiness: missing posting state for %q", jobs[index].ID)
+			}
+			if strings.EqualFold(compactSpaces(posting.JobTitle), identity.title) &&
+				strings.EqualFold(compactSpaces(posting.Location), identity.location) &&
+				compactSpaces(posting.ExperienceRequiredRange) == identity.experience {
+				if matched >= 0 {
+					return nil, fmt.Errorf(
+						"ofbusiness: duplicate detail URL %s matches more than one collection record",
+						detailURL,
+					)
+				}
+				matched = index
+			}
+		}
+		if matched < 0 {
+			return nil, fmt.Errorf(
+				"ofbusiness: duplicate detail URL %s matches none of its %d collection records",
+				detailURL, len(indexes),
+			)
+		}
+		for _, index := range indexes {
+			keep[index] = index == matched
+		}
+	}
+	actionable := make([]model.Job, 0, len(jobs))
+	for index, job := range jobs {
+		if keep[index] {
+			actionable = append(actionable, job)
+		}
+	}
+	return actionable, nil
+}
+
+func (s *ofBusiness) fetchDetailIdentity(
+	ctx context.Context,
+	endpoint string,
+) (ofBusinessDetailIdentity, error) {
+	expected, err := url.Parse(endpoint)
+	if err != nil {
+		return ofBusinessDetailIdentity{}, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return ofBusinessDetailIdentity{}, err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+	client := s.client
+	if client == nil {
+		client = http.DefaultClient
+	}
+	response, err := clientWithoutRedirects(client).Do(req)
+	if err != nil {
+		return ofBusinessDetailIdentity{}, err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != http.StatusOK {
+		return ofBusinessDetailIdentity{}, fmt.Errorf("GET %s: %s", endpoint, response.Status)
+	}
+	mediaType, _, err := mime.ParseMediaType(response.Header.Get("Content-Type"))
+	if err != nil || (mediaType != "text/html" && mediaType != "application/xhtml+xml") {
+		return ofBusinessDetailIdentity{}, fmt.Errorf(
+			"GET %s: unexpected Content-Type %q", endpoint, response.Header.Get("Content-Type"),
+		)
+	}
+	if response.Request == nil || response.Request.URL == nil ||
+		response.Request.URL.User != nil ||
+		response.Request.URL.Scheme != expected.Scheme ||
+		!strings.EqualFold(response.Request.URL.Host, expected.Host) ||
+		response.Request.URL.EscapedPath() != expected.EscapedPath() ||
+		response.Request.URL.RawQuery != "" || response.Request.URL.ForceQuery ||
+		response.Request.URL.Fragment != "" {
+		return ofBusinessDetailIdentity{}, fmt.Errorf("GET %s: redirected away from the canonical job page", endpoint)
+	}
+	body, err := io.ReadAll(io.LimitReader(response.Body, ofBusinessBodyLimit+1))
+	if err != nil {
+		return ofBusinessDetailIdentity{}, err
+	}
+	if len(body) > ofBusinessBodyLimit {
+		return ofBusinessDetailIdentity{}, fmt.Errorf("GET %s: response exceeds safety limit", endpoint)
+	}
+	matches := ofBusinessTitleRE.FindAllStringSubmatch(string(body), -1)
+	if len(matches) != 1 {
+		return ofBusinessDetailIdentity{}, fmt.Errorf("expected one title element, found %d", len(matches))
+	}
+	titleParts := strings.Split(cleanHTMLFragment(matches[0][1]), "||")
+	if len(titleParts) != 3 {
+		return ofBusinessDetailIdentity{}, fmt.Errorf("job-page title does not contain title, location, and experience")
+	}
+	identity := ofBusinessDetailIdentity{
+		title:      compactSpaces(titleParts[0]),
+		location:   compactSpaces(titleParts[1]),
+		experience: compactSpaces(titleParts[2]),
+	}
+	if identity.title == "" || identity.location == "" || identity.experience == "" {
+		return ofBusinessDetailIdentity{}, fmt.Errorf("job-page title contains an empty identity field")
+	}
+	return identity, nil
+}
+
 func (s *ofBusiness) normalizePosting(posting ofBusinessPosting) (model.Job, error) {
+	if strings.TrimSpace(posting.EmpID) == "" {
+		return model.Job{}, fmt.Errorf("empty empId")
+	}
 	title := strings.TrimSpace(posting.JobTitle)
 	if title == "" {
 		return model.Job{}, fmt.Errorf("empty jobTitle")
@@ -781,7 +944,8 @@ func resolveOfBusinessDetailURL(base, raw string) (string, error) {
 	resolved := siteURL.ResolveReference(reference)
 	if !strings.EqualFold(resolved.Scheme, siteURL.Scheme) ||
 		!strings.EqualFold(resolved.Host, siteURL.Host) ||
-		resolved.User != nil {
+		resolved.User != nil ||
+		!strings.HasPrefix(resolved.EscapedPath(), "/jobs/") {
 		return "", fmt.Errorf("detail path %q leaves the careers site", raw)
 	}
 	return resolved.String(), nil
@@ -802,7 +966,7 @@ func (s *ofBusiness) fetchHTML(
 	if client == nil {
 		client = http.DefaultClient
 	}
-	response, err := client.Do(req)
+	response, err := clientWithoutRedirects(client).Do(req)
 	if err != nil {
 		return nil, err
 	}

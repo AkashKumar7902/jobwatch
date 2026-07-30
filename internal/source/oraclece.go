@@ -38,13 +38,17 @@ func init() {
 		if !oracleCESiteRe.MatchString(site) {
 			return nil, fmt.Errorf("param %q: invalid Oracle site %q", "site", site)
 		}
+		location := strings.TrimSpace(p.Get("location"))
+		if len(location) > 200 || strings.ContainsAny(location, ",;") {
+			return nil, fmt.Errorf("param %q: invalid Oracle location %q", "location", location)
+		}
 		maxPages, err := positiveCappedParam(p, "max_pages", 100, 200)
 		if err != nil {
 			return nil, err
 		}
 		return &oracleCE{
 			company: company, host: host, site: site, base: "https://" + host,
-			maxPages: maxPages, client: client,
+			location: location, maxPages: maxPages, client: client,
 		}, nil
 	})
 }
@@ -54,6 +58,7 @@ type oracleCE struct {
 	host     string
 	site     string
 	base     string
+	location string
 	maxPages int
 	client   *http.Client
 }
@@ -92,13 +97,17 @@ func (o *oracleCE) Fetch(ctx context.Context) ([]model.Job, error) {
 	total := -1
 	offset := 0
 	for pageNumber := 1; pageNumber <= o.maxPages; pageNumber++ {
+		finder := fmt.Sprintf(
+			"findReqs;siteNumber=%s,limit=%d,offset=%d",
+			o.site, oracleCEPageSize, offset,
+		)
+		if o.location != "" {
+			finder += ",location=" + o.location
+		}
 		query := url.Values{
 			"onlyData": {"true"},
 			"expand":   {"requisitionList"},
-			"finder": {fmt.Sprintf(
-				"findReqs;siteNumber=%s,limit=%d,offset=%d",
-				o.site, oracleCEPageSize, offset,
-			)},
+			"finder":   {finder},
 		}
 		var page oracleCEList
 		endpoint := o.base + "/hcmRestApi/resources/latest/recruitingCEJobRequisitions?" + query.Encode()

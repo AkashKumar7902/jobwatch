@@ -50,7 +50,8 @@ func init() {
 		}
 		return &eightfold{
 			company: company, host: host, domain: domain, location: strings.TrimSpace(p.Get("location")),
-			base: "https://" + host, maxPostings: maxPostings, client: client,
+			query: strings.TrimSpace(p.Get("query")),
+			base:  "https://" + host, maxPostings: maxPostings, client: client,
 		}, nil
 	})
 }
@@ -60,6 +61,7 @@ type eightfold struct {
 	host        string
 	domain      string
 	location    string
+	query       string
 	base        string
 	maxPostings int
 	client      *http.Client
@@ -99,7 +101,7 @@ func (s *eightfold) Fetch(ctx context.Context) ([]model.Job, error) {
 	for start := 0; start < s.maxPostings; {
 		query := url.Values{
 			"domain": {s.domain},
-			"query":  {""},
+			"query":  {s.query},
 			"start":  {strconv.Itoa(start)},
 		}
 		if s.location != "" {

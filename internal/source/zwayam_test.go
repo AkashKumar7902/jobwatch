@@ -47,6 +47,18 @@ func TestZwayamNewValidatesCanonicalCoordinates(t *testing.T) {
 	if got.client != http.DefaultClient {
 		t.Errorf("nil client did not use http.DefaultClient")
 	}
+	canonical, err := New("zwayam", "Renamed Cult.fit", params.Map{
+		"domain": "careers.cult.fit", "company_id": testZwayamCompanyID,
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if Identity(src) != "zwayam/careers.cult.fit/15470" || Identity(src) != Identity(canonical) {
+		t.Errorf("identities = %q and %q", Identity(src), Identity(canonical))
+	}
+	if StatePrefix(src) != "zwayam/careers.cult.fit/15470/" {
+		t.Errorf("state prefix = %q", StatePrefix(src))
+	}
 
 	tests := []struct {
 		name    string
@@ -426,11 +438,24 @@ func TestZwayamFetchRejectsPaginationDrift(t *testing.T) {
 			name: "changed page size",
 			build: func(_ int32) zwayamSearchResponse {
 				response := testZwayamPage([]*zwayamSearchHit{}, 0, false)
+				value := stringish("0")
+				response.Data.FacetedSearchConfig.PaginationHowMuch = &value
+				return response
+			},
+			wantErr: `paginationHowMuch "0" is not from 1`,
+		},
+		{
+			name: "page size changes between pages",
+			build: func(call int32) zwayamSearchResponse {
+				if call == 1 {
+					return testZwayamPage(testZwayamHits(10), 11, true)
+				}
+				response := testZwayamPage([]*zwayamSearchHit{testZwayamHit(11)}, 11, false)
 				value := stringish("20")
 				response.Data.FacetedSearchConfig.PaginationHowMuch = &value
 				return response
 			},
-			wantErr: `paginationHowMuch is "20", want 10`,
+			wantErr: "paginationHowMuch changed from 10 to 20",
 		},
 		{
 			name: "negative total",
@@ -523,6 +548,31 @@ func TestZwayamFetchRejectsPaginationDrift(t *testing.T) {
 				t.Fatalf("Fetch error = %v, want substring %q", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestZwayamFetchAcceptsTenantDeclaredPageSize(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			w.Header().Set("Content-Type", "text/html")
+			fmt.Fprint(w, `<base href="/cult/">`)
+			return
+		}
+		response := testZwayamPage(testZwayamHits(11), 11, false)
+		pageSize := stringish("20")
+		response.Data.FacetedSearchConfig.PaginationHowMuch = &pageSize
+		writeZwayamJSON(t, w, response)
+	}))
+	defer server.Close()
+
+	jobs, err := testZwayamSource(server).Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 11 {
+		t.Fatalf("jobs = %d, want 11", len(jobs))
 	}
 }
 
@@ -708,6 +758,11 @@ func TestZwayamSiteDiscoveryRejectsUnsafeOrDriftedPages(t *testing.T) {
 			body:    `<base href="/cult/?tenant=other">`,
 			wantErr: "unsafe career-site base href",
 		},
+		{
+			name:    "bare query in base",
+			body:    `<base href="/cult/?">`,
+			wantErr: "unsafe career-site base href",
+		},
 	}
 	for _, test := range tests {
 		test := test
@@ -724,6 +779,23 @@ func TestZwayamSiteDiscoveryRejectsUnsafeOrDriftedPages(t *testing.T) {
 				t.Fatalf("discoverSiteBase error = %v, want substring %q", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestZwayamSiteDiscoveryRejectsSameHostUserinfo(t *testing.T) {
+	t.Parallel()
+
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		baseWithUser := strings.Replace(server.URL, "://", "://user@", 1)
+		fmt.Fprintf(w, `<base href="%s/cult/">`, baseWithUser)
+	}))
+	defer server.Close()
+
+	_, err := testZwayamSource(server).discoverSiteBase(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "unsafe career-site base href") {
+		t.Fatalf("discoverSiteBase error = %v", err)
 	}
 }
 
@@ -799,6 +871,20 @@ func TestZwayamDetailRejectsForeignJobWithoutRequest(t *testing.T) {
 				ID: src.jobID("1"), URL: server.URL + "/cult/jobs/role-1",
 			},
 			wantErr: "does not contain a jobview path",
+		},
+		{
+			name: "bare query URL",
+			job: &model.Job{
+				ID: src.jobID("1"), URL: server.URL + "/cult/jobview/role-1?",
+			},
+			wantErr: "not a canonical URL",
+		},
+		{
+			name: "userinfo URL",
+			job: &model.Job{
+				ID: src.jobID("1"), URL: strings.Replace(server.URL, "://", "://user@", 1) + "/cult/jobview/role-1",
+			},
+			wantErr: "not a canonical URL",
 		},
 	}
 	for _, test := range tests {

@@ -1,13 +1,13 @@
-// Package source fetches job postings from applicant tracking systems
-// (ATS). Each ATS gets one file implementing the Source interface and
-// registering a Factory in init(); the config file then selects sources by
-// name. To support a new ATS, add one file — nothing else changes.
+// Package source fetches job postings from applicant tracking systems and
+// first-party careers endpoints. Each adapter implements Source, registers a
+// Factory in init(), and exposes stable board/job identities for state.
 package source
 
 import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -112,6 +112,12 @@ func identityFor(name string, p params.Map) string {
 		return "recruitee/" + p.Get("company_slug")
 	case "rippling":
 		return "rippling/" + p.Get("board_slug")
+	case "polymer":
+		return "polymer/" + p.Get("organization_slug")
+	case "darwinbox":
+		return "darwinbox/" + strings.ToLower(strings.TrimSpace(p.Get("subdomain")))
+	case "freshteam":
+		return "freshteam/" + p.Get("company_slug")
 	case "smartrecruiters":
 		return "smartrecruiters/" + p.Get("company_id")
 	case "bamboohr":
@@ -122,6 +128,66 @@ func identityFor(name string, p params.Map) string {
 		return "wayfair"
 	case "talentbrew":
 		return "talentbrew/" + p.Get("host")
+	case "amazon":
+		return "amazon/" + strings.ToUpper(p.GetDefault("country_code", "IND"))
+	case "auzmor":
+		return "auzmor/" + strings.ToLower(strings.TrimSpace(p.Get("domain")))
+	case "atlassian", "deshaw", "medianet", "enphase", "richpanel", "makemytrip",
+		"highergs", "hyperverge", "juspay", "komprise", "nationwithnamo",
+		"nutanix", "ofbusiness", "publicissapient", "slb":
+		return name
+	case "walmart":
+		return "walmart/IN"
+	case "avature":
+		return fmt.Sprintf(
+			"avature/%s/%s/%s",
+			p.Get("host"),
+			strings.Trim(p.Get("site"), "/"),
+			strings.Trim(p.Get("search_path"), "/"),
+		)
+	case "eightfold":
+		identity := fmt.Sprintf("eightfold/%s/%s/%s", p.Get("host"), p.Get("domain"), strings.TrimSpace(p.Get("location")))
+		if query := strings.TrimSpace(p.Get("query")); query != "" {
+			identity += "/query=" + url.QueryEscape(query)
+		}
+		return identity
+	case "kula":
+		return "kula/" + p.Get("account_name")
+	case "icims", "successfactors", "mynexthire":
+		host, _ := normalizeBoardHost(p.Get("host"))
+		return name + "/" + host
+	case "ibm":
+		return fmt.Sprintf("ibm/%s/%s/%s", p.Get("appid"), p.Get("scope"), p.Get("rc"))
+	case "hrone":
+		return fmt.Sprintf(
+			"hrone/%s/%s/%s",
+			strings.ToLower(strings.TrimSpace(p.Get("domain_code"))),
+			strings.TrimSpace(p.Get("request_type")),
+			strings.TrimSpace(p.Get("company_code")),
+		)
+	case "jubilant":
+		return "jubilant/" + strings.ToUpper(strings.TrimSpace(p.GetDefault("country_code", "IND")))
+	case "jio":
+		return "jio/" + jioIdentityFunctions(p)
+	case "oraclece":
+		host, _ := normalizeBoardHost(p.Get("host"))
+		identity := fmt.Sprintf("oraclece/%s/%s", host, p.Get("site"))
+		if location := strings.TrimSpace(p.Get("location")); location != "" {
+			identity += "/" + location
+		}
+		return identity
+	case "keka":
+		return fmt.Sprintf("keka/%s/%s/%s", p.Get("host"), p.Get("portal"), strings.ToLower(p.Get("identifier")))
+	case "ukg":
+		host, _ := normalizeBoardHost(p.Get("host"))
+		board, _ := canonicalUKGUUID(p.Get("board"))
+		return fmt.Sprintf("ukg/%s/%s/%s", host, p.Get("tenant"), board)
+	case "zwayam":
+		domain, _ := normalizeBoardHost(p.Get("domain"))
+		companyID, _, _ := canonicalZwayamDecimal(p.Get("company_id"))
+		return fmt.Sprintf("zwayam/%s/%s", domain, companyID)
+	case "fastenal", "siemensjobs", "nykaa", "airoha", "payu", "forty2gears":
+		return name
 	}
 
 	// Keep future externally registered sources deterministic too.
@@ -151,6 +217,12 @@ func statePrefixFor(name string, p params.Map) string {
 		return "recruitee/" + p.Get("company_slug") + "/"
 	case "rippling":
 		return "rippling/" + p.Get("board_slug") + "/"
+	case "polymer":
+		return "polymer/" + p.Get("organization_slug") + "/"
+	case "darwinbox":
+		return "darwinbox/" + strings.ToLower(strings.TrimSpace(p.Get("subdomain"))) + "/"
+	case "freshteam":
+		return "freshteam/" + p.Get("company_slug") + "/"
 	case "smartrecruiters":
 		return "smartrecruiters/" + p.Get("company_id") + "/"
 	case "bamboohr":
@@ -162,6 +234,53 @@ func statePrefixFor(name string, p params.Map) string {
 		return "wayfair/"
 	case "talentbrew":
 		return "talentbrew/" + p.Get("host") + "/"
+	case "amazon":
+		return "amazon/" + strings.ToUpper(p.GetDefault("country_code", "IND")) + "/"
+	case "auzmor":
+		return "auzmor/" + strings.ToLower(strings.TrimSpace(p.Get("domain"))) + "/"
+	case "atlassian", "deshaw", "medianet", "enphase", "richpanel", "makemytrip",
+		"highergs", "hyperverge", "juspay", "komprise", "nutanix", "ofbusiness",
+		"publicissapient", "slb", "walmart":
+		return name + "/"
+	case "nationwithnamo":
+		return "nationwithnamo/gilp-impact-fellowship/"
+	case "avature":
+		return fmt.Sprintf("avature/%s/%s/", p.Get("host"), strings.Trim(p.Get("site"), "/"))
+	case "eightfold":
+		return fmt.Sprintf("eightfold/%s/%s/", p.Get("host"), p.Get("domain"))
+	case "kula":
+		return "kula/" + p.Get("account_name") + "/"
+	case "icims", "successfactors", "mynexthire":
+		host, _ := normalizeBoardHost(p.Get("host"))
+		return name + "/" + host + "/"
+	case "ibm":
+		return fmt.Sprintf("ibm/%s/%s/%s/", p.Get("appid"), p.Get("scope"), p.Get("rc"))
+	case "hrone":
+		return fmt.Sprintf(
+			"hrone/%s/%s/%s/",
+			strings.ToLower(strings.TrimSpace(p.Get("domain_code"))),
+			strings.TrimSpace(p.Get("request_type")),
+			strings.TrimSpace(p.Get("company_code")),
+		)
+	case "jubilant":
+		return "jubilant/" + strings.ToUpper(strings.TrimSpace(p.GetDefault("country_code", "IND"))) + "/"
+	case "jio":
+		return "jio/"
+	case "oraclece":
+		host, _ := normalizeBoardHost(p.Get("host"))
+		return fmt.Sprintf("oraclece/%s/%s/", host, p.Get("site"))
+	case "keka":
+		return fmt.Sprintf("keka/%s/%s/", p.Get("host"), p.Get("portal"))
+	case "ukg":
+		host, _ := normalizeBoardHost(p.Get("host"))
+		board, _ := canonicalUKGUUID(p.Get("board"))
+		return fmt.Sprintf("ukg/%s/%s/%s/", host, p.Get("tenant"), board)
+	case "zwayam":
+		domain, _ := normalizeBoardHost(p.Get("domain"))
+		companyID, _, _ := canonicalZwayamDecimal(p.Get("company_id"))
+		return fmt.Sprintf("zwayam/%s/%s/", domain, companyID)
+	case "fastenal", "siemensjobs", "nykaa", "airoha", "payu", "forty2gears":
+		return name + "/"
 	}
 	return ""
 }

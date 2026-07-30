@@ -191,6 +191,30 @@ func TestFreshteamFetchCompleteAndLazyDetail(t *testing.T) {
 	}
 }
 
+func TestFreshteamDetailDoesNotBindSchemaOrganizationToDisplayName(t *testing.T) {
+	src := freshteamTestSource(func(req *http.Request) (*http.Response, error) {
+		return freshteamResponse(
+			req, http.StatusOK,
+			freshteamDetailPage(t, freshteamValidPosting()),
+		), nil
+	})
+	src.company = "Renamed Acme Careers"
+	job := model.Job{
+		ID:             "freshteam/acme/" + freshteamTestID1,
+		Company:        src.company,
+		Title:          "Platform & Reliability",
+		Location:       "Bengaluru",
+		URL:            freshteamTestBase + "/jobs/" + freshteamTestID1 + "/platform-reliability",
+		EmploymentType: "Full Time",
+	}
+	if err := src.Detail(context.Background(), &job); err != nil {
+		t.Fatal(err)
+	}
+	if job.Description == "" {
+		t.Fatal("detail did not hydrate renamed display company")
+	}
+}
+
 func TestFreshteamFactoryValidatesCompanySlug(t *testing.T) {
 	source, err := New(
 		"freshteam", "Acme",
@@ -202,6 +226,10 @@ func TestFreshteamFactoryValidatesCompanySlug(t *testing.T) {
 	}
 	if source.Company() != "Acme" {
 		t.Fatalf("company = %q", source.Company())
+	}
+	if Identity(source) != "freshteam/kaleyra-talent" ||
+		StatePrefix(source) != "freshteam/kaleyra-talent/" {
+		t.Fatalf("identity=%q prefix=%q", Identity(source), StatePrefix(source))
 	}
 	if _, ok := source.(Detailer); !ok {
 		t.Fatal("wrapped Freshteam source does not expose Detailer")
@@ -414,6 +442,16 @@ func TestFreshteamFetchStatusBodyLimitAndFinalURL(t *testing.T) {
 			},
 			wantErr: "unexpected final URL",
 		},
+		{
+			name: "bare final query",
+			response: func(req *http.Request) *http.Response {
+				resp := freshteamResponse(req, http.StatusOK, freshteamListPage("", 0))
+				bare, _ := url.Parse(freshteamTestBase + "/jobs?")
+				resp.Request = &http.Request{URL: bare}
+				return resp
+			},
+			wantErr: "unexpected final URL",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -454,6 +492,7 @@ func TestFreshteamDetailRejectsInvalidJobsWithoutRequest(t *testing.T) {
 		{name: "cross-host URL", job: freshteamJobPointer(valid, func(j *model.Job) { j.URL = "https://evil.example/jobs/" + freshteamTestID1 + "/platform" })},
 		{name: "URL ID mismatch", job: freshteamJobPointer(valid, func(j *model.Job) { j.URL = freshteamTestBase + "/jobs/" + freshteamTestID2 + "/platform" })},
 		{name: "URL query", job: freshteamJobPointer(valid, func(j *model.Job) { j.URL += "?from=list" })},
+		{name: "URL bare query", job: freshteamJobPointer(valid, func(j *model.Job) { j.URL += "?" })},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -577,6 +616,13 @@ func TestFreshteamDetailRejectsSchemaFailuresAtomically(t *testing.T) {
 			wantErr: "posting URL must not contain",
 		},
 		{
+			name: "canonical bare query",
+			mutate: func(posting map[string]any) {
+				posting["url"] = posting["url"].(string) + "?"
+			},
+			wantErr: "posting URL must not contain",
+		},
+		{
 			name: "title mismatch",
 			mutate: func(posting map[string]any) {
 				posting["title"] = "Different title"
@@ -596,13 +642,6 @@ func TestFreshteamDetailRejectsSchemaFailuresAtomically(t *testing.T) {
 				delete(posting, "hiringOrganization")
 			},
 			wantErr: "omitted hiringOrganization",
-		},
-		{
-			name: "hiring organization mismatch",
-			mutate: func(posting map[string]any) {
-				posting["hiringOrganization"] = map[string]any{"name": "Other Co"}
-			},
-			wantErr: "does not match company",
 		},
 		{
 			name: "missing employment type",

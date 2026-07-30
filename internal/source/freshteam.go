@@ -77,7 +77,7 @@ func (s *freshteam) Fetch(ctx context.Context) ([]model.Job, error) {
 	if status != http.StatusOK {
 		return nil, fmt.Errorf("freshteam %s jobs: GET /jobs returned %s", s.slug, http.StatusText(status))
 	}
-	if finalURL.EscapedPath() != "/jobs" || finalURL.RawQuery != "" {
+	if finalURL.EscapedPath() != "/jobs" || finalURL.RawQuery != "" || finalURL.ForceQuery {
 		return nil, fmt.Errorf("freshteam %s jobs: unexpected final URL %q", s.slug, finalURL.String())
 	}
 
@@ -309,12 +309,6 @@ func (s *freshteam) Detail(ctx context.Context, job *model.Job) error {
 	if compactSpaces(posting.HiringOrganization) == "" {
 		return fmt.Errorf("freshteam %s job %s detail: schema omitted hiringOrganization", s.slug, opaqueID)
 	}
-	if !strings.EqualFold(compactSpaces(posting.HiringOrganization), compactSpaces(job.Company)) {
-		return fmt.Errorf(
-			"freshteam %s job %s detail: hiringOrganization %q does not match company %q",
-			s.slug, opaqueID, posting.HiringOrganization, job.Company,
-		)
-	}
 	employmentType := compactSpaces(posting.EmploymentType)
 	if employmentType == "" {
 		return fmt.Errorf("freshteam %s job %s detail: schema omitted employmentType", s.slug, opaqueID)
@@ -445,7 +439,7 @@ func (s *freshteam) parsePostingURL(raw string, requireListSlug bool) (*url.URL,
 	if err := s.validateTrustedURL(resolved); err != nil {
 		return nil, "", err
 	}
-	if resolved.RawQuery != "" || resolved.Fragment != "" {
+	if resolved.RawQuery != "" || resolved.ForceQuery || resolved.Fragment != "" {
 		return nil, "", fmt.Errorf("posting URL must not contain a query or fragment")
 	}
 	segments := strings.Split(strings.Trim(resolved.EscapedPath(), "/"), "/")

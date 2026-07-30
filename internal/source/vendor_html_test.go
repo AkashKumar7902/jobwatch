@@ -24,6 +24,9 @@ func TestOracleCEFetchAndLazyDetail(t *testing.T) {
 				t.Errorf("unexpected list query: %s", r.URL.RawQuery)
 			}
 			finder := r.URL.Query().Get("finder")
+			if !strings.Contains(finder, "location=India") {
+				t.Errorf("finder omitted location scope: %q", finder)
+			}
 			offset := 0
 			postings := `[{"Id":101,"Title":"Platform Engineer","PostedDate":"2026-07-30","PrimaryLocation":"Bengaluru, IN","WorkplaceType":"Hybrid"},{"Id":"102","Title":"Data Engineer","PostedDate":"2026-07-29","PrimaryLocationCountry":"India"}]`
 			if strings.Contains(finder, "offset=2") {
@@ -48,7 +51,7 @@ func TestOracleCEFetchAndLazyDetail(t *testing.T) {
 
 	src := &oracleCE{
 		company: "Acme", host: "jobs.example.com", site: "CX", base: server.URL,
-		maxPages: 2, client: server.Client(),
+		location: "India", maxPages: 2, client: server.Client(),
 	}
 	jobs, err := src.Fetch(context.Background())
 	if err != nil {
@@ -365,6 +368,11 @@ func TestVendorFactoriesValidateConnectionParams(t *testing.T) {
 	}
 	if _, err := New("icims", "Acme", params.Map{"host": "jobs.example.com", "max_pages": "501"}, client); err == nil {
 		t.Fatal("expected max_pages cap error")
+	}
+	if _, err := New("oraclece", "Acme", params.Map{
+		"host": "jobs.example.com", "site": "CX", "location": "India,Remote",
+	}, client); err == nil {
+		t.Fatal("expected unsafe Oracle location error")
 	}
 }
 

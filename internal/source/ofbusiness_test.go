@@ -27,6 +27,11 @@ func TestOfBusinessFetchesEveryDeclaredPage(t *testing.T) {
 	var serverURL string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		requests.Add(1)
+		if r.URL.Path == "/jobs/platform-engineer" {
+			w.Header().Set("Content-Type", "text/html")
+			fmt.Fprint(w, `<title>Platform Engineer || Bengaluru || 0-2 years</title>`)
+			return
+		}
 		if r.URL.Path != "/categories" {
 			http.NotFound(w, r)
 			return
@@ -65,11 +70,11 @@ func TestOfBusinessFetchesEveryDeclaredPage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if requests.Load() != 3 {
-		t.Fatalf("got %d requests, want 3", requests.Load())
+	if requests.Load() != 4 {
+		t.Fatalf("got %d requests, want three collection pages plus one duplicate-URL check", requests.Load())
 	}
-	if len(jobs) != 5 {
-		t.Fatalf("got %d jobs, want 5", len(jobs))
+	if len(jobs) != 4 {
+		t.Fatalf("got %d actionable jobs, want 4", len(jobs))
 	}
 	if jobs[0].ID != "ofbusiness/"+ofBusinessFixtureUUID(1) ||
 		jobs[0].URL != server.URL+"/jobs/platform-engineer" ||
@@ -79,8 +84,10 @@ func TestOfBusinessFetchesEveryDeclaredPage(t *testing.T) {
 		jobs[0].EmploymentType != "Full-Time" {
 		t.Fatalf("unexpected first job: %+v", jobs[0])
 	}
-	if jobs[0].URL != jobs[1].URL || jobs[0].ID == jobs[1].ID {
-		t.Fatalf("site-provided duplicate slugs did not retain distinct record IDs: %+v %+v", jobs[0], jobs[1])
+	for _, job := range jobs {
+		if job.Location == "Pune" {
+			t.Fatalf("emitted inaccessible duplicate detail record: %+v", job)
+		}
 	}
 	for _, want := range []string{
 		"Department: Engineering",
@@ -122,10 +129,12 @@ func TestOfBusinessHandlesEmptyCollection(t *testing.T) {
 func TestOfBusinessSkipsOnlyFullyBlankCMSPlaceholder(t *testing.T) {
 	job := ofBusinessFixturePosting(1, "Backend Engineer", "Bengaluru", "/jobs/backend-engineer")
 	placeholder := map[string]any{
-		"_id":          ofBusinessFixtureUUID(2),
-		"_createdDate": map[string]any{"$date": "2026-07-01T10:00:02Z"},
-		"_updatedDate": map[string]any{"$date": "2026-07-01T10:00:02Z"},
-		"jobCode":      202401,
+		"_id":             ofBusinessPlaceholderID,
+		"_owner":          ofBusinessPlaceholderOwner,
+		"_createdDate":    map[string]any{"$date": ofBusinessPlaceholderDate},
+		"_updatedDate":    map[string]any{"$date": ofBusinessPlaceholderDate},
+		"jobCode":         202401,
+		"link-jobs-1-all": "/jobs-1/",
 	}
 	var serverURL string
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -144,6 +153,32 @@ func TestOfBusinessSkipsOnlyFullyBlankCMSPlaceholder(t *testing.T) {
 	}
 	if len(jobs) != 1 || jobs[0].ID != "ofbusiness/"+ofBusinessFixtureUUID(1) {
 		t.Fatalf("unexpected jobs: %+v", jobs)
+	}
+}
+
+func TestOfBusinessRejectsUnknownBlankPlaceholder(t *testing.T) {
+	placeholder := map[string]any{
+		"_id":             ofBusinessFixtureUUID(1),
+		"_owner":          ofBusinessPlaceholderOwner,
+		"_createdDate":    map[string]any{"$date": ofBusinessPlaceholderDate},
+		"_updatedDate":    map[string]any{"$date": ofBusinessPlaceholderDate},
+		"jobCode":         202401,
+		"link-jobs-1-all": "/jobs-1/",
+	}
+	var serverURL string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		fmt.Fprint(w, ofBusinessFixtureDocument(
+			t, serverURL, 1, 1, 1, []map[string]any{placeholder}, []map[string]any{placeholder},
+		))
+	}))
+	serverURL = server.URL
+	defer server.Close()
+
+	src := &ofBusiness{company: "OfBusiness", base: server.URL, client: server.Client()}
+	jobs, err := src.Fetch(context.Background())
+	if err == nil || jobs != nil || !strings.Contains(err.Error(), "validated CMS shell") {
+		t.Fatalf("Fetch = %#v, %v; want unknown-placeholder error", jobs, err)
 	}
 }
 
@@ -167,6 +202,26 @@ func TestOfBusinessRejectsMalformedPostingFields(t *testing.T) {
 			wantErr: "empty location",
 		},
 		{
+			name: "identifiable malformed record is not a placeholder",
+			mutate: func(posting map[string]any) {
+				for _, key := range []string{
+					"jobTitle", "location", "jobType", "experienceRequiredRangeyrs",
+					"jobDescription", "whatYouWillDo", "whatWeAreLookingFor",
+					"whatWeAreOffering", "link-jobs-jobTitle", "category",
+				} {
+					delete(posting, key)
+				}
+			},
+			wantErr: "empty jobTitle",
+		},
+		{
+			name: "missing employee ID",
+			mutate: func(posting map[string]any) {
+				delete(posting, "empId")
+			},
+			wantErr: "empty empId",
+		},
+		{
 			name: "missing rich text",
 			mutate: func(posting map[string]any) {
 				posting["whatYouWillDo"] = "<p> </p>"
@@ -186,6 +241,13 @@ func TestOfBusinessRejectsMalformedPostingFields(t *testing.T) {
 				posting["link-jobs-jobTitle"] = "/jobs/one?redirect=https://attacker.example"
 			},
 			wantErr: "invalid detail path",
+		},
+		{
+			name: "detail dot segment",
+			mutate: func(posting map[string]any) {
+				posting["link-jobs-jobTitle"] = "/jobs/../categories"
+			},
+			wantErr: "leaves the careers site",
 		},
 		{
 			name: "invalid category",
@@ -476,7 +538,9 @@ func TestOfBusinessHTTPGuards(t *testing.T) {
 	}
 
 	t.Run("redirect origin", func(t *testing.T) {
+		var redirected atomic.Bool
 		destination := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			redirected.Store(true)
 			w.Header().Set("Content-Type", "text/html")
 			fmt.Fprint(w, "<html></html>")
 		}))
@@ -487,8 +551,11 @@ func TestOfBusinessHTTPGuards(t *testing.T) {
 		defer server.Close()
 		src := &ofBusiness{company: "OfBusiness", base: server.URL, client: server.Client()}
 		_, err := src.Fetch(context.Background())
-		if err == nil || !strings.Contains(err.Error(), "redirected away") {
+		if err == nil || !strings.Contains(err.Error(), "302 Found") {
 			t.Fatalf("unexpected error: %v", err)
+		}
+		if redirected.Load() {
+			t.Fatal("redirect destination was requested")
 		}
 	})
 }
@@ -500,6 +567,8 @@ func TestOfBusinessFactoryRejectsParams(t *testing.T) {
 	}
 	if src, err := New("ofbusiness", "OfBusiness", nil, nil); err != nil || src.Company() != "OfBusiness" {
 		t.Fatalf("unexpected source/error: %v %v", src, err)
+	} else if Identity(src) != "ofbusiness" || StatePrefix(src) != "ofbusiness/" {
+		t.Fatalf("identity/prefix = %q/%q", Identity(src), StatePrefix(src))
 	}
 }
 
@@ -528,6 +597,7 @@ func ofBusinessFixturePosting(
 		"_id":                        id,
 		"_createdDate":               map[string]any{"$date": fmt.Sprintf("2026-07-01T10:00:%02dZ", number)},
 		"_updatedDate":               map[string]any{"$date": fmt.Sprintf("2026-07-02T10:00:%02dZ", number)},
+		"empId":                      fmt.Sprintf("OFB-%03d", number),
 		"jobTitle":                   title,
 		"location":                   location,
 		"jobType":                    "Full-Time",

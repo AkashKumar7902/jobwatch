@@ -37,6 +37,7 @@ import (
 const (
 	zwayamAPIBase         = "https://public.zwayam.com"
 	zwayamPageSize        = 10
+	zwayamMaximumPageSize = 1000
 	zwayamMaximumPostings = 100_000
 	zwayamBodyLimit       = 8 << 20
 )
@@ -170,6 +171,7 @@ func (s *zwayam) Fetch(ctx context.Context) ([]model.Job, error) {
 	var jobs []model.Job
 	seen := make(map[string]struct{})
 	expectedTotal := -1
+	expectedPageSize := -1
 	for offset := 0; ; {
 		response, err := s.search(ctx, offset)
 		if err != nil {
@@ -187,10 +189,18 @@ func (s *zwayam) Fetch(ctx context.Context) ([]model.Job, error) {
 			return nil, fmt.Errorf("zwayam %s page at offset %d: response omitted pagination fields", s.domain, offset)
 		}
 		pageSize, err := strconv.Atoi(string(*page.FacetedSearchConfig.PaginationHowMuch))
-		if err != nil || pageSize != zwayamPageSize {
+		if err != nil || pageSize <= 0 || pageSize > zwayamMaximumPageSize {
 			return nil, fmt.Errorf(
-				"zwayam %s page at offset %d: paginationHowMuch is %q, want %d",
-				s.domain, offset, *page.FacetedSearchConfig.PaginationHowMuch, zwayamPageSize,
+				"zwayam %s page at offset %d: paginationHowMuch %q is not from 1 to %d",
+				s.domain, offset, *page.FacetedSearchConfig.PaginationHowMuch, zwayamMaximumPageSize,
+			)
+		}
+		if expectedPageSize < 0 {
+			expectedPageSize = pageSize
+		} else if pageSize != expectedPageSize {
+			return nil, fmt.Errorf(
+				"zwayam %s page at offset %d: paginationHowMuch changed from %d to %d",
+				s.domain, offset, expectedPageSize, pageSize,
 			)
 		}
 		total := *page.TotalCount
@@ -214,10 +224,10 @@ func (s *zwayam) Fetch(ctx context.Context) ([]model.Job, error) {
 		}
 
 		results := *page.Results
-		if len(results) > zwayamPageSize {
+		if len(results) > expectedPageSize {
 			return nil, fmt.Errorf(
 				"zwayam %s page at offset %d: returned %d jobs, page size is %d",
-				s.domain, offset, len(results), zwayamPageSize,
+				s.domain, offset, len(results), expectedPageSize,
 			)
 		}
 		if len(results) == 0 && offset != expectedTotal {
@@ -258,7 +268,7 @@ func (s *zwayam) Fetch(ctx context.Context) ([]model.Job, error) {
 		if !wantMore {
 			return jobs, nil
 		}
-		if len(results) < zwayamPageSize {
+		if len(results) < expectedPageSize {
 			return nil, fmt.Errorf(
 				"zwayam %s: short page of %d at offset %d before reported total %d",
 				s.domain, len(results), offset, expectedTotal,
@@ -483,7 +493,8 @@ func (s *zwayam) discoverSiteBase(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("zwayam %s: parse career-site base href: %w", s.domain, err)
 	}
-	if resolvedURL.Scheme != originURL.Scheme || resolvedURL.RawQuery != "" {
+	if resolvedURL.Scheme != originURL.Scheme || resolvedURL.RawQuery != "" ||
+		resolvedURL.ForceQuery || resolvedURL.User != nil {
 		return "", fmt.Errorf("zwayam %s: unsafe career-site base href %q", s.domain, baseHrefs[0])
 	}
 	resolvedURL.Path = strings.TrimRight(resolvedURL.Path, "/") + "/"
@@ -604,7 +615,7 @@ func (s *zwayam) slugFromJobURL(raw string) (string, error) {
 		return "", fmt.Errorf("invalid configured origin: %w", err)
 	}
 	if jobURL.Scheme != originURL.Scheme || !strings.EqualFold(jobURL.Host, originURL.Host) ||
-		jobURL.RawQuery != "" || jobURL.Fragment != "" {
+		jobURL.RawQuery != "" || jobURL.ForceQuery || jobURL.User != nil || jobURL.Fragment != "" {
 		return "", fmt.Errorf("job URL is not a canonical URL on %s", s.domain)
 	}
 	segments := strings.Split(strings.Trim(jobURL.Path, "/"), "/")

@@ -47,7 +47,8 @@ func TestEightfoldPaginationAndLazyDetail(t *testing.T) {
 		switch r.URL.Path {
 		case "/api/pcsx/search":
 			listCalls++
-			if r.URL.Query().Get("domain") != "acme.com" || r.URL.Query().Get("location") != "India" {
+			if r.URL.Query().Get("domain") != "acme.com" || r.URL.Query().Get("location") != "India" ||
+				r.URL.Query().Get("query") != "Cradlepoint" {
 				http.Error(w, "missing board query", http.StatusBadRequest)
 				return
 			}
@@ -88,7 +89,7 @@ func TestEightfoldPaginationAndLazyDetail(t *testing.T) {
 	defer server.Close()
 
 	src := &eightfold{
-		company: "Acme", host: "test.eightfold", domain: "acme.com", location: "India",
+		company: "Acme", host: "test.eightfold", domain: "acme.com", location: "India", query: "Cradlepoint",
 		base: server.URL, maxPostings: 100, client: server.Client(),
 	}
 	jobs, err := src.Fetch(context.Background())

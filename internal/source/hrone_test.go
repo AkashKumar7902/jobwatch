@@ -171,11 +171,34 @@ func TestHROneNewValidatesAndCanonicalizesCoordinates(t *testing.T) {
 func TestHROneBoardIDsSurviveRenameAndAPIKeyRotation(t *testing.T) {
 	t.Parallel()
 
-	first := testHROneSource(nil)
-	first.company = "Old display name"
-	second := testHROneSource(nil)
-	second.company = "New display name"
-	second.apiKey = strings.Repeat("z", 40)
+	firstConfig := params.Map{
+		"domain_code": " AddVerb ", "api_key": testHROneAPIKey,
+		"request_type": testHROneRequestType, "company_code": testHROneCompanyCode,
+	}
+	secondConfig := params.Map{
+		"domain_code": "addverb", "api_key": strings.Repeat("z", 40),
+		"request_type": testHROneRequestType, "company_code": testHROneCompanyCode,
+	}
+	firstSource, err := New("hrone", "Old display name", firstConfig, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secondSource, err := New("hrone", "New display name", secondConfig, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if Identity(firstSource) != Identity(secondSource) {
+		t.Fatalf("API-key rotation changed identity: %q != %q", Identity(firstSource), Identity(secondSource))
+	}
+	if Identity(firstSource) != "hrone/addverb/request_type_token/company_code_token" {
+		t.Fatalf("identity = %q", Identity(firstSource))
+	}
+	if StatePrefix(firstSource) != "hrone/addverb/request_type_token/company_code_token/" {
+		t.Fatalf("state prefix = %q", StatePrefix(firstSource))
+	}
+
+	first := firstSource.(*identifiedSource).Source.(*hrone)
+	second := secondSource.(*identifiedSource).Source.(*hrone)
 
 	want := "hrone/addverb/request_type_token/company_code_token/encrypted_position_01"
 	if got := first.jobID("encrypted_position_01"); got != want {
