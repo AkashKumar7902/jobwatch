@@ -2,10 +2,10 @@
 
 Emails you when a company posts a job asking for **0–1 years of experience**.
 
-It polls company job boards directly through their ATS APIs (Greenhouse, Lever,
-Ashby, Workable, Recruitee, SmartRecruiters, BambooHR, Workday) — plain JSON
-over HTTP, no browser, no scraping. Rippling Recruiting boards are supported
-too. Each job is emailed at most once.
+It polls company job boards directly through anonymous ATS and first-party
+careers endpoints. Sources consume structured JSON, XML, or server-rendered
+HTML over HTTP; scheduled runs need no login or browser. Each job is emailed
+at most once.
 
 ```
 fetch job boards → keep unseen jobs → match experience rule → email you
@@ -93,6 +93,8 @@ job or "Apply" link:
 | `acme.bamboohr.com/careers`              | `source: bamboohr, params: {company_slug: acme}`                   |
 | `jobs.smartrecruiters.com/Acme`          | `source: smartrecruiters, params: {company_id: Acme}`              |
 | `ats.rippling.com/acme/jobs/...`         | `source: rippling, params: {board_slug: acme}`                     |
+| `acme.freshteam.com/jobs`                | `source: freshteam, params: {company_slug: acme}`                  |
+| `jobs.polymer.co/acme`                   | `source: polymer, params: {organization_slug: acme}`               |
 | `acme.wd5.myworkdayjobs.com/en-US/jobs`  | `source: workday, params: {host: acme.wd5.myworkdayjobs.com, tenant: acme, site: jobs}` |
 
 Do not rely on a company-name guess: follow an Apply link to the exact ATS
@@ -103,15 +105,15 @@ companies:
 ./jobwatch -dry-run    # prints matches, sends nothing, saves nothing
 ```
 
-`config.example.yaml` ships with 204 verified ATS boards. The catalog ledgers
-account for every source row in two upstream lists: 145 distinct identities
-are represented by the 483-row
-[`moreThanFAANGM` audit](catalog/morethanfaangm-audit.tsv), and 13 validated
-rows appear in the 131-row
+`config.example.yaml` ships with 259 verified job-board identities. The
+catalog ledgers account for every source row in two upstream lists: 145
+distinct identities are represented by the 483-row
+[`moreThanFAANGM` audit](catalog/morethanfaangm-audit.tsv), and 68 distinct
+validated boards appear in the 131-row
 [`List_OF_Companies` audit](catalog/list-of-companies-audit.tsv). Five board
-identities overlap, for 153 unique identities across both audits; the other
-51 boards were verified when they were added. Unsupported, dead, duplicate,
-and manual-review rows are documented but are not configured.
+identities overlap, for 208 unique identities across both audits; the other
+51 boards were verified when they were added. Dead, duplicate, and
+manual-review rows are documented but are not configured.
 
 ## Notifications
 
@@ -197,13 +199,14 @@ and rule that matched.
 | `-interval 1h`      | Keep running, poll on that interval (default: run once)             |
 | `-config path`      | Use another config file (default `config.yaml`)                     |
 
-## Extending (one file each, nothing else changes)
+## Extending
 
 Sources, matchers, and notifiers all follow the same pattern: implement a
 small interface, call `Register("name", factory)` in `init()`, select it by
 name in the config.
 
-- **New job board (ATS)** → copy `internal/source/greenhouse.go` (~60 lines)
+- **New job board** → add a focused adapter in `internal/source/`, register
+  it, and define its stable board identity/state prefix in `source.go`
 - **New matching rule** → implement `Matcher` in `internal/match/`
 - **New notification channel** → implement `Notifier` in `internal/notify/`.
   Message formatting is already shared (`format.go` gives you `Headline`,

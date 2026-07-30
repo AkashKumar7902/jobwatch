@@ -53,13 +53,13 @@ var auditSpecs = []auditSpec{
 		path:                "list-of-companies-audit.tsv",
 		rows:                131,
 		fingerprint:         "4394e63ad3c23cb83552a5b8478b425095346e8dc3a76196d085bee35b14586f",
-		validatedIdentities: 13,
+		validatedIdentities: 68,
 		expected: map[string]int{
-			"validated_supported": 13,
-			"duplicate":           34,
-			"unsupported":         66,
-			"dead":                13,
-			"manual_review":       5,
+			"validated_supported": 67,
+			"duplicate":           35,
+			"unsupported":         0,
+			"dead":                17,
+			"manual_review":       12,
 		},
 	},
 }
@@ -206,8 +206,8 @@ func TestEveryValidatedBoardIsConfiguredOnce(t *testing.T) {
 		}
 		configured[id] = company.Name
 	}
-	if len(configured) != 204 {
-		t.Fatalf("configured source count = %d, want 204", len(configured))
+	if len(configured) != 259 {
+		t.Fatalf("configured source count = %d, want 259", len(configured))
 	}
 
 	validatedSets := map[string]map[string]struct{}{}
@@ -248,8 +248,8 @@ func TestEveryValidatedBoardIsConfiguredOnce(t *testing.T) {
 	if overlap != 5 {
 		t.Errorf("validated identity overlap = %d, want 5", overlap)
 	}
-	if len(union) != 153 {
-		t.Errorf("validated identity union = %d, want 153", len(union))
+	if len(union) != 208 {
+		t.Errorf("validated identity union = %d, want 208", len(union))
 	}
 	configuredOutsideAudits := 0
 	for identity := range configured {

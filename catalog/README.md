@@ -16,13 +16,16 @@ Jobwatch's independent ATS verification and disposition:
   [nawabsahab16/List_OF_Companies](https://github.com/nawabsahab16/List_OF_Companies)
   at commit `1614c9176fe23462ec0596730c052c5d6739b637` (source README
   SHA-256 `39dc8126940e032a07dff2f4337e81c31fd98841a010ec05f6a59ca02e6abedd`).
-  The 2026-07-30 audit has 13 validated rows, 34 duplicates, 66 unsupported
-  systems, 13 dead entries, and 5 manual-review cases.
+  The 2026-07-30 audit now has 67 validated rows representing 68 distinct
+  boards (MaxLinear exposes two), 35 duplicates, no unresolved unsupported
+  rows, 17 dead entries, and 12 manual-review cases. Every row previously
+  marked unsupported was either integrated or reclassified from current
+  first-party evidence.
 
 Five validated identities in the second ledger already occur in the legacy
-ledger, so the audits represent 153 unique verified identities
-(`145 + 13 - 5`). Alongside 51 other boards verified when they were added,
-`config.example.yaml` now contains 204 unique ATS boards.
+ledger, so the audits represent 208 unique verified identities
+(`145 + 68 - 5`). Alongside 51 other boards verified when they were added,
+`config.example.yaml` now contains 259 unique job-board identities.
 
 The List_OF_Companies repository has no license file. Its ledger therefore
 retains only factual company/career-target provenance; it does not reproduce
