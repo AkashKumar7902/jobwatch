@@ -1,0 +1,431 @@
+package source
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"strconv"
+	"strings"
+	"testing"
+
+	"jobwatch/internal/params"
+)
+
+func TestCustomASourceNamesAndFactories(t *testing.T) {
+	tests := []struct {
+		name   string
+		params params.Map
+	}{
+		{"eightfold", params.Map{"host": "careers.example.com", "domain": "example.com"}},
+		{"kula", params.Map{"account_name": "acme"}},
+		{"amazon", params.Map{}},
+		{"atlassian", params.Map{}},
+		{"deshaw", params.Map{}},
+		{"avature", params.Map{"host": "jobs.example.com", "site": "en_US/careers", "search_path": "SearchJobs"}},
+		{"medianet", params.Map{}},
+	}
+	available := strings.Join(Names(), ",")
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if !strings.Contains(","+available+",", ","+test.name+",") {
+				t.Fatalf("%q is not registered; Names=%v", test.name, Names())
+			}
+			if _, err := New(test.name, "Acme", test.params, &http.Client{}); err != nil {
+				t.Fatalf("factory failed: %v", err)
+			}
+		})
+	}
+}
+
+func TestEightfoldPaginationAndLazyDetail(t *testing.T) {
+	const firstID int64 = 9000000000000001
+	listCalls, detailCalls := 0, 0
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/pcsx/search":
+			listCalls++
+			if r.URL.Query().Get("domain") != "acme.com" || r.URL.Query().Get("location") != "India" {
+				http.Error(w, "missing board query", http.StatusBadRequest)
+				return
+			}
+			start, _ := strconv.Atoi(r.URL.Query().Get("start"))
+			end := min(start+eightfoldPageSize, 12)
+			positions := make([]map[string]any, 0, max(0, end-start))
+			for i := start; i < end; i++ {
+				id := firstID + int64(i)
+				positions = append(positions, map[string]any{
+					"id": id, "displayJobId": fmt.Sprintf("REQ-%d", i), "atsJobId": fmt.Sprintf("REQ-%d", i),
+					"name": fmt.Sprintf("Engineer %d", i), "locations": []string{"India"},
+					"postedTs": 1_785_237_164, "positionUrl": fmt.Sprintf("/careers/job/%d", id),
+				})
+			}
+			json.NewEncoder(w).Encode(map[string]any{
+				"status": 200, "error": map[string]string{"message": "", "body": ""},
+				"data": map[string]any{"count": 12, "positions": positions},
+			})
+		case "/api/pcsx/position_details":
+			detailCalls++
+			if r.URL.Query().Get("position_id") != strconv.FormatInt(firstID, 10) {
+				http.Error(w, "wrong detail id", http.StatusBadRequest)
+				return
+			}
+			json.NewEncoder(w).Encode(map[string]any{
+				"status": 200,
+				"data": map[string]any{
+					"id": firstID, "name": "Engineer 0", "locations": []string{"Bengaluru, India"},
+					"postedTs": 1_785_237_164, "jobDescription": "<p>Build reliable systems. 3+ years.</p>",
+					"publicUrl":                  server.URL + "/careers/job/" + strconv.FormatInt(firstID, 10),
+					"efcustomTextEmploymentType": []string{"Full-Time"},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	src := &eightfold{
+		company: "Acme", host: "test.eightfold", domain: "acme.com", location: "India",
+		base: server.URL, maxPostings: 100, client: server.Client(),
+	}
+	jobs, err := src.Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 12 || listCalls != 2 || detailCalls != 0 {
+		t.Fatalf("Fetch jobs=%d listCalls=%d detailCalls=%d", len(jobs), listCalls, detailCalls)
+	}
+	if got, want := jobs[0].ID, "eightfold/test.eightfold/acme.com/"+strconv.FormatInt(firstID, 10); got != want {
+		t.Fatalf("ID=%q want %q", got, want)
+	}
+	if jobs[0].Description != "" {
+		t.Fatal("list fetch eagerly populated description")
+	}
+	if err := src.Detail(context.Background(), &jobs[0]); err != nil {
+		t.Fatal(err)
+	}
+	if detailCalls != 1 || !strings.Contains(jobs[0].Description, "Build reliable systems") ||
+		jobs[0].EmploymentType != "Full-Time" || jobs[0].Location != "Bengaluru, India" {
+		t.Fatalf("detail did not normalize job: %+v, calls=%d", jobs[0], detailCalls)
+	}
+}
+
+func TestKulaPaginationAndNormalization(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("accountName") != "acme" || r.URL.Query().Get("type") != "ats_job_post.index" {
+			http.Error(w, "bad query", http.StatusBadRequest)
+			return
+		}
+		page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+		start := (page - 1) * kulaPageSize
+		end := min(start+kulaPageSize, 100)
+		data := make([]map[string]any, 0, max(0, end-start))
+		for i := start; i < end; i++ {
+			data = append(data, map[string]any{
+				"id": i + 1, "title": fmt.Sprintf("Kula Role %d", i+1), "listed": true,
+				"kind": "external", "is_confidential": false,
+				"ats_job": map[string]any{
+					"job_description": "<p>Own the role end to end.</p>", "workplace": "office",
+					"employment_type": "full_time",
+					"offices": []map[string]any{{
+						"id": 1, "location": "Bengaluru, Karnataka, India", "country": "India",
+					}},
+				},
+			})
+		}
+		json.NewEncoder(w).Encode(map[string]any{
+			"data": data, "errors": []any{},
+			"meta": map[string]any{"count": 100, "page": page, "items": kulaPageSize, "pages": 2},
+		})
+	}))
+	defer server.Close()
+	src := &kula{
+		company: "Acme", account: "acme", apiBase: server.URL,
+		boardBase: server.URL + "/acme", maxPostings: 200, client: server.Client(),
+	}
+	jobs, err := src.Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 100 {
+		t.Fatalf("got %d jobs", len(jobs))
+	}
+	if jobs[0].ID != "kula/acme/1" || jobs[0].EmploymentType != "full_time" ||
+		!strings.Contains(jobs[0].Description, "Own the role") ||
+		jobs[0].URL != server.URL+"/acme/1" {
+		t.Fatalf("unexpected first job: %+v", jobs[0])
+	}
+}
+
+func TestAmazonCountryPaginationAndFullDescription(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("normalized_country_code[]") != "IND" {
+			http.Error(w, "wrong country", http.StatusBadRequest)
+			return
+		}
+		offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+		limit, _ := strconv.Atoi(r.URL.Query().Get("result_limit"))
+		end := min(offset+limit, 101)
+		postings := make([]map[string]any, 0, max(0, end-offset))
+		for i := offset; i < end; i++ {
+			id := strconv.Itoa(1000 + i)
+			postings = append(postings, map[string]any{
+				"id": fmt.Sprintf("uuid-%d", i), "id_icims": id, "title": fmt.Sprintf("Amazon Role %d", i),
+				"country_code": "IND", "normalized_location": "Bengaluru, Karnataka, IND",
+				"job_path": "/en/jobs/" + id + "/amazon-role", "job_schedule_type": "full-time",
+				"description": "<p>Build products.</p>", "basic_qualifications": "<p>Three years.</p>",
+				"preferred_qualifications": "<p>Distributed systems.</p>", "posted_date": "July 30, 2026",
+			})
+		}
+		json.NewEncoder(w).Encode(map[string]any{"hits": 101, "jobs": postings})
+	}))
+	defer server.Close()
+	src := &amazon{
+		company: "Amazon", country: "IND", searchURL: server.URL + "/search.json",
+		siteBase: server.URL, maxPostings: 500, client: server.Client(),
+	}
+	jobs, err := src.Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 101 {
+		t.Fatalf("got %d jobs", len(jobs))
+	}
+	if jobs[0].ID != "amazon/IND/1000" || !strings.Contains(jobs[0].Description, "Distributed systems") ||
+		jobs[0].PostedAt.IsZero() || jobs[0].URL != server.URL+"/en/jobs/1000/amazon-role" {
+		t.Fatalf("unexpected first job: %+v", jobs[0])
+	}
+}
+
+func TestAtlassianBulkNormalization(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Write([]byte(`[{
+			"id":25020,"portalId":242,"title":"Account Executive","locations":["Bengaluru - India","Remote"],
+			"category":"Sales","overview":"<p>Working at Atlassian</p>",
+			"responsibilities":"<ul><li>Own accounts</li></ul>",
+			"qualifications":"<p>5+ years</p>","compensation":"<p>Equity eligible</p>",
+			"applyUrl":"https://apply.example/25020",
+			"portalJobPost":{"portalId":242,"portalUrl":"https://portal.example/25020","id":25020,"updatedDate":"2026-06-26"}
+		}]`))
+	}))
+	defer server.Close()
+	src := &atlassian{
+		company: "Atlassian", endpoint: server.URL, detailBase: server.URL + "/details",
+		maxPostings: 100, client: server.Client(),
+	}
+	jobs, err := src.Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 1 || jobs[0].ID != "atlassian/25020" ||
+		jobs[0].URL != server.URL+"/details/25020" ||
+		!strings.Contains(jobs[0].Description, "Own accounts") {
+		t.Fatalf("unexpected jobs: %+v", jobs)
+	}
+}
+
+func TestDEShawNextDataRegularAndInternships(t *testing.T) {
+	payload := `{
+		"props":{"pageProps":{"jobsFetchingError":false,
+			"regularJobs":[{
+				"id":5874,"displayName":"Administrative Associate","office":[{"name":"New York","abbreviation":"NYC"}],
+				"data":{"id":5874,"displayName":"Administrative Associate","validFromDate":"2026-04-15",
+					"isActive":true,"jobUrl":"Administrative-Associate-5874",
+					"jobDescription":{"websiteDescription":"<p>Support the team.</p>","responsibilitiesHtml":"<ul><li>Plan events.</li></ul>","peopleWeAreLookingFor":["Detail oriented."]},
+					"jobMetadata":{"activeOnWebsite":true,"workStatus":"Limited Term"}}}],
+			"internships":[{
+				"id":5709,"displayName":"Research Analyst Intern","office":[{"name":"New York","abbreviation":"NYC"}],
+				"data":{"id":5709,"displayName":"Research Analyst Intern","validFromDate":"2026-01-01",
+					"isActive":true,"jobUrl":"Research-Analyst-Intern-5709",
+					"jobDescription":{"websiteDescription":"<p>Research companies.</p>","responsibilitiesHtml":"<p>Analyze data.</p>","peopleWeAreLookingFor":["Critical thinkers."]},
+					"jobMetadata":{"activeOnWebsite":true,"workStatus":"Intern"}}}]
+		}}}`
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintf(w, `<html><script id="__NEXT_DATA__" type="application/json">%s</script></html>`, payload)
+	}))
+	defer server.Close()
+	src := &deshaw{
+		company: "D. E. Shaw", careersURL: server.URL + "/careers",
+		siteBase: server.URL, maxPostings: 100, client: server.Client(),
+	}
+	jobs, err := src.Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 2 || jobs[0].ID != "deshaw/5874" || jobs[1].ID != "deshaw/5709" ||
+		jobs[1].EmploymentType != "Intern" ||
+		jobs[0].URL != server.URL+"/careers/administrative-associate-5874" ||
+		jobs[1].URL != server.URL+"/careers/research-analyst-intern-5709" ||
+		!strings.Contains(jobs[0].Description, "Detail oriented") {
+		t.Fatalf("unexpected jobs: %+v", jobs)
+	}
+}
+
+func TestAvatureSSRPaginationAndLazyDetail(t *testing.T) {
+	listCalls, detailCalls := 0, 0
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/SearchJobs") {
+			listCalls++
+			offset, _ := strconv.Atoi(r.URL.Query().Get("jobOffset"))
+			limit, _ := strconv.Atoi(r.URL.Query().Get("jobRecordsPerPage"))
+			end := min(offset+limit, 21)
+			fmt.Fprint(w, "<html><div>Showing jobs of 21</div>")
+			for i := offset; i < end; i++ {
+				id := strconv.Itoa(200000 + i)
+				fmt.Fprintf(w, `<a class="link link_result" href="/en_US/careers/JobDetail/Role-%[1]s/%[1]s">Role %[1]s</a>
+					<span class="list-item-location">Orlando, USA</span>
+					<span class="list-item-id">Role ID %[1]s</span>
+					<span class="list-item-workerType">Regular Employee</span>`, id)
+			}
+			fmt.Fprint(w, "</html>")
+			return
+		}
+		if strings.Contains(r.URL.Path, "/JobDetail/") {
+			detailCalls++
+			id := pathLast(r.URL.Path)
+			fmt.Fprintf(w, `<html><head><link rel="canonical" href="%s%s"></head><body>
+				<article><div class="article__content__view__field__label">Role ID</div>
+				<div class="article__content__view__field__value">%s</div>
+				<div><strong>Locations</strong>: Austin, USA <br></div>
+				<div class="article__content__view__field__label">Worker Type</div>
+				<div class="article__content__view__field__value">Contract</div></article>
+				<article><h3>Description &amp; Requirements</h3><div>Build <b>great systems</b>. 4+ years.</div></article>
+				</body></html>`, server.URL, r.URL.Path, id)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+	host := strings.TrimPrefix(server.URL, "http://")
+	src := &avature{
+		company: "EA", host: host, site: "en_US/careers",
+		searchURL: server.URL + "/en_US/careers/SearchJobs/", maxPostings: 100, client: server.Client(),
+	}
+	jobs, err := src.Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 21 || listCalls != 2 || detailCalls != 0 {
+		t.Fatalf("Fetch jobs=%d listCalls=%d detailCalls=%d", len(jobs), listCalls, detailCalls)
+	}
+	if err := src.Detail(context.Background(), &jobs[0]); err != nil {
+		t.Fatal(err)
+	}
+	if detailCalls != 1 || !strings.Contains(jobs[0].Description, "great systems") ||
+		jobs[0].Location != "Austin, USA" || jobs[0].EmploymentType != "Contract" {
+		t.Fatalf("unexpected detailed job: %+v calls=%d", jobs[0], detailCalls)
+	}
+}
+
+func pathLast(value string) string {
+	value = strings.TrimRight(value, "/")
+	return value[strings.LastIndexByte(value, '/')+1:]
+}
+
+func TestMediaNetDepartmentsDetailsAndStablePostID(t *testing.T) {
+	var server *httptest.Server
+	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			w.Write([]byte(`<a class="flex-btn-link" href="/engineering/">1 Position</a>
+				<a class="flex-btn-link" href="/design/">0 Position</a>`))
+		case "/engineering/":
+			fmt.Fprintf(w, `<ul class="openings-list"><li><a href="%s/engineering/engineer-builder/">Engineer &amp; Builder</a></li></ul>`, server.URL)
+		case "/engineering/engineer-builder/":
+			w.Write([]byte(`<h2 id="jobProfile">Engineer &amp; Builder</h2>
+				<input type="hidden" name="post_id" value="8420">
+				<div class="post-body"><p>Build <strong>ad systems</strong>.</p><p>3+ years.</p></div>
+				<div class="social-share-wrapper">Apply</div>`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	src := &mediaNet{
+		company: "Media.net", baseURL: server.URL + "/",
+		maxPostings: 100, client: server.Client(),
+	}
+	jobs, err := src.Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jobs) != 1 || jobs[0].ID != "medianet/8420" ||
+		jobs[0].Title != "Engineer & Builder" ||
+		!strings.Contains(jobs[0].Description, "ad systems") {
+		t.Fatalf("unexpected jobs: %+v", jobs)
+	}
+}
+
+func TestCustomASchemaChecks(t *testing.T) {
+	t.Run("eightfold missing count", func(t *testing.T) {
+		server := testJSONServer(t, `{"status":200,"data":{"positions":[]}}`)
+		defer server.Close()
+		src := &eightfold{company: "x", host: "x", domain: "x.com", base: server.URL, maxPostings: 10, client: server.Client()}
+		if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "omitted count or positions") {
+			t.Fatalf("got %v", err)
+		}
+	})
+	t.Run("kula incoherent pages", func(t *testing.T) {
+		server := testJSONServer(t, `{"data":[],"errors":[],"meta":{"count":100,"page":1,"items":99,"pages":1}}`)
+		defer server.Close()
+		src := &kula{company: "x", account: "x", apiBase: server.URL, boardBase: server.URL, maxPostings: 100, client: server.Client()}
+		if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "inconsistent") {
+			t.Fatalf("got %v", err)
+		}
+	})
+	t.Run("amazon missing jobs", func(t *testing.T) {
+		server := testJSONServer(t, `{"hits":1}`)
+		defer server.Close()
+		src := &amazon{company: "x", country: "IND", searchURL: server.URL, siteBase: server.URL, maxPostings: 100, client: server.Client()}
+		if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "omitted hits or jobs") {
+			t.Fatalf("got %v", err)
+		}
+	})
+	t.Run("atlassian mismatched portal id", func(t *testing.T) {
+		server := testJSONServer(t, `[{"id":1,"title":"x","overview":"x","portalJobPost":{"id":2}}]`)
+		defer server.Close()
+		src := &atlassian{company: "x", endpoint: server.URL, detailBase: server.URL, maxPostings: 10, client: server.Client()}
+		if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "portalJobPost id") {
+			t.Fatalf("got %v", err)
+		}
+	})
+	t.Run("deshaw missing next data", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("<html></html>")) }))
+		defer server.Close()
+		src := &deshaw{company: "x", careersURL: server.URL, siteBase: server.URL, maxPostings: 10, client: server.Client()}
+		if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "omitted __NEXT_DATA__") {
+			t.Fatalf("got %v", err)
+		}
+	})
+	t.Run("avature missing total", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.Write([]byte("<html></html>")) }))
+		defer server.Close()
+		host := strings.TrimPrefix(server.URL, "http://")
+		src := &avature{company: "x", host: host, site: "careers", searchURL: server.URL, maxPostings: 10, client: server.Client()}
+		if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "omitted total") {
+			t.Fatalf("got %v", err)
+		}
+	})
+	t.Run("medianet no active departments", func(t *testing.T) {
+		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			w.Write([]byte(`<a class="flex-btn-link" href="/engineering/">0 Position</a>`))
+		}))
+		defer server.Close()
+		src := &mediaNet{company: "x", baseURL: server.URL + "/", maxPostings: 10, client: server.Client()}
+		if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "no active departments") {
+			t.Fatalf("got %v", err)
+		}
+	})
+}
+
+func testJSONServer(t *testing.T, body string) *httptest.Server {
+	t.Helper()
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(body))
+	}))
+}
