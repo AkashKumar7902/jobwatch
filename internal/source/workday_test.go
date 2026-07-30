@@ -1,15 +1,55 @@
 package source
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
 )
+
+type workdayTestRequest struct {
+	Limit  int `json:"limit"`
+	Offset int `json:"offset"`
+}
+
+type workdayTestPosting struct {
+	Title        string `json:"title"`
+	ExternalPath string `json:"externalPath"`
+}
+
+type workdayTestResponse struct {
+	Total       int                  `json:"total"`
+	JobPostings []workdayTestPosting `json:"jobPostings"`
+}
+
+type workdayTestCall struct {
+	limit  int
+	offset int
+}
+
+func workdayTestPostings(start, count int) []workdayTestPosting {
+	postings := make([]workdayTestPosting, 0, count)
+	for i := start; i < start+count; i++ {
+		postings = append(postings, workdayTestPosting{
+			Title:        fmt.Sprintf("Job %d", i),
+			ExternalPath: fmt.Sprintf("/job/J-%d", i),
+		})
+	}
+	return postings
+}
+
+func writeWorkdayTestPage(t *testing.T, w http.ResponseWriter, total int, postings []workdayTestPosting) {
+	t.Helper()
+	if err := json.NewEncoder(w).Encode(workdayTestResponse{Total: total, JobPostings: postings}); err != nil {
+		t.Errorf("encode response: %v", err)
+	}
+}
 
 // Fetch lists the whole board without any detail request; Detail fills the
 // posting on demand. Identities are the externalPath (stable req ID), so
@@ -59,21 +99,17 @@ func TestWorkdayPagination(t *testing.T) {
 		jobCount        int
 		maxPostings     int
 		laterTotalsZero bool
+		alwaysTotalZero bool
 		ignoreLimit     bool
-		wantCalls       []struct {
-			limit  int
-			offset int
-		}
+		wantLog         string
+		wantCalls       []workdayTestCall
 	}{
 		{
 			name:            "preserves first total when later pages report zero",
 			jobCount:        45,
 			maxPostings:     500,
 			laterTotalsZero: true,
-			wantCalls: []struct {
-				limit  int
-				offset int
-			}{{20, 0}, {20, 20}, {20, 40}},
+			wantCalls:       []workdayTestCall{{20, 0}, {20, 20}, {20, 40}},
 		},
 		{
 			name:            "max postings remains exact when the server ignores limit",
@@ -81,83 +117,56 @@ func TestWorkdayPagination(t *testing.T) {
 			maxPostings:     25,
 			laterTotalsZero: true,
 			ignoreLimit:     true,
-			wantCalls: []struct {
-				limit  int
-				offset int
-			}{{20, 0}, {5, 20}},
+			wantCalls:       []workdayTestCall{{20, 0}, {5, 20}},
+		},
+		{
+			name:            "unknown total logs max postings cap",
+			jobCount:        45,
+			maxPostings:     25,
+			alwaysTotalZero: true,
+			wantLog:         "max_postings cap; total unknown",
+			wantCalls:       []workdayTestCall{{20, 0}, {5, 20}},
 		},
 		{
 			name:        "exact full terminal page does not request an empty page",
 			jobCount:    40,
 			maxPostings: 500,
-			wantCalls: []struct {
-				limit  int
-				offset int
-			}{{20, 0}, {20, 20}},
+			wantCalls:   []workdayTestCall{{20, 0}, {20, 20}},
 		},
 		{
 			name:        "truly empty board stops after the first page",
 			jobCount:    0,
 			maxPostings: 500,
-			wantCalls: []struct {
-				limit  int
-				offset int
-			}{{20, 0}},
+			wantCalls:   []workdayTestCall{{20, 0}},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			type request struct {
-				Limit  int `json:"limit"`
-				Offset int `json:"offset"`
-			}
-			type posting struct {
-				Title        string `json:"title"`
-				ExternalPath string `json:"externalPath"`
-			}
-
-			var calls []struct {
-				limit  int
-				offset int
-			}
+			var calls []workdayTestCall
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodPost || !strings.HasSuffix(r.URL.Path, "/jobs") {
 					http.Error(w, "unexpected request", http.StatusBadRequest)
 					return
 				}
-				var req request
+				var req workdayTestRequest
 				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
-				calls = append(calls, struct {
-					limit  int
-					offset int
-				}{req.Limit, req.Offset})
+				calls = append(calls, workdayTestCall{req.Limit, req.Offset})
 
 				responseLimit := req.Limit
 				if tt.ignoreLimit {
 					responseLimit = workdayPageSize
 				}
 				end := min(req.Offset+responseLimit, tt.jobCount)
-				page := make([]posting, 0, max(0, end-req.Offset))
-				for i := req.Offset; i < end; i++ {
-					page = append(page, posting{
-						Title:        fmt.Sprintf("Job %d", i),
-						ExternalPath: fmt.Sprintf("/job/J-%d", i),
-					})
-				}
+				page := workdayTestPostings(req.Offset, max(0, end-req.Offset))
 				total := tt.jobCount
-				if tt.laterTotalsZero && req.Offset > 0 {
+				if tt.alwaysTotalZero || tt.laterTotalsZero && req.Offset > 0 {
 					total = 0
 				}
-				if err := json.NewEncoder(w).Encode(struct {
-					Total       int       `json:"total"`
-					JobPostings []posting `json:"jobPostings"`
-				}{total, page}); err != nil {
-					t.Errorf("encode response: %v", err)
-				}
+				writeWorkdayTestPage(t, w, total, page)
 			}))
 			defer srv.Close()
 
@@ -167,6 +176,11 @@ func TestWorkdayPagination(t *testing.T) {
 				maxPostings: tt.maxPostings,
 				client:      srv.Client(),
 			}
+			var logs bytes.Buffer
+			oldLogWriter := log.Writer()
+			log.SetOutput(&logs)
+			defer log.SetOutput(oldLogWriter)
+
 			jobs, err := wd.Fetch(context.Background())
 			if err != nil {
 				t.Fatal(err)
@@ -177,6 +191,179 @@ func TestWorkdayPagination(t *testing.T) {
 			}
 			if !reflect.DeepEqual(calls, tt.wantCalls) {
 				t.Errorf("requests = %#v, want %#v", calls, tt.wantCalls)
+			}
+			if tt.wantLog != "" && !strings.Contains(logs.String(), tt.wantLog) {
+				t.Errorf("log = %q, want substring %q", logs.String(), tt.wantLog)
+			}
+		})
+	}
+}
+
+func TestWorkdayIncompletePaginationReturnsPartialJobs(t *testing.T) {
+	tests := []struct {
+		name       string
+		mode       string
+		firstTotal int
+		wantJobs   int
+		wantErr    string
+		wantCalls  int
+		wantNil    bool
+	}{
+		{
+			name:       "later empty page",
+			mode:       "empty",
+			firstTotal: 25,
+			wantJobs:   20,
+			wantErr:    "empty page at offset 20 after 20 of 25 postings",
+			wantCalls:  2,
+		},
+		{
+			name:       "later short page",
+			mode:       "short",
+			firstTotal: 30,
+			wantJobs:   25,
+			wantErr:    "short page (5 of 20 requested) at offset 20 after 25 of 30 postings",
+			wantCalls:  2,
+		},
+		{
+			name:       "later request failure",
+			mode:       "error",
+			firstTotal: 40,
+			wantJobs:   20,
+			wantErr:    "fetch page at offset 20 after 20 postings",
+			wantCalls:  2,
+		},
+		{
+			name:      "first request failure",
+			mode:      "first error",
+			wantErr:   "fetch page at offset 0 after 0 postings",
+			wantCalls: 1,
+			wantNil:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := 0
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				var req workdayTestRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if tt.mode == "first error" {
+					http.Error(w, "upstream unavailable", http.StatusBadGateway)
+					return
+				}
+				if req.Offset == 0 {
+					writeWorkdayTestPage(t, w, tt.firstTotal, workdayTestPostings(0, workdayPageSize))
+					return
+				}
+				switch tt.mode {
+				case "empty":
+					writeWorkdayTestPage(t, w, 0, nil)
+				case "short":
+					writeWorkdayTestPage(t, w, 0, workdayTestPostings(workdayPageSize, 5))
+				case "error":
+					http.Error(w, "upstream unavailable", http.StatusBadGateway)
+				default:
+					http.Error(w, "unexpected test mode", http.StatusInternalServerError)
+				}
+			}))
+			defer srv.Close()
+
+			wd := &workday{
+				company:     "Acme",
+				base:        srv.URL + "/wday/cxs/acme/jobs",
+				maxPostings: 500,
+				client:      srv.Client(),
+			}
+			jobs, err := wd.Fetch(context.Background())
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("Fetch error = %v, want substring %q", err, tt.wantErr)
+			}
+			if len(jobs) != tt.wantJobs {
+				t.Fatalf("Fetch returned %d partial jobs, want %d", len(jobs), tt.wantJobs)
+			}
+			if tt.wantNil && jobs != nil {
+				t.Fatalf("first-page failure jobs = %#v, want nil", jobs)
+			}
+			if calls != tt.wantCalls {
+				t.Errorf("request count = %d, want %d", calls, tt.wantCalls)
+			}
+		})
+	}
+}
+
+func TestWorkdayInvalidPostingIdentityReturnsPartialJobs(t *testing.T) {
+	tests := []struct {
+		name    string
+		mutate  func([]workdayTestPosting) []workdayTestPosting
+		wantErr string
+	}{
+		{
+			name: "missing external path",
+			mutate: func(postings []workdayTestPosting) []workdayTestPosting {
+				postings[0].ExternalPath = ""
+				return postings
+			},
+			wantErr: "missing externalPath",
+		},
+		{
+			name: "duplicate external path on one page",
+			mutate: func(postings []workdayTestPosting) []workdayTestPosting {
+				postings[1].ExternalPath = postings[0].ExternalPath
+				return postings
+			},
+			wantErr: "duplicate externalPath",
+		},
+		{
+			name: "duplicate external path across pages",
+			mutate: func(postings []workdayTestPosting) []workdayTestPosting {
+				postings[0].ExternalPath = "/job/J-0"
+				return postings
+			},
+			wantErr: "duplicate externalPath \"/job/J-0\" across pages",
+		},
+		{
+			name: "repeated page makes no unique progress",
+			mutate: func([]workdayTestPosting) []workdayTestPosting {
+				return workdayTestPostings(0, workdayPageSize)
+			},
+			wantErr: "made no unique externalPath progress",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var req workdayTestRequest
+				if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					return
+				}
+				if req.Offset == 0 {
+					writeWorkdayTestPage(t, w, 40, workdayTestPostings(0, workdayPageSize))
+					return
+				}
+				page := tt.mutate(workdayTestPostings(workdayPageSize, workdayPageSize))
+				writeWorkdayTestPage(t, w, 0, page)
+			}))
+			defer srv.Close()
+
+			wd := &workday{
+				company:     "Acme",
+				base:        srv.URL + "/wday/cxs/acme/jobs",
+				maxPostings: 500,
+				client:      srv.Client(),
+			}
+			jobs, err := wd.Fetch(context.Background())
+			if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+				t.Fatalf("Fetch error = %v, want substring %q", err, tt.wantErr)
+			}
+			if len(jobs) != workdayPageSize {
+				t.Fatalf("Fetch returned %d partial jobs, want %d", len(jobs), workdayPageSize)
 			}
 		})
 	}
