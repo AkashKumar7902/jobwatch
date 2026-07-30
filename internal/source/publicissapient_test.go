@@ -121,6 +121,28 @@ func TestPublicisSapientRejectsMalformedPage(t *testing.T) {
 	}
 }
 
+func TestPublicisSapientRejectsCanonicalDetailPathForDifferentJob(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		writeJSON(t, w, map[string]any{"response": map[string]any{
+			"numFound": 1, "start": 0, "docs": []map[string]any{{
+				"id": "2026-1", "jobId": "2026-1", "name": "Role",
+				"displayLocation": "Gurugram, India", "countryName": "India",
+				"releasedDate": "2026-07-01T10:20:00Z",
+				"jobDetailUrl": "/job-details/2026-2-role",
+			}},
+		}})
+	}))
+	defer server.Close()
+	src := &publicisSapient{
+		baseURL: server.URL, country: "India",
+		maxPostings: 100, client: server.Client(),
+	}
+	jobs, err := src.Fetch(context.Background())
+	if err == nil || jobs != nil || !strings.Contains(err.Error(), "does not belong to jobId") {
+		t.Fatalf("Fetch = %#v, %v", jobs, err)
+	}
+}
+
 func TestPublicisSapientDetailRequiresStructuredDescription(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = fmt.Fprint(
@@ -130,7 +152,9 @@ func TestPublicisSapientDetailRequiresStructuredDescription(t *testing.T) {
 	}))
 	defer server.Close()
 	src := &publicisSapient{baseURL: server.URL, client: server.Client()}
-	job := model.Job{URL: server.URL + "/job-details/one"}
+	job := model.Job{
+		ID: "publicissapient/2026-1", URL: server.URL + "/job-details/2026-1-role",
+	}
 	if err := src.Detail(context.Background(), &job); err == nil {
 		t.Fatal("expected empty structured detail to fail")
 	}
@@ -222,10 +246,34 @@ func TestPublicisSapientDetailRejectsUntrustedInputsBeforeRequest(t *testing.T) 
 		job  *model.Job
 	}{
 		{name: "nil job"},
-		{name: "base root", job: &model.Job{URL: server.URL}},
-		{name: "wrong path", job: &model.Job{URL: server.URL + "/other/one"}},
-		{name: "query", job: &model.Job{URL: server.URL + "/job-details/one?next=evil"}},
-		{name: "foreign", job: &model.Job{URL: "https://example.com/job-details/one"}},
+		{name: "missing id", job: &model.Job{URL: server.URL + "/job-details/2026-1-role"}},
+		{
+			name: "foreign id", job: &model.Job{
+				ID: "other/2026-1", URL: server.URL + "/job-details/2026-1-role",
+			},
+		},
+		{
+			name: "base root", job: &model.Job{
+				ID: "publicissapient/2026-1", URL: server.URL,
+			},
+		},
+		{
+			name: "wrong path", job: &model.Job{
+				ID: "publicissapient/2026-1", URL: server.URL + "/other/2026-1-role",
+			},
+		},
+		{
+			name: "query", job: &model.Job{
+				ID:  "publicissapient/2026-1",
+				URL: server.URL + "/job-details/2026-1-role?next=evil",
+			},
+		},
+		{
+			name: "foreign", job: &model.Job{
+				ID:  "publicissapient/2026-1",
+				URL: "https://example.com/job-details/2026-1-role",
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -239,23 +287,48 @@ func TestPublicisSapientDetailRejectsUntrustedInputsBeforeRequest(t *testing.T) 
 	}
 }
 
+func TestPublicisSapientDetailRejectsMismatchedListIdentityBeforeRequest(t *testing.T) {
+	var calls int
+	server := httptest.NewServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
+		calls++
+	}))
+	defer server.Close()
+	src := &publicisSapient{baseURL: server.URL, client: server.Client()}
+	job := model.Job{
+		ID: "publicissapient/2026-1", URL: server.URL + "/job-details/2026-2-role",
+		Description: "unchanged", EmploymentType: "unchanged",
+	}
+	original := job
+	err := src.Detail(context.Background(), &job)
+	if err == nil || !strings.Contains(err.Error(), "does not match job ID") {
+		t.Fatalf("Detail error = %v", err)
+	}
+	if calls != 0 {
+		t.Fatalf("mismatched job made %d requests", calls)
+	}
+	if job != original {
+		t.Fatalf("job mutated on failure: %#v", job)
+	}
+}
+
 func TestPublicisSapientDetailRejectsRedirectWithoutFollowingIt(t *testing.T) {
 	var redirectedCalls int
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/job-details/one" {
-			http.Redirect(w, r, "/job-details/two", http.StatusFound)
+		if r.URL.Path == "/job-details/2026-1-role" {
+			http.Redirect(w, r, "/job-details/2026-1-other", http.StatusFound)
 			return
 		}
 		redirectedCalls++
 		_, _ = fmt.Fprint(w, publicisSapientDetailMarkup(
 			t,
-			"https://sapient-publicisgroupe.icims.com/jobs/2/job/login",
+			"https://sapient-publicisgroupe.icims.com/jobs/1/job/login",
 		))
 	}))
 	defer server.Close()
 	src := &publicisSapient{baseURL: server.URL, client: server.Client()}
 	job := model.Job{
-		URL: server.URL + "/job-details/one", Description: "unchanged",
+		ID: "publicissapient/2026-1", URL: server.URL + "/job-details/2026-1-role",
+		Description:    "unchanged",
 		EmploymentType: "unchanged",
 	}
 	original := job
@@ -281,7 +354,8 @@ func TestPublicisSapientDetailValidatesPrimaryCTABeforeMutation(t *testing.T) {
 	defer server.Close()
 	src := &publicisSapient{baseURL: server.URL, client: server.Client()}
 	job := model.Job{
-		URL: server.URL + "/job-details/one", Description: "unchanged",
+		ID: "publicissapient/2026-1", URL: server.URL + "/job-details/2026-1-role",
+		Description:    "unchanged",
 		EmploymentType: "unchanged",
 	}
 	original := job
@@ -294,9 +368,35 @@ func TestPublicisSapientDetailValidatesPrimaryCTABeforeMutation(t *testing.T) {
 	}
 }
 
+func TestPublicisSapientDetailRejectsMismatchedApplyIdentityBeforeMutation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = fmt.Fprint(
+			w,
+			publicisSapientDetailMarkup(
+				t,
+				"https://sapient-publicisgroupe.icims.com/jobs/2/job/login",
+			),
+		)
+	}))
+	defer server.Close()
+	src := &publicisSapient{baseURL: server.URL, client: server.Client()}
+	job := model.Job{
+		ID: "publicissapient/2026-1", URL: server.URL + "/job-details/2026-1-role",
+		Description: "unchanged", EmploymentType: "unchanged",
+	}
+	original := job
+	err := src.Detail(context.Background(), &job)
+	if err == nil || !strings.Contains(err.Error(), "does not match requisition ID") {
+		t.Fatalf("Detail error = %v", err)
+	}
+	if job != original {
+		t.Fatalf("job mutated on failure: %#v", job)
+	}
+}
+
 func TestValidatePublicisSapientApplyURL(t *testing.T) {
 	valid := "https://sapient-publicisgroupe.icims.com/jobs/144904/job/login"
-	if got, err := validatePublicisSapientApplyURL(valid); err != nil || got != valid {
+	if got, err := validatePublicisSapientApplyURL(valid, "144904"); err != nil || got != valid {
 		t.Fatalf("valid apply URL = %q, %v", got, err)
 	}
 	for _, raw := range []string{
@@ -309,10 +409,16 @@ func TestValidatePublicisSapientApplyURL(t *testing.T) {
 		"https://sapient-publicisgroupe.icims.com/jobs/144904/job/login?next=evil",
 	} {
 		t.Run(raw, func(t *testing.T) {
-			if got, err := validatePublicisSapientApplyURL(raw); err == nil || got != "" {
+			if got, err := validatePublicisSapientApplyURL(raw, "144904"); err == nil || got != "" {
 				t.Fatalf("validate(%q) = %q, %v", raw, got, err)
 			}
 		})
+	}
+	if got, err := validatePublicisSapientApplyURL(
+		"https://sapient-publicisgroupe.icims.com/jobs/144905/job/login",
+		"144904",
+	); err == nil || got != "" || !strings.Contains(err.Error(), "does not match requisition ID") {
+		t.Fatalf("mismatched apply URL = %q, %v", got, err)
 	}
 }
 

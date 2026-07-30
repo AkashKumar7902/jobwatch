@@ -30,7 +30,7 @@ const (
 
 var (
 	publicisSapientDetailPathRE = regexp.MustCompile(`^/job-details/[A-Za-z0-9][A-Za-z0-9-]*$`)
-	publicisSapientApplyPathRE  = regexp.MustCompile(`^/jobs/[1-9][0-9]*/job/login$`)
+	publicisSapientApplyPathRE  = regexp.MustCompile(`^/jobs/([1-9][0-9]*)/job/login$`)
 	publicisSapientJobIDRE      = regexp.MustCompile(`^[0-9]{4}-[1-9][0-9]*$`)
 )
 
@@ -207,6 +207,12 @@ func (s *publicisSapient) Fetch(ctx context.Context) ([]model.Job, error) {
 		if !publicisSapientDetailPathRE.MatchString(detailPath) {
 			return nil, fmt.Errorf("publicissapient: item %d has invalid detail path %q", i, detailPath)
 		}
+		if documentID == jobID && !publicisSapientDetailPathMatchesJobID(detailPath, jobID) {
+			return nil, fmt.Errorf(
+				"publicissapient: item %d canonical detail path %q does not belong to jobId %q",
+				i, detailPath, jobID,
+			)
+		}
 		employmentType := strings.TrimSpace(posting.TypeOfEmployment)
 		releasedDate := strings.TrimSpace(posting.ReleasedDate)
 		if releasedDate == "" {
@@ -282,7 +288,11 @@ func (s *publicisSapient) Detail(ctx context.Context, job *model.Job) error {
 	if job == nil {
 		return fmt.Errorf("publicissapient: nil job")
 	}
-	detailURL, err := validatePublicisSapientDetailURL(s.baseURL, job.URL)
+	jobID, requisitionID, err := validatePublicisSapientModelJobID(job.ID)
+	if err != nil {
+		return fmt.Errorf("publicissapient: invalid job ID: %w", err)
+	}
+	detailURL, err := validatePublicisSapientDetailURL(s.baseURL, job.URL, jobID)
 	if err != nil {
 		return fmt.Errorf("publicissapient: invalid detail URL: %w", err)
 	}
@@ -302,7 +312,7 @@ func (s *publicisSapient) Detail(ctx context.Context, job *model.Job) error {
 	if resp.Request == nil || resp.Request.URL == nil {
 		return fmt.Errorf("publicissapient: detail %s omitted final request URL", detailURL)
 	}
-	finalURL, err := validatePublicisSapientDetailURL(s.baseURL, resp.Request.URL.String())
+	finalURL, err := validatePublicisSapientDetailURL(s.baseURL, resp.Request.URL.String(), jobID)
 	if err != nil || finalURL != detailURL {
 		return fmt.Errorf("publicissapient: detail %s resolved to an untrusted URL", detailURL)
 	}
@@ -344,7 +354,7 @@ func (s *publicisSapient) Detail(ctx context.Context, job *model.Job) error {
 	if err := json.Unmarshal([]byte(decoded), &detail); err != nil {
 		return fmt.Errorf("publicissapient: decoding job details: %w", err)
 	}
-	applyURL, err := validatePublicisSapientApplyURL(detail.PrimaryCTA.Link)
+	applyURL, err := validatePublicisSapientApplyURL(detail.PrimaryCTA.Link, requisitionID)
 	if err != nil {
 		return fmt.Errorf("publicissapient: invalid primary CTA: %w", err)
 	}
@@ -379,7 +389,24 @@ func (s *publicisSapient) Detail(ctx context.Context, job *model.Job) error {
 	return nil
 }
 
-func validatePublicisSapientDetailURL(baseURL, raw string) (string, error) {
+func validatePublicisSapientModelJobID(raw string) (string, string, error) {
+	const prefix = "publicissapient/"
+	if !strings.HasPrefix(raw, prefix) {
+		return "", "", fmt.Errorf("unexpected job ID %q", raw)
+	}
+	jobID := strings.TrimPrefix(raw, prefix)
+	if !publicisSapientJobIDRE.MatchString(jobID) {
+		return "", "", fmt.Errorf("unexpected job ID %q", raw)
+	}
+	_, requisitionID, _ := strings.Cut(jobID, "-")
+	return jobID, requisitionID, nil
+}
+
+func publicisSapientDetailPathMatchesJobID(detailPath, jobID string) bool {
+	return strings.HasPrefix(detailPath, "/job-details/"+jobID+"-")
+}
+
+func validatePublicisSapientDetailURL(baseURL, raw, jobID string) (string, error) {
 	base, err := url.Parse(strings.TrimRight(strings.TrimSpace(baseURL), "/"))
 	if err != nil || !base.IsAbs() || base.Opaque != "" || base.User != nil ||
 		base.Scheme == "" || base.Host == "" ||
@@ -396,18 +423,30 @@ func validatePublicisSapientDetailURL(baseURL, raw string) (string, error) {
 		detail.RawQuery != "" || detail.ForceQuery || detail.Fragment != "" {
 		return "", fmt.Errorf("unexpected detail URL %q", raw)
 	}
+	if !publicisSapientDetailPathMatchesJobID(detail.Path, jobID) {
+		return "", fmt.Errorf("detail URL %q does not match job ID %q", raw, jobID)
+	}
 	return detail.String(), nil
 }
 
-func validatePublicisSapientApplyURL(raw string) (string, error) {
+func validatePublicisSapientApplyURL(raw, requisitionID string) (string, error) {
 	applyURL, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil || !applyURL.IsAbs() || applyURL.Opaque != "" || applyURL.User != nil ||
 		!strings.EqualFold(applyURL.Scheme, "https") ||
 		!strings.EqualFold(applyURL.Host, publicisSapientApplyHost) ||
 		applyURL.RawPath != "" ||
-		!publicisSapientApplyPathRE.MatchString(applyURL.Path) ||
 		applyURL.RawQuery != "" || applyURL.ForceQuery || applyURL.Fragment != "" {
 		return "", fmt.Errorf("unexpected apply URL %q", raw)
+	}
+	pathMatch := publicisSapientApplyPathRE.FindStringSubmatch(applyURL.Path)
+	if len(pathMatch) != 2 {
+		return "", fmt.Errorf("unexpected apply URL %q", raw)
+	}
+	if pathMatch[1] != requisitionID {
+		return "", fmt.Errorf(
+			"apply ID %q does not match requisition ID %q",
+			pathMatch[1], requisitionID,
+		)
 	}
 	return applyURL.String(), nil
 }
