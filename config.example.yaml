@@ -177,6 +177,12 @@ companies:
   - {name: "xAI", source: greenhouse, params: {board_token: "xai"}}
   - {name: "Yugabyte", source: greenhouse, params: {board_token: "yugabyte"}}
 
+  # Imported from List_OF_Companies; see catalog/list-of-companies-audit.tsv.
+  - {name: "Arcesium", source: greenhouse, params: {board_token: "arcesiumllc"}}
+  - {name: "Harness", source: greenhouse, params: {board_token: "harnessinc"}}
+  - {name: "Tekion", source: greenhouse, params: {board_token: "tekion"}}
+  - {name: "Zynga", source: greenhouse, params: {board_token: "zyngacareers"}}
+
   # ---- Lever ----
   - {name: "Envato", source: lever, params: {site: envato-2}}
   - {name: "JumpCloud", source: lever, params: {site: jumpcloud}}
@@ -254,6 +260,9 @@ companies:
   - {name: "Visa (SmartRecruiters)", source: smartrecruiters, params: {company_id: "Visa"}}
   - {name: "Western Digital", source: smartrecruiters, params: {company_id: "WesternDigital"}}
 
+  # Imported from List_OF_Companies; see catalog/list-of-companies-audit.tsv.
+  - {name: "Renesas Electronics (Steradian)", source: smartrecruiters, params: {company_id: "RenesasElectronics"}}
+
   # ---- BambooHR ----
   - {name: "Bandcamp", source: bamboohr, params: {company_slug: songtradr}} # acquired by Songtradr
   - {name: "Dribbble", source: bamboohr, params: {company_slug: dribbble}}
@@ -326,6 +335,16 @@ companies:
   - {name: "Unisys", source: workday, params: {host: "unisys.wd5.myworkdayjobs.com", tenant: "unisys", site: "External"}}
   - {name: "Visa (Workday)", source: workday, params: {host: "visa.wd5.myworkdayjobs.com", tenant: "visa", site: "Visa"}}
   - {name: "Warner Bros. Discovery", source: workday, params: {host: "warnerbros.wd5.myworkdayjobs.com", tenant: "warnerbros", site: "global"}}
+
+  # Imported from List_OF_Companies; see catalog/list-of-companies-audit.tsv.
+  - {name: "PayPal", source: workday, params: {host: "paypal.wd1.myworkdayjobs.com", tenant: "paypal", site: "jobs"}}
+  - {name: "Wells Fargo", source: workday, params: {host: "wd1.myworkdaysite.com", tenant: "wf", site: "WellsFargoJobs", max_postings: 2000}}
+  - {name: "Silicon Labs", source: workday, params: {host: "silabs.wd1.myworkdayjobs.com", tenant: "silabs", site: "SiliconlabsCareers"}}
+  - {name: "Samsung Semiconductor India Research", source: workday, params: {host: "sec.wd3.myworkdayjobs.com", tenant: "sec", site: "Samsung_Careers", max_postings: 1000}}
+  - {name: "AirAsia", source: workday, params: {host: "airasia.wd3.myworkdayjobs.com", tenant: "airasia", site: "Careers"}}
+  - {name: "Signify", source: workday, params: {host: "lighting.wd3.myworkdayjobs.com", tenant: "lighting", site: "jobs-and-careers"}}
+  - {name: "Junglee Games", source: workday, params: {host: "flutterbe.wd3.myworkdayjobs.com", tenant: "flutterbe", site: "Junglee_Games"}}
+  - {name: "Baker Hughes", source: workday, params: {host: "bakerhughes.wd5.myworkdayjobs.com", tenant: "bakerhughes", site: "BakerHughes", max_postings: 1000}}
 # Not included (no supported public JSON API as of 2026-07-16):
 #   37signals (XML feed only), Chef/Progress (Jobvite XML feed),
 #   Toggl (Ashby public API disabled), Spotify/Shopify/chess.com/Deel/
