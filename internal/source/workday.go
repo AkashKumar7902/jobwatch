@@ -20,10 +20,11 @@ package source
 //	    host: redhat.wd5.myworkdayjobs.com
 //	    tenant: redhat
 //	    site: jobs
-//	    max_postings: 500    # optional cap on list paging
+//	    max_postings: 500    # optional cap on raw list positions paged
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -84,20 +85,28 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 	var postings []posting
 	seenPaths := make(map[string]struct{})
 	total := 0
-	var partialErr error
-	for offset := 0; len(postings) < w.maxPostings; {
-		limit := min(workdayPageSize, w.maxPostings-len(postings))
+	rawScanned := 0
+	missingCount := 0
+	var missingOffsets []int
+	duplicateCount := 0
+	var duplicateExamples []string
+	var partialErrs []error
+	for offset := 0; offset < w.maxPostings; {
+		limit := min(workdayPageSize, w.maxPostings-offset)
 		var page struct {
 			Total       int       `json:"total"`
 			JobPostings []posting `json:"jobPostings"`
 		}
 		body := fmt.Appendf(nil, `{"appliedFacets":{},"limit":%d,"offset":%d,"searchText":""}`, limit, offset)
 		if err := fetchJSON(ctx, w.client, http.MethodPost, w.base+"/jobs", body, &page); err != nil {
-			err = fmt.Errorf("workday %s: fetch page at offset %d after %d postings: %w", w.company, offset, len(postings), err)
-			if len(postings) == 0 {
+			err = fmt.Errorf(
+				"workday %s: fetch page at offset %d after scanning %d raw postings (%d usable): %w",
+				w.company, offset, rawScanned, len(postings), err,
+			)
+			if rawScanned == 0 {
 				return nil, err
 			}
-			partialErr = err
+			partialErrs = append(partialErrs, err)
 			break
 		}
 
@@ -108,94 +117,125 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 			total = page.Total
 		}
 		if len(page.JobPostings) == 0 {
-			if total > len(postings) {
-				partialErr = fmt.Errorf(
-					"workday %s: pagination ended with an empty page at offset %d after %d of %d postings",
-					w.company, offset, len(postings), total,
-				)
+			if total > rawScanned {
+				partialErrs = append(partialErrs, fmt.Errorf(
+					"workday %s: pagination ended with an empty page at offset %d after scanning %d of %d raw postings (%d usable)",
+					w.company, offset, rawScanned, total, len(postings),
+				))
 			}
 			break
 		}
 
-		// Do not let a server that ignores the requested limit make Fetch
-		// exceed max_postings.
+		// max_postings is a cap on raw list positions, not on valid output.
+		// Workday occasionally emits null placeholder rows, and some servers
+		// ignore a smaller final-page limit.
 		pagePostings := page.JobPostings
 		if len(pagePostings) > limit {
 			pagePostings = pagePostings[:limit]
 		}
+		rawScanned = offset + len(pagePostings)
 
 		pagePaths := make(map[string]struct{}, len(pagePostings))
-		newPaths := 0
-		var duplicatePath string
+		crossPageDuplicates := 0
 		for i, p := range pagePostings {
+			rawOffset := offset + i
 			if p.ExternalPath == "" {
-				partialErr = fmt.Errorf(
-					"workday %s: posting at offset %d is missing externalPath",
-					w.company, offset+i,
-				)
-				break
+				missingCount++
+				if len(missingOffsets) < 5 {
+					missingOffsets = append(missingOffsets, rawOffset)
+				}
+				continue
+			}
+			if _, duplicate := seenPaths[p.ExternalPath]; duplicate {
+				crossPageDuplicates++
+				duplicateCount++
+				if len(duplicateExamples) < 5 {
+					duplicateExamples = append(duplicateExamples, fmt.Sprintf("%q at raw offset %d", p.ExternalPath, rawOffset))
+				}
+				continue
 			}
 			if _, duplicate := pagePaths[p.ExternalPath]; duplicate {
-				partialErr = fmt.Errorf(
-					"workday %s: duplicate externalPath %q on page at offset %d",
-					w.company, p.ExternalPath, offset,
-				)
-				break
+				duplicateCount++
+				if len(duplicateExamples) < 5 {
+					duplicateExamples = append(duplicateExamples, fmt.Sprintf("%q at raw offset %d", p.ExternalPath, rawOffset))
+				}
+				continue
 			}
 			pagePaths[p.ExternalPath] = struct{}{}
-			if _, duplicate := seenPaths[p.ExternalPath]; duplicate {
-				duplicatePath = p.ExternalPath
-			} else {
-				newPaths++
-			}
+			postings = append(postings, p)
 		}
-		if partialErr != nil {
-			break
+		for path := range pagePaths {
+			seenPaths[path] = struct{}{}
 		}
-		if newPaths == 0 {
-			partialErr = fmt.Errorf(
+
+		// A page with only already-seen paths (and possibly placeholders)
+		// usually means the upstream ignored offset. Stop rather than walking
+		// the whole cap while returning no unique progress.
+		if len(pagePaths) == 0 && crossPageDuplicates > 0 {
+			partialErrs = append(partialErrs, fmt.Errorf(
 				"workday %s: repeated page at offset %d made no unique externalPath progress",
 				w.company, offset,
-			)
+			))
 			break
 		}
-		if duplicatePath != "" {
-			partialErr = fmt.Errorf(
-				"workday %s: duplicate externalPath %q across pages at offset %d",
-				w.company, duplicatePath, offset,
-			)
-			break
-		}
-		for _, p := range pagePostings {
-			seenPaths[p.ExternalPath] = struct{}{}
-		}
-		postings = append(postings, pagePostings...)
 
-		if len(postings) >= w.maxPostings || (total > 0 && len(postings) >= total) {
+		// The reported total counts raw list positions, including placeholders.
+		if total > 0 && rawScanned >= total {
 			break
 		}
-		// A short page is terminal. If a known total says more jobs remain,
-		// surface the jobs already collected as a partial result.
-		if len(page.JobPostings) < limit {
-			if total > len(postings) {
-				partialErr = fmt.Errorf(
-					"workday %s: pagination ended with a short page (%d of %d requested) at offset %d after %d of %d postings",
-					w.company, len(page.JobPostings), limit, offset, len(postings), total,
-				)
+		if rawScanned >= w.maxPostings {
+			break
+		}
+
+		// A short page is terminal. If a known total says more raw positions
+		// remain, surface the usable jobs already collected as a partial result.
+		if len(pagePostings) < limit {
+			if total > rawScanned {
+				partialErrs = append(partialErrs, fmt.Errorf(
+					"workday %s: pagination ended with a short page (%d of %d requested) at offset %d after scanning %d of %d raw postings (%d usable)",
+					w.company, len(pagePostings), limit, offset, rawScanned, total, len(postings),
+				))
 			}
 			break
 		}
 		offset += limit
 	}
-	if len(postings) == w.maxPostings {
+	if rawScanned >= w.maxPostings {
 		switch {
-		case total > len(postings):
-			log.Printf("workday %s: listing %d of %d postings (max_postings cap)", w.company, len(postings), total)
+		case total > rawScanned:
+			log.Printf(
+				"workday %s: scanned %d of %d raw postings, listing %d usable postings (max_postings cap)",
+				w.company, rawScanned, total, len(postings),
+			)
 		case total == 0:
-			log.Printf("workday %s: listing %d postings (max_postings cap; total unknown)", w.company, len(postings))
+			log.Printf(
+				"workday %s: scanned %d raw postings, listing %d usable postings (max_postings cap; total unknown)",
+				w.company, rawScanned, len(postings),
+			)
 		}
 	}
 
+	if missingCount > 0 {
+		extra := ""
+		if missingCount > len(missingOffsets) {
+			extra = fmt.Sprintf("; %d more", missingCount-len(missingOffsets))
+		}
+		partialErrs = append(partialErrs, fmt.Errorf(
+			"workday %s: skipped %d malformed postings with missing externalPath (raw offsets %v%s)",
+			w.company, missingCount, missingOffsets, extra,
+		))
+	}
+	if duplicateCount > 0 {
+		extra := ""
+		if duplicateCount > len(duplicateExamples) {
+			extra = fmt.Sprintf("; %d more", duplicateCount-len(duplicateExamples))
+		}
+		partialErrs = append(partialErrs, fmt.Errorf(
+			"workday %s: skipped %d duplicate externalPath postings (%s%s)",
+			w.company, duplicateCount, strings.Join(duplicateExamples, ", "), extra,
+		))
+	}
+	partialErr := errors.Join(partialErrs...)
 	if partialErr != nil && len(postings) == 0 {
 		return nil, partialErr
 	}
