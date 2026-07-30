@@ -6,8 +6,12 @@
 # The original catalog was probed and its APIs verified live on 2026-07-16;
 # later additions were verified when they were added.
 # The initial set came from https://github.com/yanirs/established-remote;
-# 140 boards were imported from moreThanFAANGM after auditing all 483 links.
-# See catalog/morethanfaangm-audit.tsv for the evidence and exclusions.
+# 145 identities are represented by the 483-row moreThanFAANGM audit.
+# The 131-row List_OF_Companies audit validated 13 identities, 5 overlapping
+# the legacy audit. Together the ledgers represent 153 unique identities;
+# every unsupported, dead, duplicate, and manual-review row is also recorded.
+# See catalog/morethanfaangm-audit.tsv and
+# catalog/list-of-companies-audit.tsv for evidence and exclusions.
 
 poll:
   timeout_seconds: 30

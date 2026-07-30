@@ -1,22 +1,32 @@
-# Company catalog audit
+# Company catalog audits
 
-`morethanfaangm-audit.tsv` accounts for every list row parsed from
-[Kaustubh-Natuskar/moreThanFAANGM](https://github.com/Kaustubh-Natuskar/moreThanFAANGM)
-at commit `a91b6120e47091bd1b987a566689a3f58f5252cb`.
+The catalog ledgers account for every physical row in two upstream company
+lists. They preserve the supplied company name and career target, then record
+Jobwatch's independent ATS verification and disposition:
 
-The source README advertises 481 companies but contains 483 links: 481 unique
-company names, one exact Ninjacart duplicate, and one maintainer/contact link.
-Each row was checked on 2026-07-16 by resolving the supplied URL, identifying
-the current ATS from first-party evidence, and probing any supported public API.
-Rows promoted after that audit record their later verification in the row
-evidence.
+- `morethanfaangm-audit.tsv` covers all 483 parsed links in
+  [Kaustubh-Natuskar/moreThanFAANGM](https://github.com/Kaustubh-Natuskar/moreThanFAANGM)
+  at commit `a91b6120e47091bd1b987a566689a3f58f5252cb`. It now has
+  143 validated rows representing 145 distinct boards (Nike and Visa each
+  expose two), 9 duplicates, 256 unsupported systems, 36 dead links/boards,
+  38 manual-review cases, and 1 non-company maintainer link. The original
+  audit was performed on 2026-07-16; later promotions carry their recheck date
+  in the row evidence.
+- `list-of-companies-audit.tsv` covers all 131 physical table rows in
+  [nawabsahab16/List_OF_Companies](https://github.com/nawabsahab16/List_OF_Companies)
+  at commit `1614c9176fe23462ec0596730c052c5d6739b637` (source README
+  SHA-256 `39dc8126940e032a07dff2f4337e81c31fd98841a010ec05f6a59ca02e6abedd`).
+  The 2026-07-30 audit has 13 validated rows, 34 duplicates, 66 unsupported
+  systems, 13 dead entries, and 5 manual-review cases.
 
-The audit now contains 138 validated rows (140 distinct boards because Nike
-and Visa each expose two), 9 duplicates, 260 unsupported systems, 36 dead
-links/boards, 39 manual-review cases, and 1 non-company maintainer link.
-Rippling was promoted after a first-party API recheck on 2026-07-29. All 140
-validated identities are present in `config.example.yaml`; alongside 51 other
-boards verified when they were added, Jobwatch now polls 191 unique ATS boards.
+Five validated identities in the second ledger already occur in the legacy
+ledger, so the audits represent 153 unique verified identities
+(`145 + 13 - 5`). Alongside 51 other boards verified when they were added,
+`config.example.yaml` now contains 204 unique ATS boards.
+
+The List_OF_Companies repository has no license file. Its ledger therefore
+retains only factual company/career-target provenance; it does not reproduce
+the source table's role or compensation columns.
 
 Dispositions mean:
 

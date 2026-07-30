@@ -22,9 +22,41 @@ type auditRow struct {
 	ParamsJSON  string
 }
 
-func readAudit(t *testing.T) []auditRow {
+type auditSpec struct {
+	path     string
+	rows     int
+	expected map[string]int
+}
+
+var auditSpecs = []auditSpec{
+	{
+		path: "morethanfaangm-audit.tsv",
+		rows: 483,
+		expected: map[string]int{
+			"validated_supported": 143,
+			"duplicate":           9,
+			"unsupported":         256,
+			"dead":                36,
+			"manual_review":       38,
+			"not_a_company":       1,
+		},
+	},
+	{
+		path: "list-of-companies-audit.tsv",
+		rows: 131,
+		expected: map[string]int{
+			"validated_supported": 13,
+			"duplicate":           34,
+			"unsupported":         66,
+			"dead":                13,
+			"manual_review":       5,
+		},
+	},
+}
+
+func readAudit(t *testing.T, path string, wantRows int) []auditRow {
 	t.Helper()
-	f, err := os.Open("morethanfaangm-audit.tsv")
+	f, err := os.Open(path)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,51 +67,47 @@ func readAudit(t *testing.T) []auditRow {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(records) != 484 {
-		t.Fatalf("audit has %d data rows, want 483", len(records)-1)
+	if len(records) != wantRows+1 {
+		t.Fatalf("%s has %d data rows, want %d", path, len(records)-1, wantRows)
 	}
 	if got := records[0]; len(got) != 11 || got[0] != "ordinal" || got[10] != "evidence_or_error" {
-		t.Fatalf("unexpected audit header: %v", got)
+		t.Fatalf("%s has unexpected audit header: %v", path, got)
 	}
-	rows := make([]auditRow, 0, 483)
+	rows := make([]auditRow, 0, wantRows)
 	for i, record := range records[1:] {
 		if len(record) != 11 {
-			t.Fatalf("row %d has %d fields, want 11", i+1, len(record))
+			t.Fatalf("%s row %d has %d fields, want 11", path, i+1, len(record))
 		}
 		if record[0] != strconv.Itoa(i+1) {
-			t.Fatalf("row %d has ordinal %q", i+1, record[0])
+			t.Fatalf("%s row %d has ordinal %q", path, i+1, record[0])
 		}
 		rows = append(rows, auditRow{record[0], record[1], record[5], record[6], record[7]})
 	}
 	return rows
 }
 
-func TestAuditAccountsForEveryUpstreamRow(t *testing.T) {
-	want := map[string]int{
-		"validated_supported": 143,
-		"duplicate":           9,
-		"unsupported":         256,
-		"dead":                36,
-		"manual_review":       38,
-		"not_a_company":       1,
-	}
-	got := map[string]int{}
-	for _, row := range readAudit(t) {
-		got[row.Disposition]++
-		if _, ok := want[row.Disposition]; !ok {
-			t.Fatalf("ordinal %s has unknown disposition %q", row.Ordinal, row.Disposition)
-		}
-		if row.ParamsJSON != "" {
-			var value any
-			if err := json.Unmarshal([]byte(row.ParamsJSON), &value); err != nil {
-				t.Fatalf("ordinal %s has invalid params JSON: %v", row.Ordinal, err)
+func TestAuditsAccountForEveryUpstreamRow(t *testing.T) {
+	for _, audit := range auditSpecs {
+		t.Run(audit.path, func(t *testing.T) {
+			got := map[string]int{}
+			for _, row := range readAudit(t, audit.path, audit.rows) {
+				got[row.Disposition]++
+				if _, ok := audit.expected[row.Disposition]; !ok {
+					t.Fatalf("ordinal %s has unknown disposition %q", row.Ordinal, row.Disposition)
+				}
+				if row.ParamsJSON != "" {
+					var value any
+					if err := json.Unmarshal([]byte(row.ParamsJSON), &value); err != nil {
+						t.Fatalf("ordinal %s has invalid params JSON: %v", row.Ordinal, err)
+					}
+				}
 			}
-		}
-	}
-	for disposition, count := range want {
-		if got[disposition] != count {
-			t.Errorf("%s count = %d, want %d", disposition, got[disposition], count)
-		}
+			for disposition, count := range audit.expected {
+				if got[disposition] != count {
+					t.Errorf("%s count = %d, want %d", disposition, got[disposition], count)
+				}
+			}
+		})
 	}
 }
 
@@ -105,39 +133,41 @@ func TestEveryValidatedBoardIsConfiguredOnce(t *testing.T) {
 		t.Fatalf("configured source count = %d, want 204", len(configured))
 	}
 
-	for _, row := range readAudit(t) {
-		if row.Disposition != "validated_supported" {
-			continue
-		}
-		var raw any
-		if err := json.Unmarshal([]byte(row.ParamsJSON), &raw); err != nil {
-			t.Fatalf("ordinal %s: %v", row.Ordinal, err)
-		}
-		values := []any{raw}
-		if list, ok := raw.([]any); ok {
-			values = list
-		}
-		for _, value := range values {
-			object, ok := value.(map[string]any)
-			if !ok {
-				t.Fatalf("ordinal %s params are not an object", row.Ordinal)
+	for _, audit := range auditSpecs {
+		for _, row := range readAudit(t, audit.path, audit.rows) {
+			if row.Disposition != "validated_supported" {
+				continue
 			}
-			sourceName := row.Source
-			if embedded, ok := object["source"].(string); ok {
-				sourceName = embedded
+			var raw any
+			if err := json.Unmarshal([]byte(row.ParamsJSON), &raw); err != nil {
+				t.Fatalf("%s ordinal %s: %v", audit.path, row.Ordinal, err)
 			}
-			p := params.Map{}
-			for key, value := range object {
-				if key != "source" {
-					p[key] = fmt.Sprint(value)
+			values := []any{raw}
+			if list, ok := raw.([]any); ok {
+				values = list
+			}
+			for _, value := range values {
+				object, ok := value.(map[string]any)
+				if !ok {
+					t.Fatalf("%s ordinal %s params are not an object", audit.path, row.Ordinal)
 				}
-			}
-			s, err := source.New(sourceName, row.Name, p, client)
-			if err != nil {
-				t.Fatalf("ordinal %s source construction: %v", row.Ordinal, err)
-			}
-			if _, ok := configured[source.Identity(s)]; !ok {
-				t.Errorf("ordinal %s validated board %q is absent from config", row.Ordinal, source.Identity(s))
+				sourceName := row.Source
+				if embedded, ok := object["source"].(string); ok {
+					sourceName = embedded
+				}
+				p := params.Map{}
+				for key, value := range object {
+					if key != "source" {
+						p[key] = fmt.Sprint(value)
+					}
+				}
+				s, err := source.New(sourceName, row.Name, p, client)
+				if err != nil {
+					t.Fatalf("%s ordinal %s source construction: %v", audit.path, row.Ordinal, err)
+				}
+				if _, ok := configured[source.Identity(s)]; !ok {
+					t.Errorf("%s ordinal %s validated board %q is absent from config", audit.path, row.Ordinal, source.Identity(s))
+				}
 			}
 		}
 	}

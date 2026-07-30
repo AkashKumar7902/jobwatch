@@ -103,10 +103,15 @@ companies:
 ./jobwatch -dry-run    # prints matches, sends nothing, saves nothing
 ```
 
-`config.example.yaml` ships with 191 verified ATS boards. Of those, 140 were
-added after auditing every row in moreThanFAANGM; the checked URL, disposition,
-exact API identity, job count, and exclusion reason for all 483 source links
-are recorded in [`catalog/morethanfaangm-audit.tsv`](catalog/morethanfaangm-audit.tsv).
+`config.example.yaml` ships with 204 verified ATS boards. The catalog ledgers
+account for every source row in two upstream lists: 145 distinct identities
+are represented by the 483-row
+[`moreThanFAANGM` audit](catalog/morethanfaangm-audit.tsv), and 13 validated
+rows appear in the 131-row
+[`List_OF_Companies` audit](catalog/list-of-companies-audit.tsv). Five board
+identities overlap, for 153 unique identities across both audits; the other
+51 boards were verified when they were added. Unsupported, dead, duplicate,
+and manual-review rows are documented but are not configured.
 
 ## Notifications
 
