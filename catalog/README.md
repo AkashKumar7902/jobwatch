@@ -8,8 +8,8 @@ Jobwatch's independent ATS verification and disposition:
   [Kaustubh-Natuskar/moreThanFAANGM](https://github.com/Kaustubh-Natuskar/moreThanFAANGM)
   at commit `a91b6120e47091bd1b987a566689a3f58f5252cb`. It now has
   143 validated rows representing 145 distinct boards (Nike and Visa each
-  expose two), 9 duplicates, 256 unsupported systems, 36 dead links/boards,
-  38 manual-review cases, and 1 non-company maintainer link. The original
+  expose two), 9 duplicates, 255 unsupported systems, 36 dead links/boards,
+  39 manual-review cases, and 1 non-company maintainer link. The original
   audit was performed on 2026-07-16; later promotions carry their recheck date
   in the row evidence.
 - `list-of-companies-audit.tsv` covers all 131 physical table rows in
@@ -24,8 +24,8 @@ Jobwatch's independent ATS verification and disposition:
 
 Five validated identities in the second ledger already occur in the legacy
 ledger, so the audits represent 208 unique verified identities
-(`145 + 68 - 5`). Alongside 51 other boards verified when they were added,
-`config.example.yaml` now contains 259 unique job-board identities.
+(`145 + 68 - 5`). Alongside 52 other boards verified when they were added,
+`config.example.yaml` now contains 260 unique job-board identities.
 
 The List_OF_Companies repository has no license file. Its ledger therefore
 retains only factual company/career-target provenance; it does not reproduce

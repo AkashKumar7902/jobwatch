@@ -92,6 +92,7 @@ func TestAddedSourceIdentitiesAndStatePrefixes(t *testing.T) {
 		{"richpanel", nil, nil, "richpanel", "richpanel/"},
 		{"successfactors", params.Map{"host": "jobs.sap.com"}, params.Map{"max_pages": "2"}, "successfactors/jobs.sap.com", "successfactors/jobs.sap.com/"},
 		{"highergs", nil, params.Map{"max_postings": "10"}, "highergs", "highergs/"},
+		{"google", nil, nil, "google/IN", "google/"},
 		{"hyperverge", nil, nil, "hyperverge", "hyperverge/"},
 		{"juspay", nil, nil, "juspay", "juspay/"},
 		{"komprise", nil, nil, "komprise", "komprise/"},

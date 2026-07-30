@@ -132,6 +132,8 @@ func identityFor(name string, p params.Map) string {
 		return "amazon/" + strings.ToUpper(p.GetDefault("country_code", "IND"))
 	case "auzmor":
 		return "auzmor/" + strings.ToLower(strings.TrimSpace(p.Get("domain")))
+	case "google":
+		return "google/IN"
 	case "atlassian", "deshaw", "medianet", "enphase", "richpanel", "makemytrip",
 		"highergs", "hyperverge", "juspay", "komprise", "nationwithnamo",
 		"nutanix", "ofbusiness", "publicissapient", "slb":
@@ -240,7 +242,7 @@ func statePrefixFor(name string, p params.Map) string {
 		return "auzmor/" + strings.ToLower(strings.TrimSpace(p.Get("domain"))) + "/"
 	case "atlassian", "deshaw", "medianet", "enphase", "richpanel", "makemytrip",
 		"highergs", "hyperverge", "juspay", "komprise", "nutanix", "ofbusiness",
-		"publicissapient", "slb", "walmart":
+		"publicissapient", "slb", "walmart", "google":
 		return name + "/"
 	case "nationwithnamo":
 		return "nationwithnamo/gilp-impact-fellowship/"

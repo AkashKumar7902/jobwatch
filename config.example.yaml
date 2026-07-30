@@ -406,6 +406,7 @@ companies:
   - {name: "Media.net", source: medianet}
   - {name: "JUSPAY", source: juspay}
   - {name: "Goldman Sachs", source: highergs}
+  - {name: "Google India", source: google}
   - {name: "Komprise", source: komprise}
   - {name: "Nutanix", source: nutanix}
   - {name: "OfBusiness", source: ofbusiness}
