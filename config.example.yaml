@@ -344,7 +344,7 @@ companies:
   - {name: "PayPal", source: workday, params: {host: "paypal.wd1.myworkdayjobs.com", tenant: "paypal", site: "jobs"}}
   - {name: "Wells Fargo", source: workday, params: {host: "wd1.myworkdaysite.com", tenant: "wf", site: "WellsFargoJobs", max_postings: 2000}}
   - {name: "Silicon Labs", source: workday, params: {host: "silabs.wd1.myworkdayjobs.com", tenant: "silabs", site: "SiliconlabsCareers"}}
-  - {name: "Samsung Semiconductor India Research", source: workday, params: {host: "sec.wd3.myworkdayjobs.com", tenant: "sec", site: "Samsung_Careers", max_postings: 1000}}
+  - {name: "Samsung Electronics (includes SSIR)", source: workday, params: {host: "sec.wd3.myworkdayjobs.com", tenant: "sec", site: "Samsung_Careers", max_postings: 1000}}
   - {name: "AirAsia", source: workday, params: {host: "airasia.wd3.myworkdayjobs.com", tenant: "airasia", site: "Careers"}}
   - {name: "Signify", source: workday, params: {host: "lighting.wd3.myworkdayjobs.com", tenant: "lighting", site: "jobs-and-careers"}}
   - {name: "Junglee Games", source: workday, params: {host: "flutterbe.wd3.myworkdayjobs.com", tenant: "flutterbe", site: "Junglee_Games"}}
