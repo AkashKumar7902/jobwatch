@@ -83,25 +83,45 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 	// Page through the list.
 	var postings []posting
 	total := 0
-	for offset := 0; ; offset += workdayPageSize {
+	for offset := 0; len(postings) < w.maxPostings; {
+		limit := min(workdayPageSize, w.maxPostings-len(postings))
 		var page struct {
 			Total       int       `json:"total"`
 			JobPostings []posting `json:"jobPostings"`
 		}
-		body := fmt.Appendf(nil, `{"appliedFacets":{},"limit":%d,"offset":%d,"searchText":""}`, workdayPageSize, offset)
+		body := fmt.Appendf(nil, `{"appliedFacets":{},"limit":%d,"offset":%d,"searchText":""}`, limit, offset)
 		if err := fetchJSON(ctx, w.client, http.MethodPost, w.base+"/jobs", body, &page); err != nil {
 			return nil, err
 		}
-		total = page.Total
-		postings = append(postings, page.JobPostings...)
-		if len(page.JobPostings) == 0 || offset+workdayPageSize >= page.Total || len(postings) >= w.maxPostings {
+
+		// Some live Workday boards report the total only on the first page
+		// and return zero on every later, non-empty page. Keep the first
+		// meaningful value instead of treating those zeroes as an empty board.
+		if total == 0 && page.Total > 0 {
+			total = page.Total
+		}
+		if len(page.JobPostings) == 0 {
 			break
 		}
+
+		// Do not let a server that ignores the requested limit make Fetch
+		// exceed max_postings.
+		pagePostings := page.JobPostings
+		if len(pagePostings) > limit {
+			pagePostings = pagePostings[:limit]
+		}
+		postings = append(postings, pagePostings...)
+
+		if len(postings) >= w.maxPostings || (total > 0 && len(postings) >= total) {
+			break
+		}
+		// A short page is terminal even if a stale total claims otherwise.
+		if len(page.JobPostings) < limit {
+			break
+		}
+		offset += limit
 	}
-	if len(postings) > w.maxPostings {
-		postings = postings[:w.maxPostings]
-	}
-	if total > len(postings) {
+	if total > len(postings) && len(postings) == w.maxPostings {
 		log.Printf("workday %s: listing %d of %d postings (max_postings cap)", w.company, len(postings), total)
 	}
 
