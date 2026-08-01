@@ -10,6 +10,7 @@ package run
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"sort"
@@ -50,6 +51,14 @@ type Runner struct {
 	// DryRun evaluates and reports but never persists state, so the same
 	// jobs are re-evaluated next run. Good for tuning the matcher.
 	DryRun bool
+
+	// SaveEvery bounds how much matcher work a killed process can lose:
+	// state is checkpointed to disk at least this often while evaluating
+	// jobs. LLM matching can spend seconds per posting, so a big board
+	// sweep may run for hours — without interim saves, a CI timeout or
+	// SIGTERM would discard all of it and the next run would repeat the
+	// identical work forever. Zero means the one-minute default.
+	SaveEvery time.Duration
 }
 
 // RunOnce performs a single poll cycle. One company failing to fetch is
@@ -82,6 +91,31 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 	var matchedIDs []string
 	totalJobs, newJobs, retries, failures, partials := 0, 0, 0, 0, 0
 	newSources, seededJobs := 0, 0
+
+	// checkpoint persists progress accumulated so far (dirty tracks unsaved
+	// Store.Add calls). Mid-sweep callers ignore the returned error — it is
+	// logged here, and one failed interim write must not abort a sweep the
+	// final Save may still persist. The cancellation path does propagate it,
+	// because there no later Save will run.
+	saveEvery := r.SaveEvery
+	if saveEvery <= 0 {
+		saveEvery = time.Minute
+	}
+	lastSave := time.Now()
+	dirty := 0
+	checkpoint := func() error {
+		if r.DryRun || dirty == 0 {
+			return nil
+		}
+		lastSave = time.Now() // set even on failure so a bad disk isn't retried every job
+		if err := r.Store.Save(); err != nil {
+			r.Log.Printf("checkpoint save failed: %v", err)
+			return err
+		}
+		dirty = 0
+		return nil
+	}
+
 	for _, res := range results {
 		if res.err != nil {
 			if len(res.jobs) == 0 {
@@ -95,9 +129,10 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		totalJobs += len(res.jobs)
 
 		seedSource := r.SeedOnly
+		markerID := ""
 		if (r.SeedOnly || r.SeedNewSources) && !r.DryRun {
-			markerID := "__jobwatch_source__/" + source.Identity(res.src)
-			if !r.Store.Seen(markerID) {
+			id := "__jobwatch_source__/" + source.Identity(res.src)
+			if !r.Store.Seen(id) {
 				knownSource := r.Store.HasPrefix(source.StatePrefix(res.src))
 				for _, job := range res.jobs {
 					if r.Store.Seen(job.ID) {
@@ -109,10 +144,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 					seedSource = true
 					newSources++
 				}
-				r.Store.Add(markerID, store.Record{
-					FirstSeen: time.Now(),
-					Title:     "source: " + res.src.Company(),
-				})
+				markerID = id
 			}
 		}
 
@@ -123,6 +155,13 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			// stops a long sweep instead of only stopping future fetches.
 			select {
 			case <-ctx.Done():
+				// Save everything already evaluated before unwinding, so an
+				// interrupted sweep resumes where it stopped instead of
+				// starting over. This is the last chance to persist — a
+				// failed save here must not masquerade as a clean interrupt.
+				if err := checkpoint(); err != nil {
+					return errors.Join(ctx.Err(), fmt.Errorf("checkpoint at interruption: %w", err))
+				}
 				return ctx.Err()
 			default:
 			}
@@ -157,6 +196,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 						FirstSeen: rec.FirstSeen,
 						Title:     job.Company + ": " + job.Title,
 					})
+					dirty++
 				}
 				continue
 			}
@@ -187,14 +227,32 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				r.Store.Add(job.ID, store.Record{
 					FirstSeen: rec.FirstSeen,
 					Title:     job.Company + ": " + job.Title,
-					Matched:   verdict.Matched,
+					Matched:   true,
 				})
+				dirty++
+				if time.Since(lastSave) >= saveEvery {
+					checkpoint()
+				}
 			}
+		}
+		// The marker is recorded only once the whole board has been walked:
+		// a checkpoint must never persist "board baselined" ahead of the
+		// baseline itself, or an interrupted first pass would turn into a
+		// full-board notification blast on the next run.
+		if markerID != "" {
+			r.Store.Add(markerID, store.Record{
+				FirstSeen: time.Now(),
+				Title:     "source: " + res.src.Company(),
+			})
+			dirty++
 		}
 		// One line per board keeps CI logs scannable: what was fetched,
 		// how long it took, and whether anything new turned up.
 		r.Log.Printf("fetch %s: %d open jobs in %s (%d new, %d matched)",
 			res.src.Company(), len(res.jobs), res.dur, srcNew, srcMatched)
+		// A board's work is durable the moment the board is done; the
+		// in-loop interval save covers long boards, this covers short ones.
+		checkpoint()
 	}
 
 	sort.Slice(matches, func(i, j int) bool {

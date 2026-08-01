@@ -28,7 +28,9 @@ concurrency:
 jobs:
   poll:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Hosted runners hard-kill jobs at 360 minutes; stay just under so the
+    # always() steps below (summary, state push) still run on a long sweep.
+    timeout-minutes: 355
     steps:
       - uses: actions/checkout@v4
 
@@ -39,7 +41,11 @@ jobs:
       - name: Restore state from the state branch
         run: |
           if git fetch --depth 1 origin state 2>/dev/null; then
-            git show FETCH_HEAD:state.json > state.json
+            # Extract via a temp file: `> state.json` truncates BEFORE git
+            # runs, so a failed extraction would leave a 0-byte file for the
+            # always() push step to force-push over the good state.
+            git show FETCH_HEAD:state.json > state.tmp
+            mv state.tmp state.json
             echo "restored state: $(wc -c < state.json) bytes"
           else
             echo "no state branch yet - this run will seed without emailing"
@@ -52,6 +58,13 @@ jobs:
           go build -o jobwatch ./cmd/jobwatch
 
       - name: Poll job boards
+        # A backlog sweep (LLM-matching hundreds of new postings) can run for
+        # hours. jobwatch checkpoints state to disk every minute and after
+        # every board, so however this step dies — timeout, signal, hard
+        # kill — the next run resumes from the last checkpoint instead of
+        # starting over. The 10-minute gap to the job timeout keeps the
+        # state push below alive in the worst case.
+        timeout-minutes: 345
         env:
           JOBWATCH_SMTP_USERNAME: ${{ secrets.JOBWATCH_SMTP_USERNAME }}
           JOBWATCH_SMTP_PASSWORD: ${{ secrets.JOBWATCH_SMTP_PASSWORD }}
@@ -97,7 +110,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          [ -f state.json ] || { echo "no state produced, nothing to push"; exit 0; }
+          # -s, not -f: a zero-byte state.json is never valid, and pushing
+          # one would corrupt the state branch for every later run.
+          [ -s state.json ] || { echo "no usable state produced, nothing to push"; exit 0; }
           dir=$(mktemp -d)
           cp state.json "$dir/"
           cd "$dir"

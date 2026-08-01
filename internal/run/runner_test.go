@@ -5,8 +5,12 @@ import (
 	"errors"
 	"io"
 	"log"
+	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 	"testing"
+	"time"
 
 	"jobwatch/internal/match"
 	"jobwatch/internal/model"
@@ -315,4 +319,278 @@ func TestDryRunPersistsNothing(t *testing.T) {
 
 func testSources() []source.Source {
 	return []source.Source{&fakeSource{jobs: []model.Job{testJob}}}
+}
+
+// cancellingMatcher cancels the run's context from inside a match call,
+// simulating a CI timeout or SIGTERM landing mid-evaluation.
+type cancellingMatcher struct {
+	cancel  context.CancelFunc
+	matched bool
+}
+
+func (cancellingMatcher) Name() string { return "cancelling" }
+func (m cancellingMatcher) Match(model.Job) match.Result {
+	m.cancel()
+	return match.Result{Matched: m.matched, Reason: "test"}
+}
+
+// A cancelled run must persist the evaluations it already made, so an
+// interrupted sweep resumes where it stopped instead of repeating the
+// identical (and possibly expensive) matcher work forever.
+func TestCancelledRunCheckpointsProgress(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(st.Close)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	job2 := model.Job{ID: "test/acme/2", Company: "Acme", Title: "Backend Dev", URL: "https://x/2"}
+	r := &Runner{
+		Sources:     []source.Source{&fakeSource{jobs: []model.Job{testJob, job2}}},
+		Matcher:     cancellingMatcher{cancel: cancel},
+		Notifiers:   []notify.Notifier{&flakyNotifier{}},
+		Store:       st,
+		Log:         log.New(io.Discard, "", 0),
+		Concurrency: 1,
+	}
+
+	if err := r.RunOnce(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("RunOnce = %v, want context.Canceled", err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("no state was checkpointed before unwinding: %v", err)
+	}
+	if !strings.Contains(string(data), testJob.ID) {
+		t.Errorf("evaluated job %s missing from checkpointed state", testJob.ID)
+	}
+	if strings.Contains(string(data), job2.ID) {
+		t.Errorf("job %s was never evaluated and should not be in state", job2.ID)
+	}
+}
+
+// diskPeekMatcher checks, while matching peekID, whether lookForID is
+// already durable in the state file on disk.
+type diskPeekMatcher struct {
+	path      string
+	peekID    string
+	lookForID string
+	sawOnDisk *bool
+}
+
+func (diskPeekMatcher) Name() string { return "diskpeek" }
+func (m diskPeekMatcher) Match(j model.Job) match.Result {
+	if j.ID == m.peekID {
+		data, _ := os.ReadFile(m.path)
+		*m.sawOnDisk = strings.Contains(string(data), m.lookForID)
+	}
+	return match.Result{Matched: false, Reason: "test"}
+}
+
+// Each board's evaluations must reach disk once that board is done, not
+// only at the end of the whole cycle — a kill mid-catalog then costs one
+// board's progress at most.
+func TestStateCheckpointedAfterEachBoard(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(st.Close)
+
+	job1 := model.Job{ID: "test/one/1", Company: "One", Title: "Dev", URL: "https://x/1"}
+	job2 := model.Job{ID: "test/two/1", Company: "Two", Title: "Dev", URL: "https://x/2"}
+	sawOnDisk := false
+	r := &Runner{
+		Sources: []source.Source{
+			&fakeSource{identity: "test/one", jobs: []model.Job{job1}},
+			&fakeSource{identity: "test/two", jobs: []model.Job{job2}},
+		},
+		Matcher:     diskPeekMatcher{path: path, peekID: job2.ID, lookForID: job1.ID, sawOnDisk: &sawOnDisk},
+		Notifiers:   []notify.Notifier{&flakyNotifier{}},
+		Store:       st,
+		Log:         log.New(io.Discard, "", 0),
+		Concurrency: 1,
+	}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !sawOnDisk {
+		t.Error("first board's evaluations were not on disk while the second board was being matched")
+	}
+}
+
+// The interval save must make a long board's evaluations durable while the
+// board is still being walked, because a hard kill (SIGKILL after the CI
+// grace window) never reaches the cancellation checkpoint — at most
+// SaveEvery of matcher work may be lost.
+func TestIntervalCheckpointDuringLongBoard(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(st.Close)
+
+	j1 := model.Job{ID: "test/one/1", Company: "One", Title: "Dev", URL: "https://x/1"}
+	j2 := model.Job{ID: "test/one/2", Company: "One", Title: "Dev II", URL: "https://x/2"}
+	sawOnDisk := false
+	r := &Runner{
+		Sources:     []source.Source{&fakeSource{jobs: []model.Job{j1, j2}}},
+		Matcher:     diskPeekMatcher{path: path, peekID: j2.ID, lookForID: j1.ID, sawOnDisk: &sawOnDisk},
+		Notifiers:   []notify.Notifier{&flakyNotifier{}},
+		Store:       st,
+		Log:         log.New(io.Discard, "", 0),
+		Concurrency: 1,
+		SaveEvery:   time.Nanosecond,
+	}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !sawOnDisk {
+		t.Error("first job was not durable on disk while a later job of the same board was being matched")
+	}
+}
+
+// A new board's baseline marker must never be checkpointed ahead of its
+// seeded postings: if a kill lands between the two, the next run would
+// treat the whole board as already baselined and email its entire backlog.
+func TestSeedMarkerNotPersistedBeforeBaseline(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(st.Close)
+
+	// Board A is already known (marker + one recorded posting); its new job
+	// a2 is what the matcher is evaluating — and cancelling on — when the
+	// walk reaches brand-new board B.
+	st.Add("__jobwatch_source__/test/a", store.Record{Title: "source: A"})
+	st.Add("test/a/1", store.Record{Title: "A: old posting"})
+	a2 := model.Job{ID: "test/a/2", Company: "A", Title: "New Dev", URL: "https://a/2"}
+	b1 := model.Job{ID: "test/b/1", Company: "B", Title: "Dev", URL: "https://b/1"}
+	b2 := model.Job{ID: "test/b/2", Company: "B", Title: "Dev II", URL: "https://b/2"}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	r := &Runner{
+		Sources: []source.Source{
+			&fakeSource{identity: "test/a", jobs: []model.Job{{ID: "test/a/1", Company: "A", Title: "Old"}, a2}},
+			&fakeSource{identity: "test/b", jobs: []model.Job{b1, b2}},
+		},
+		Matcher:        cancellingMatcher{cancel: cancel},
+		Notifiers:      []notify.Notifier{&flakyNotifier{}},
+		Store:          st,
+		Log:            log.New(io.Discard, "", 0),
+		Concurrency:    1,
+		SeedNewSources: true,
+	}
+	if err := r.RunOnce(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("RunOnce = %v, want context.Canceled", err)
+	}
+	if data, err := os.ReadFile(path); err == nil && strings.Contains(string(data), "__jobwatch_source__/test/b") {
+		t.Fatal("board B's marker was checkpointed before its baseline")
+	}
+
+	// The next, uninterrupted run must seed board B silently.
+	n := &flakyNotifier{}
+	r.Matcher = matchAll{}
+	r.Notifiers = []notify.Notifier{n}
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	for _, batch := range n.batches {
+		for _, m := range batch {
+			if m.Job.ID == b1.ID || m.Job.ID == b2.ID {
+				t.Fatalf("board B posting %s was delivered instead of seeded", m.Job.ID)
+			}
+		}
+	}
+}
+
+// A cancelled dry run must leave no state file behind: DryRun's contract is
+// that nothing persists and the same jobs are re-evaluated next run.
+func TestDryRunNeverCheckpoints(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(st.Close)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	job2 := model.Job{ID: "test/acme/2", Company: "Acme", Title: "Backend Dev", URL: "https://x/2"}
+	r := &Runner{
+		Sources:     []source.Source{&fakeSource{jobs: []model.Job{testJob, job2}}},
+		Matcher:     cancellingMatcher{cancel: cancel, matched: true},
+		Notifiers:   []notify.Notifier{&flakyNotifier{}},
+		Store:       st,
+		Log:         log.New(io.Discard, "", 0),
+		Concurrency: 1,
+		DryRun:      true,
+		SaveEvery:   time.Nanosecond,
+	}
+
+	if err := r.RunOnce(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("RunOnce = %v, want context.Canceled", err)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("dry run wrote a state file (stat err = %v)", err)
+	}
+}
+
+// countingMatcher records which jobs were evaluated.
+type countingMatcher struct{ ids *[]string }
+
+func (countingMatcher) Name() string { return "counting" }
+func (m countingMatcher) Match(j model.Job) match.Result {
+	*m.ids = append(*m.ids, j.ID)
+	return match.Result{Reason: "test"}
+}
+
+// A failing interim save must not abort the sweep: remaining boards still
+// run, and the error surfaces through the final Save.
+func TestCheckpointFailureDoesNotAbortSweep(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs a non-root unix user so directory permissions make Save fail")
+	}
+	dir := t.TempDir()
+	st, err := store.Open(filepath.Join(dir, "state.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(st.Close)
+	if err := os.Chmod(dir, 0o500); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { os.Chmod(dir, 0o755) })
+
+	var evaluated []string
+	r := &Runner{
+		Sources: []source.Source{
+			&fakeSource{identity: "test/one", jobs: []model.Job{{ID: "test/one/1", Company: "One", Title: "Dev", URL: "https://x/1"}}},
+			&fakeSource{identity: "test/two", jobs: []model.Job{{ID: "test/two/1", Company: "Two", Title: "Dev", URL: "https://x/2"}}},
+		},
+		Matcher:     countingMatcher{ids: &evaluated},
+		Notifiers:   []notify.Notifier{&flakyNotifier{}},
+		Store:       st,
+		Log:         log.New(io.Discard, "", 0),
+		Concurrency: 1,
+		SaveEvery:   time.Nanosecond,
+	}
+
+	err = r.RunOnce(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "saving state") {
+		t.Fatalf("RunOnce = %v, want the final saving state error", err)
+	}
+	if len(evaluated) != 2 {
+		t.Errorf("evaluated %v, want both boards despite failing checkpoints", evaluated)
+	}
 }
