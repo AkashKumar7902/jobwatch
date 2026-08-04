@@ -172,13 +172,14 @@ Built-in matchers:
 | `employment` | ATS-reported employment type is in `types:` (full-time, contract, intern...) |
 | `keywords`   | `include`/`exclude` term lists against `field:` title, description, location, or any (case-insensitive, whole-word) |
 | `recency`    | Posting published within `max_days` (skips stale evergreen ads)            |
-| `llm`        | A language model judges fit against your `profile:` — works with any OpenAI-compatible endpoint (OpenAI, Anthropic, Groq, local Ollama); see config.example.yaml |
+| `llm`        | A language model judges fit against your `profile:` through an OpenAI-compatible endpoint with JSON-schema structured-output support; see config.example.yaml |
 | `all` `any` `not` | Combine other matchers under `of:`                                    |
 
 The `llm` matcher costs one API call per new job that reaches it, so place
 it last under `all` — earlier matchers veto first, and `-seed` never calls
-it. If the endpoint is down it matches by default (`on_error: match`), so
-an outage produces extra email rather than silently lost jobs.
+it. If the endpoint or response is invalid, that posting stays unprocessed
+for a later run. Confirmed work is still saved and delivered, then the run
+exits with an error so scheduled failures are visible.
 
 The experience matcher parses each mention into a range: "1-3 years" is
 [1, 3], "2+ years" or a bare "2 years" is a floor [2, ∞), "up to 2 years"

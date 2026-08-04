@@ -12,7 +12,9 @@ package match
 //	      params: {field: title, exclude: "senior, staff, principal"}
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	"jobwatch/internal/model"
@@ -45,16 +47,30 @@ type all struct{ children []Matcher }
 
 func (a *all) Name() string { return "all" }
 
-func (a *all) Match(job model.Job) Result {
+func (a *all) Match(ctx context.Context, job model.Job) (Result, error) {
 	reasons := make([]string, 0, len(a.children))
+	var childErrs []error
 	for _, c := range a.children {
-		r := c.Match(job)
+		if err := ctx.Err(); err != nil {
+			return Result{}, err
+		}
+		r, err := c.Match(ctx, job)
+		if err != nil {
+			if ctx.Err() != nil {
+				return Result{}, ctx.Err()
+			}
+			childErrs = append(childErrs, fmt.Errorf("%s: %w", c.Name(), err))
+			continue
+		}
 		if !r.Matched {
-			return Result{Matched: false, Reason: c.Name() + ": " + r.Reason}
+			return Result{Matched: false, Reason: c.Name() + ": " + r.Reason}, nil
 		}
 		reasons = append(reasons, r.Reason)
 	}
-	return Result{Matched: true, Reason: strings.Join(reasons, "; ")}
+	if len(childErrs) > 0 {
+		return Result{}, errors.Join(childErrs...)
+	}
+	return Result{Matched: true, Reason: strings.Join(reasons, "; ")}, nil
 }
 
 // any_ matches when at least one child matches ("any" clashes with the
@@ -63,16 +79,30 @@ type any_ struct{ children []Matcher }
 
 func (a *any_) Name() string { return "any" }
 
-func (a *any_) Match(job model.Job) Result {
+func (a *any_) Match(ctx context.Context, job model.Job) (Result, error) {
 	reasons := make([]string, 0, len(a.children))
+	var childErrs []error
 	for _, c := range a.children {
-		r := c.Match(job)
+		if err := ctx.Err(); err != nil {
+			return Result{}, err
+		}
+		r, err := c.Match(ctx, job)
+		if err != nil {
+			if ctx.Err() != nil {
+				return Result{}, ctx.Err()
+			}
+			childErrs = append(childErrs, fmt.Errorf("%s: %w", c.Name(), err))
+			continue
+		}
 		if r.Matched {
-			return r
+			return r, nil
 		}
 		reasons = append(reasons, r.Reason)
 	}
-	return Result{Matched: false, Reason: "no criterion matched: " + strings.Join(reasons, "; ")}
+	if len(childErrs) > 0 {
+		return Result{}, errors.Join(childErrs...)
+	}
+	return Result{Matched: false, Reason: "no criterion matched: " + strings.Join(reasons, "; ")}, nil
 }
 
 // not inverts its child — useful for exclusion rules.
@@ -80,7 +110,13 @@ type not struct{ child Matcher }
 
 func (n *not) Name() string { return "not" }
 
-func (n *not) Match(job model.Job) Result {
-	r := n.child.Match(job)
-	return Result{Matched: !r.Matched, Reason: r.Reason}
+func (n *not) Match(ctx context.Context, job model.Job) (Result, error) {
+	if err := ctx.Err(); err != nil {
+		return Result{}, err
+	}
+	r, err := n.child.Match(ctx, job)
+	if err != nil {
+		return Result{}, err
+	}
+	return Result{Matched: !r.Matched, Reason: r.Reason}, nil
 }

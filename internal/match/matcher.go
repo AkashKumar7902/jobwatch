@@ -8,6 +8,7 @@
 package match
 
 import (
+	"context"
 	"fmt"
 	"sort"
 
@@ -23,10 +24,11 @@ type Result struct {
 	Reason string
 }
 
-// Matcher decides whether a job should trigger a notification.
+// Matcher decides whether a job should trigger a notification. An error means
+// the verdict is indeterminate and the caller must defer the job.
 type Matcher interface {
 	Name() string
-	Match(job model.Job) Result
+	Match(ctx context.Context, job model.Job) (Result, error)
 }
 
 // Spec is a matcher configuration tree, mirroring the `matcher:` block in

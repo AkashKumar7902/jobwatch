@@ -1,8 +1,9 @@
 package match
 
 // The "llm" matcher asks a language model whether a job fits your profile.
-// It speaks the OpenAI-compatible chat-completions API, which nearly every
-// provider serves, so it is not tied to any vendor:
+// It speaks the OpenAI-compatible chat-completions API. The configured
+// endpoint must support JSON-schema structured outputs (`response_format`
+// with type `json_schema`):
 //
 //	OpenAI      base_url: https://api.openai.com/v1        model: gpt-4o-mini
 //	Anthropic   base_url: https://api.anthropic.com/v1     model: claude-opus-4-8
@@ -20,12 +21,9 @@ package match
 //	    base_url: https://api.openai.com/v1
 //	    model: gpt-4o-mini
 //	    api_key_env: OPENAI_API_KEY  # omit for keyless endpoints like local Ollama
-//	    on_error: match              # match (default) or skip; see below
 //
-// on_error decides what happens when the provider is unreachable or returns
-// garbage. The default "match" FAILS OPEN: the runner marks evaluated jobs
-// as seen, so failing closed would silently lose postings forever during an
-// outage — a noisy email is recoverable, a lost job is not.
+// Provider and protocol failures return an error. The runner leaves that job
+// unprocessed for a later run instead of guessing at a verdict.
 
 import (
 	"bytes"
@@ -36,7 +34,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 
@@ -68,9 +65,8 @@ func init() {
 				return nil, fmt.Errorf("api_key_env %s is set in config but the environment variable is empty", envName)
 			}
 		}
-		onError := p.GetDefault("on_error", "match")
-		if onError != "match" && onError != "skip" {
-			return nil, fmt.Errorf(`param "on_error": want "match" or "skip", got %q`, onError)
+		if _, ok := p["on_error"]; ok {
+			return nil, fmt.Errorf(`param "on_error" was removed; delete it because matcher failures now always defer the job`)
 		}
 		maxDescChars, err := p.Int("max_desc_chars", 6000)
 		if err != nil {
@@ -90,10 +86,10 @@ func init() {
 			endpoint:     strings.TrimSuffix(baseURL, "/") + "/chat/completions",
 			model:        modelName,
 			apiKey:       apiKey,
-			matchOnError: onError == "match",
 			maxDescChars: maxDescChars,
 			maxTokens:    maxTokens,
 			client:       &http.Client{Timeout: 90 * time.Second},
+			timeout:      90 * time.Second,
 		}, nil
 	})
 }
@@ -104,26 +100,25 @@ type llm struct {
 	endpoint     string
 	model        string
 	apiKey       string
-	matchOnError bool
 	maxDescChars int
 	maxTokens    int
 	client       *http.Client
+	timeout      time.Duration
 }
 
 func (l *llm) Name() string { return "llm" }
 
 const llmSystemPrompt = `You judge whether a job posting fits a candidate. Consider role fit, seniority, stated experience requirements, employment type, and location/timezone eligibility. Be practical: a posting the candidate could reasonably be hired for is a fit; a posting clearly above their level or closed to their location is not. Respond with ONLY a JSON object: {"match": true|false, "reason": "<why>"}`
 
-func (l *llm) Match(job model.Job) Result {
-	verdict, err := l.ask(job)
+func (l *llm) Match(ctx context.Context, job model.Job) (Result, error) {
+	ctx, cancel := context.WithTimeout(ctx, l.timeout)
+	defer cancel()
+
+	verdict, err := l.ask(ctx, job)
 	if err != nil {
-		log.Printf("llm matcher: %v", err)
-		if l.matchOnError {
-			return Result{Matched: true, Reason: "llm unavailable, matching by default: " + err.Error()}
-		}
-		return Result{Matched: false, Reason: "llm unavailable, skipping: " + err.Error()}
+		return Result{}, err
 	}
-	return Result{Matched: verdict.Match, Reason: "llm: " + verdict.Reason}
+	return Result{Matched: verdict.Match, Reason: "llm: " + verdict.Reason}, nil
 }
 
 type llmVerdict struct {
@@ -131,7 +126,7 @@ type llmVerdict struct {
 	Reason string `json:"reason"`
 }
 
-func (l *llm) ask(job model.Job) (llmVerdict, error) {
+func (l *llm) ask(ctx context.Context, job model.Job) (llmVerdict, error) {
 	desc := job.Description
 	if len(desc) > l.maxDescChars {
 		desc = desc[:l.maxDescChars] + "\n[truncated]"
@@ -152,18 +147,19 @@ func (l *llm) ask(job model.Job) (llmVerdict, error) {
 			{"role": "system", "content": l.system},
 			{"role": "user", "content": user.String()},
 		},
-		"max_tokens": l.maxTokens,
+		"max_tokens":      l.maxTokens,
+		"response_format": verdictResponseFormat(),
 	})
 	if err != nil {
 		return llmVerdict{}, err
 	}
 
 	// Rate limits are routine on free tiers (Gemini free: ~10 req/min), so
-	// retry 429s and transient 5xx with a pause instead of failing open.
+	// retry 429s and transient 5xx with a pause before deferring the job.
 	var resp *http.Response
 	var raw []byte
 	for attempt := 1; ; attempt++ {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, l.endpoint, bytes.NewReader(body))
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, l.endpoint, bytes.NewReader(body))
 		if err != nil {
 			return llmVerdict{}, err
 		}
@@ -173,16 +169,27 @@ func (l *llm) ask(job model.Job) (llmVerdict, error) {
 		}
 		resp, err = l.client.Do(req)
 		if err != nil {
+			if ctx.Err() != nil {
+				return llmVerdict{}, ctx.Err()
+			}
 			// Transport errors (timeouts, resets) are as transient as 5xx.
 			if attempt >= 4 {
-				return llmVerdict{}, err
+				return llmVerdict{}, fmt.Errorf("calling %s: %w", l.endpoint, err)
 			}
 			log.Printf("llm matcher: %v, retrying in 5s (attempt %d/4)", err, attempt)
-			time.Sleep(5 * time.Second)
+			if err := waitForRetry(ctx, 5*time.Second); err != nil {
+				return llmVerdict{}, err
+			}
 			continue
 		}
-		raw, _ = io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+		raw, err = io.ReadAll(io.LimitReader(resp.Body, maxLLMResponseBytes+1))
 		resp.Body.Close()
+		if err != nil {
+			return llmVerdict{}, fmt.Errorf("reading completion: %w", err)
+		}
+		if len(raw) > maxLLMResponseBytes {
+			return llmVerdict{}, fmt.Errorf("completion exceeds %d bytes", maxLLMResponseBytes)
+		}
 		if resp.StatusCode == http.StatusOK {
 			break
 		}
@@ -200,7 +207,9 @@ func (l *llm) ask(job model.Job) (llmVerdict, error) {
 			}
 		}
 		log.Printf("llm matcher: %s, retrying in %s (attempt %d/4)", resp.Status, wait, attempt)
-		time.Sleep(wait)
+		if err := waitForRetry(ctx, wait); err != nil {
+			return llmVerdict{}, err
+		}
 	}
 
 	var completion struct {
@@ -219,41 +228,97 @@ func (l *llm) ask(job model.Job) (llmVerdict, error) {
 	return parseVerdict(completion.Choices[0].Message.Content)
 }
 
-var (
-	matchFieldRe  = regexp.MustCompile(`"match"\s*:\s*(true|false)`)
-	reasonFieldRe = regexp.MustCompile(`"reason"\s*:\s*"((?:[^"\\]|\\.)*)`)
-	// Local reasoning models (qwen3, deepseek-r1, ...) prepend their
-	// chain of thought in <think> tags, which may contain draft JSON.
-	thinkRe = regexp.MustCompile(`(?s)<think>.*?</think>`)
-)
+const maxLLMResponseBytes = 1 << 20
 
-// parseVerdict extracts the {"match":..., "reason":...} object from the
-// model's reply, tolerating surrounding prose, code fences, and — because
-// long replies can be cut off at max_tokens mid-JSON — truncation. A
-// truncated reply still carries the model's actual decision; salvaging it
-// beats failing open on a verdict that was really "false".
+func verdictResponseFormat() map[string]any {
+	return map[string]any{
+		"type": "json_schema",
+		"json_schema": map[string]any{
+			"name":   "job_match",
+			"strict": true,
+			"schema": map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"match":  map[string]any{"type": "boolean"},
+					"reason": map[string]any{"type": "string"},
+				},
+				"required":             []string{"match", "reason"},
+				"additionalProperties": false,
+			},
+		},
+	}
+}
+
+func waitForRetry(ctx context.Context, delay time.Duration) error {
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
+// parseVerdict accepts exactly one object with the two schema fields. Token
+// parsing keeps field names case-sensitive and detects duplicates, unlike
+// decoding directly into a Go struct.
 func parseVerdict(content string) (llmVerdict, error) {
-	content = thinkRe.ReplaceAllString(content, "")
-	start := strings.Index(content, "{")
-	end := strings.LastIndex(content, "}")
-	if start >= 0 && end > start {
-		var v llmVerdict
-		if err := json.Unmarshal([]byte(content[start:end+1]), &v); err == nil {
-			return v, nil
+	dec := json.NewDecoder(strings.NewReader(content))
+	token, err := dec.Token()
+	if err != nil {
+		return llmVerdict{}, fmt.Errorf("parsing model reply: %w", err)
+	}
+	opening, ok := token.(json.Delim)
+	if !ok || opening != '{' {
+		return llmVerdict{}, fmt.Errorf("model reply must be one JSON object")
+	}
+
+	var verdict llmVerdict
+	seen := make(map[string]bool, 2)
+	for dec.More() {
+		token, err = dec.Token()
+		if err != nil {
+			return llmVerdict{}, fmt.Errorf("parsing model reply field: %w", err)
+		}
+		name, ok := token.(string)
+		if !ok {
+			return llmVerdict{}, fmt.Errorf("model reply contains a non-string field name")
+		}
+		if seen[name] {
+			return llmVerdict{}, fmt.Errorf("model reply contains duplicate field %q", name)
+		}
+		seen[name] = true
+
+		switch name {
+		case "match":
+			var value *bool
+			if err := dec.Decode(&value); err != nil || value == nil {
+				return llmVerdict{}, fmt.Errorf(`model reply field "match" must be a boolean`)
+			}
+			verdict.Match = *value
+		case "reason":
+			var value *string
+			if err := dec.Decode(&value); err != nil || value == nil {
+				return llmVerdict{}, fmt.Errorf(`model reply field "reason" must be a string`)
+			}
+			verdict.Reason = *value
+		default:
+			return llmVerdict{}, fmt.Errorf("model reply contains unknown field %q", name)
 		}
 	}
-	m := matchFieldRe.FindStringSubmatch(content)
-	if m == nil {
-		return llmVerdict{}, fmt.Errorf("no verdict in model reply: %q", truncateStr(content, 120))
+	if token, err = dec.Token(); err != nil || token != json.Delim('}') {
+		return llmVerdict{}, fmt.Errorf("parsing model reply: incomplete JSON object")
 	}
-	v := llmVerdict{Match: m[1] == "true", Reason: "(explanation truncated by token limit)"}
-	if r := reasonFieldRe.FindStringSubmatch(content); r != nil {
-		var reason string
-		if err := json.Unmarshal([]byte(`"`+r[1]+`"`), &reason); err == nil && reason != "" {
-			v.Reason = truncateStr(reason, 500) + " …[truncated]"
+	for _, name := range []string{"match", "reason"} {
+		if !seen[name] {
+			return llmVerdict{}, fmt.Errorf("model reply is missing required field %q", name)
 		}
 	}
-	return v, nil
+	if _, err := dec.Token(); err != io.EOF {
+		return llmVerdict{}, fmt.Errorf("model reply contains trailing content")
+	}
+	return verdict, nil
 }
 
 func truncateStr(s string, n int) string {

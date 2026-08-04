@@ -13,6 +13,7 @@ package match
 //	    match_when_unknown: true
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -47,14 +48,14 @@ type recency struct {
 
 func (r *recency) Name() string { return "recency" }
 
-func (r *recency) Match(job model.Job) Result {
+func (r *recency) Match(_ context.Context, job model.Job) (Result, error) {
 	if job.PostedAt.IsZero() {
-		return Result{Matched: r.matchUnknown, Reason: "posting date unknown"}
+		return Result{Matched: r.matchUnknown, Reason: "posting date unknown"}, nil
 	}
 	age := time.Since(job.PostedAt)
 	days := int(age.Hours() / 24)
 	if age <= r.maxAge {
-		return Result{Matched: true, Reason: fmt.Sprintf("posted %d day(s) ago", days)}
+		return Result{Matched: true, Reason: fmt.Sprintf("posted %d day(s) ago", days)}, nil
 	}
-	return Result{Matched: false, Reason: fmt.Sprintf("posted %d day(s) ago, older than %d days", days, int(r.maxAge.Hours()/24))}
+	return Result{Matched: false, Reason: fmt.Sprintf("posted %d day(s) ago, older than %d days", days, int(r.maxAge.Hours()/24))}, nil
 }

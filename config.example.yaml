@@ -42,19 +42,19 @@ matcher:
         include: "engineer, engineering, developer, sde, sre, devops, software, backend, platform, infrastructure"
         exclude: "senior, sr, staff, principal, lead, director, head, vp, manager, mgr, intern, internship, architect"
     # Final judge: a language model reviews every job the rules above let
-    # through. Any OpenAI-compatible endpoint works (OpenAI, Anthropic,
-    # Groq, OpenRouter, local Ollama); this uses Google Gemini. Keep it
+    # through. Use an OpenAI-compatible endpoint with JSON-schema structured-
+    # output support; this configuration uses Google Gemini. Keep it
     # LAST under `of:` — cheap matchers veto first, so the LLM is only
     # called for jobs that already passed them, and -seed never calls it.
     - name: llm
       params:
         base_url: https://generativelanguage.googleapis.com/v1beta/openai
-        model: gemini-2.5-flash
+        model: gemini-3.6-flash
         api_key_env: JOBWATCH_LLM_API_KEY
         # Output ceiling, not input: billing is per token actually
         # generated, so a high cap costs nothing on normal replies and
         # only guards against runaway generations. 60000 sits just under
-        # gemini-2.5-flash's 65536 output limit — explanations never clip.
+        # gemini-3.6-flash's 65536 output limit — explanations never clip.
         max_tokens: 60000
         profile: >-
           Early-career backend engineer with 1 year of professional software

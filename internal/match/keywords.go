@@ -15,6 +15,7 @@ package match
 // so excluding "lead" does not block "leadership".
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
@@ -71,7 +72,7 @@ type keywords struct {
 
 func (k *keywords) Name() string { return "keywords" }
 
-func (k *keywords) Match(job model.Job) Result {
+func (k *keywords) Match(_ context.Context, job model.Job) (Result, error) {
 	var text string
 	switch k.field {
 	case "title":
@@ -86,15 +87,15 @@ func (k *keywords) Match(job model.Job) Result {
 
 	if k.exclude != nil {
 		if hit := k.exclude.FindString(text); hit != "" {
-			return Result{Matched: false, Reason: fmt.Sprintf("%s contains excluded term %q", k.field, hit)}
+			return Result{Matched: false, Reason: fmt.Sprintf("%s contains excluded term %q", k.field, hit)}, nil
 		}
 	}
 	if k.include != nil {
 		hit := k.include.FindString(text)
 		if hit == "" {
-			return Result{Matched: false, Reason: fmt.Sprintf("%s has none of the include terms", k.field)}
+			return Result{Matched: false, Reason: fmt.Sprintf("%s has none of the include terms", k.field)}, nil
 		}
-		return Result{Matched: true, Reason: fmt.Sprintf("%s contains %q", k.field, hit)}
+		return Result{Matched: true, Reason: fmt.Sprintf("%s contains %q", k.field, hit)}, nil
 	}
-	return Result{Matched: true, Reason: fmt.Sprintf("%s has no excluded terms", k.field)}
+	return Result{Matched: true, Reason: fmt.Sprintf("%s has no excluded terms", k.field)}, nil
 }

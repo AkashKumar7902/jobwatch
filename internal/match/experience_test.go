@@ -67,7 +67,7 @@ func TestExperienceMatcher(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			job := model.Job{Title: tt.title, Description: tt.desc}
-			got := oneYear.Match(job)
+			got := matchForTest(t, oneYear, job)
 			if got.Matched != tt.matched {
 				t.Errorf("Match() = %v, want %v (reason: %s)", got.Matched, tt.matched, got.Reason)
 			}
@@ -94,7 +94,7 @@ func TestExperienceUpperBoundBinds(t *testing.T) {
 		{"Up to two years of work experience is expected.", false}, // ceiling is 2
 	}
 	for _, tt := range tests {
-		got := threeYears.Match(model.Job{Title: "Engineer", Description: tt.desc})
+		got := matchForTest(t, threeYears, model.Job{Title: "Engineer", Description: tt.desc})
 		if got.Matched != tt.matched {
 			t.Errorf("years=3 vs %q: Match() = %v, want %v (reason: %s)", tt.desc, got.Matched, tt.matched, got.Reason)
 		}
@@ -114,7 +114,7 @@ func TestExperienceDecoyFigures(t *testing.T) {
 	}
 	for _, tt := range cases {
 		m := &Experience{Years: tt.years}
-		got := m.Match(model.Job{Title: "Engineer", Description: tt.desc})
+		got := matchForTest(t, m, model.Job{Title: "Engineer", Description: tt.desc})
 		if got.Matched {
 			t.Errorf("years=%v vs %q: decoy figure treated as requirement (reason: %s)", tt.years, tt.desc, got.Reason)
 		}
@@ -125,11 +125,11 @@ func TestExperienceUnlistedFlag(t *testing.T) {
 	job := model.Job{Title: "Engineer", Description: "Come build with us."}
 
 	strict := &Experience{Years: 1, NotifyWhenUnlisted: false}
-	if strict.Match(job).Matched {
+	if matchForTest(t, strict, job).Matched {
 		t.Error("unlisted experience should not match when NotifyWhenUnlisted=false")
 	}
 	lax := &Experience{Years: 1, NotifyWhenUnlisted: true}
-	if !lax.Match(job).Matched {
+	if !matchForTest(t, lax, job).Matched {
 		t.Error("unlisted experience should match when NotifyWhenUnlisted=true")
 	}
 }
@@ -143,7 +143,7 @@ func TestExperienceRejectsOldParam(t *testing.T) {
 
 func TestReasonIncludesSnippetAndRange(t *testing.T) {
 	m := &Experience{Years: 1}
-	res := m.Match(model.Job{Title: "Junior Engineer", Description: "We want someone with 1-3 years of experience shipping Go services."})
+	res := matchForTest(t, m, model.Job{Title: "Junior Engineer", Description: "We want someone with 1-3 years of experience shipping Go services."})
 	if !res.Matched {
 		t.Fatalf("expected match, got %q", res.Reason)
 	}

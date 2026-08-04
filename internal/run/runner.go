@@ -89,8 +89,9 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 
 	var matches []notify.Match
 	var matchedIDs []string
-	totalJobs, newJobs, retries, failures, partials := 0, 0, 0, 0, 0
+	totalJobs, newJobs, retries, failures, partials, deferred := 0, 0, 0, 0, 0, 0
 	newSources, seededJobs := 0, 0
+	var matchFailures deferredErrors
 
 	// checkpoint persists progress accumulated so far (dirty tracks unsaved
 	// Store.Add calls). Mid-sweep callers ignore the returned error — it is
@@ -214,7 +215,20 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				}
 			}
 
-			verdict := r.Matcher.Match(job)
+			verdict, err := r.Matcher.Match(ctx, job)
+			if err != nil {
+				if ctx.Err() != nil {
+					if saveErr := checkpoint(); saveErr != nil {
+						return errors.Join(ctx.Err(), fmt.Errorf("checkpoint at interruption: %w", saveErr))
+					}
+					return ctx.Err()
+				}
+				deferred++
+				matchFailures.add(job, err)
+				r.Log.Printf("match deferred %s — %s: %s (retried next run)",
+					job.Company, job.Title, clip(err.Error(), 300))
+				continue
+			}
 			if verdict.Matched {
 				srcMatched++
 				matches = append(matches, notify.Match{Job: job, Reason: verdict.Reason})
@@ -254,6 +268,12 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		// in-loop interval save covers long boards, this covers short ones.
 		checkpoint()
 	}
+	if ctx.Err() != nil {
+		if err := checkpoint(); err != nil {
+			return errors.Join(ctx.Err(), fmt.Errorf("checkpoint at interruption: %w", err))
+		}
+		return ctx.Err()
+	}
 
 	sort.Slice(matches, func(i, j int) bool {
 		a, b := matches[i].Job, matches[j].Job
@@ -263,47 +283,80 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		return a.Title < b.Title
 	})
 
-	r.Log.Printf("run complete: %d sources (%d failed, %d partial), %d open jobs, %d new, %d matched (%d retried)",
-		len(r.Sources), failures, partials, totalJobs, newJobs, len(matches), retries)
+	r.Log.Printf("run complete: %d sources (%d failed, %d partial), %d open jobs, %d new, %d matched, %d deferred (%d retried)",
+		len(r.Sources), failures, partials, totalJobs, newJobs, len(matches), deferred, retries)
 	if r.SeedNewSources && newSources > 0 {
 		r.Log.Printf("seeded %d new sources (%d current postings) without notifying", newSources, seededJobs)
 	}
+	deferredErr := matchFailures.err()
 	if failures == len(r.Sources) && len(r.Sources) > 0 {
-		return fmt.Errorf("all %d sources failed to fetch", failures)
+		return errors.Join(fmt.Errorf("all %d sources failed to fetch", failures), deferredErr)
 	}
 
 	if r.DryRun {
+		var deliverErr error
 		if len(matches) > 0 {
-			r.deliver(ctx, matches)
+			deliverErr = r.deliver(ctx, matches)
 		}
 		r.Log.Printf("dry run: state not saved")
-		return nil
+		return errors.Join(deliverErr, deferredErr)
 	}
 
 	// Persist first: matches are now on disk as pending (Notified=false),
 	// so a crash below retries them instead of losing them.
 	if err := r.Store.Save(); err != nil {
-		return fmt.Errorf("saving state: %w", err)
+		return errors.Join(fmt.Errorf("saving state: %w", err), deferredErr)
 	}
 	r.Log.Printf("state saved: %d records", r.Store.Len())
 	if r.SeedOnly {
 		r.Log.Printf("seeded %d postings without notifying; future runs alert on new ones", seededJobs)
-		return nil
+		return deferredErr
 	}
 	if len(matches) == 0 {
-		return nil
+		return deferredErr
 	}
 
 	if err := r.deliver(ctx, matches); err != nil {
 		// Leave the matches pending; the next cycle re-delivers them.
-		return err
+		return errors.Join(err, deferredErr)
 	}
 	for _, id := range matchedIDs {
 		rec, _ := r.Store.Get(id)
 		rec.Notified = true
 		r.Store.Add(id, rec)
 	}
-	return r.Store.Save()
+	return errors.Join(r.Store.Save(), deferredErr)
+}
+
+const deferredErrorSampleLimit = 5
+
+type deferredErrors struct {
+	count   int
+	samples []string
+}
+
+func (d *deferredErrors) add(job model.Job, err error) {
+	d.count++
+	if len(d.samples) >= deferredErrorSampleLimit {
+		return
+	}
+	label := clip(job.Company+" — "+job.Title, 160)
+	d.samples = append(d.samples, label+": "+clip(err.Error(), 300))
+}
+
+func (d *deferredErrors) err() error {
+	if d.count == 0 {
+		return nil
+	}
+	summary := fmt.Sprintf("%d matcher evaluation(s) deferred", d.count)
+	if d.count > len(d.samples) {
+		summary += fmt.Sprintf(" (showing first %d)", len(d.samples))
+	}
+	samples := make([]error, 0, len(d.samples))
+	for _, sample := range d.samples {
+		samples = append(samples, errors.New(sample))
+	}
+	return fmt.Errorf("%s: %w", summary, errors.Join(samples...))
 }
 
 // deliver sends matches through every notifier. All must succeed for the

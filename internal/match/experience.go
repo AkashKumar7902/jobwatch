@@ -28,6 +28,7 @@ package match
 //	    notify_when_unlisted: false  # also notify when nothing is listed
 
 import (
+	"context"
 	"fmt"
 	"math"
 	"regexp"
@@ -68,7 +69,7 @@ type Experience struct {
 
 func (e *Experience) Name() string { return "experience" }
 
-func (e *Experience) Match(job model.Job) Result {
+func (e *Experience) Match(_ context.Context, job model.Job) (Result, error) {
 	text := job.Title + "\n" + job.Description
 	mentions := extractMentions(text)
 
@@ -76,7 +77,7 @@ func (e *Experience) Match(job model.Job) Result {
 		return Result{
 			Matched: e.NotifyWhenUnlisted,
 			Reason:  "no experience requirement listed",
-		}
+		}, nil
 	}
 
 	for _, m := range mentions {
@@ -84,7 +85,7 @@ func (e *Experience) Match(job model.Job) Result {
 			return Result{
 				Matched: true,
 				Reason:  fmt.Sprintf("asks for %s experience, fits your %s: %q", m.describe(), fmtYears(e.Years), m.snippet),
-			}
+			}, nil
 		}
 	}
 	// Nothing fits; report the most lenient ask so the user sees how close it was.
@@ -97,7 +98,7 @@ func (e *Experience) Match(job model.Job) Result {
 	return Result{
 		Matched: false,
 		Reason:  fmt.Sprintf("asks for %s experience, outside your %s: %q", best.describe(), fmtYears(e.Years), best.snippet),
-	}
+	}, nil
 }
 
 // mention is one experience requirement found in the posting text, as the

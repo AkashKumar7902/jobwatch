@@ -15,6 +15,7 @@ package match
 //	    match_when_unknown: true
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"unicode"
@@ -68,16 +69,16 @@ type employment struct {
 
 func (e *employment) Name() string { return "employment" }
 
-func (e *employment) Match(job model.Job) Result {
+func (e *employment) Match(_ context.Context, job model.Job) (Result, error) {
 	if job.EmploymentType == "" {
-		return Result{Matched: e.matchUnknown, Reason: "employment type not stated"}
+		return Result{Matched: e.matchUnknown, Reason: "employment type not stated"}, nil
 	}
 	norm := normalizeType(job.EmploymentType)
 	for _, t := range e.types {
 		// Containment absorbs suffixes like recruitee's "fulltime_permanent".
 		if strings.Contains(norm, t) {
-			return Result{Matched: true, Reason: fmt.Sprintf("employment type %q", job.EmploymentType)}
+			return Result{Matched: true, Reason: fmt.Sprintf("employment type %q", job.EmploymentType)}, nil
 		}
 	}
-	return Result{Matched: false, Reason: fmt.Sprintf("employment type %q not in accepted list", job.EmploymentType)}
+	return Result{Matched: false, Reason: fmt.Sprintf("employment type %q not in accepted list", job.EmploymentType)}, nil
 }
