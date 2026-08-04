@@ -227,7 +227,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				r.Store.Add(job.ID, store.Record{
 					FirstSeen: rec.FirstSeen,
 					Title:     job.Company + ": " + job.Title,
-					Matched:   true,
+					Matched:   verdict.Matched,
 				})
 				dirty++
 				if time.Since(lastSave) >= saveEvery {

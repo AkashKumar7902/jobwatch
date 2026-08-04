@@ -111,6 +111,53 @@ func TestFailedDeliveryRetriesThenStops(t *testing.T) {
 	}
 }
 
+// A completed non-match is durable across process restarts and is not
+// evaluated again during a normal run.
+func TestNoMatchIsNotRetriedAfterStoreReopen(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	var evaluated []string
+	n := &flakyNotifier{}
+
+	openRunner := func() (*Runner, *store.Store) {
+		st, err := store.Open(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return &Runner{
+			Sources:     testSources(),
+			Matcher:     countingMatcher{ids: &evaluated},
+			Notifiers:   []notify.Notifier{n},
+			Store:       st,
+			Log:         log.New(io.Discard, "", 0),
+			Concurrency: 1,
+		}, st
+	}
+
+	r, st := openRunner()
+	if err := r.RunOnce(context.Background()); err != nil {
+		st.Close()
+		t.Fatal(err)
+	}
+	rec, ok := st.Get(testJob.ID)
+	if !ok || rec.Matched || rec.Notified {
+		st.Close()
+		t.Fatalf("non-match should be recorded as processed: %+v (ok=%v)", rec, ok)
+	}
+	st.Close()
+
+	r, st = openRunner()
+	defer st.Close()
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(evaluated) != 1 {
+		t.Fatalf("matcher evaluated %v, want the job exactly once", evaluated)
+	}
+	if len(n.batches) != 0 {
+		t.Fatalf("non-match must never be delivered, got %v", n.batches)
+	}
+}
+
 // Seeding records jobs as baseline without evaluating or notifying:
 // nothing is delivered now or on later runs.
 func TestSeedSuppressesDeliveryForever(t *testing.T) {
