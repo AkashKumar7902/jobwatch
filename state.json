@@ -1523,6 +1523,54 @@
   "matched": false,
   "notified": false
  },
+ "__jobwatch_source_registry_v2__": {
+  "first_seen": "2026-08-05T12:12:21.995729722Z",
+  "title": "exact source registry v2",
+  "matched": false,
+  "notified": false
+ },
+ "__jobwatch_source_seed_in_progress__/atlassian": {
+  "first_seen": "2026-08-05T12:19:25.188197715Z",
+  "title": "source seed in progress: Atlassian",
+  "matched": false,
+  "notified": false
+ },
+ "__jobwatch_source_seed_in_progress__/avature/jobs.ea.com/en_US/careers/SearchJobs": {
+  "first_seen": "2026-08-05T12:19:24.738232527Z",
+  "title": "source seed in progress: Electronic Arts",
+  "matched": false,
+  "notified": false
+ },
+ "__jobwatch_source_seed_in_progress__/enphase": {
+  "first_seen": "2026-08-05T12:19:32.697661377Z",
+  "title": "source seed in progress: Enphase Energy",
+  "matched": false,
+  "notified": false
+ },
+ "__jobwatch_source_seed_in_progress__/medianet": {
+  "first_seen": "2026-08-05T12:19:25.401975661Z",
+  "title": "source seed in progress: Media.net",
+  "matched": false,
+  "notified": false
+ },
+ "__jobwatch_source_seed_in_progress__/oraclece/eeho.fa.us2.oraclecloud.com/CX_45001": {
+  "first_seen": "2026-08-05T12:19:11.685680348Z",
+  "title": "source seed in progress: Oracle GBU",
+  "matched": false,
+  "notified": false
+ },
+ "__jobwatch_source_seed_in_progress__/oraclece/eofe.fa.us2.oraclecloud.com/BNY-Careers": {
+  "first_seen": "2026-08-05T12:19:09.186976715Z",
+  "title": "source seed in progress: BNY",
+  "matched": false,
+  "notified": false
+ },
+ "__jobwatch_source_seed_in_progress__/payu": {
+  "first_seen": "2026-08-05T12:19:32.914846695Z",
+  "title": "source seed in progress: PayU",
+  "matched": false,
+  "notified": false
+ },
  "airoha/047a4e32-bcaf-465a-9a17-10d9b909fbb7": {
   "first_seen": "2026-08-01T12:48:31.643979303Z",
   "title": "Airoha Technology: A260100-CAD Engineer",
@@ -6907,6 +6955,12 @@
  },
  "amazon/IND/10449893": {
   "first_seen": "2026-08-01T12:48:28.623323128Z",
+  "title": "Amazon India: Senior Program Manager - Decision Platform, Retail Business Services (RBS)",
+  "matched": false,
+  "notified": false
+ },
+ "amazon/IND/10449894": {
+  "first_seen": "2026-08-05T12:19:24.965094413Z",
   "title": "Amazon India: Senior Program Manager - Decision Platform, Retail Business Services (RBS)",
   "matched": false,
   "notified": false
@@ -16943,6 +16997,12 @@
   "matched": false,
   "notified": false
  },
+ "amazon/IND/10492221": {
+  "first_seen": "2026-08-05T12:19:24.955119643Z",
+  "title": "Amazon India: Investigation Associate, PQ Ops",
+  "matched": false,
+  "notified": false
+ },
  "amazon/IND/10492253": {
   "first_seen": "2026-08-04T22:35:11.352420351Z",
   "title": "Amazon India: Applied Scientist II, Alexa AI",
@@ -16958,6 +17018,12 @@
  "amazon/IND/10492334": {
   "first_seen": "2026-08-04T23:47:25.268273799Z",
   "title": "Amazon India: Tech Infrastructure Program Manager, AWS Data Center Planning \u0026 Delivery",
+  "matched": false,
+  "notified": false
+ },
+ "amazon/IND/10492342": {
+  "first_seen": "2026-08-05T12:19:24.953795029Z",
+  "title": "Amazon India: Investigation Associate, PQ Ops",
   "matched": false,
   "notified": false
  },
@@ -17135,6 +17201,42 @@
   "matched": false,
   "notified": false
  },
+ "amazon/IND/10492635": {
+  "first_seen": "2026-08-05T12:19:24.962546955Z",
+  "title": "Amazon India: Security Operations Manager, GSOC, Worldwide Operations Security (WWOS)",
+  "matched": false,
+  "notified": false
+ },
+ "amazon/IND/10492647": {
+  "first_seen": "2026-08-05T12:19:24.961054112Z",
+  "title": "Amazon India: Operations Specialist, IN Easy Ship",
+  "matched": false,
+  "notified": false
+ },
+ "amazon/IND/10492654": {
+  "first_seen": "2026-08-05T12:19:24.959875374Z",
+  "title": "Amazon India: Account Manager UK, ABACUS",
+  "matched": false,
+  "notified": false
+ },
+ "amazon/IND/10492678": {
+  "first_seen": "2026-08-05T12:19:24.958575036Z",
+  "title": "Amazon India: IT Support Associate II",
+  "matched": false,
+  "notified": false
+ },
+ "amazon/IND/10492683": {
+  "first_seen": "2026-08-05T12:19:24.957519521Z",
+  "title": "Amazon India: Program Mgr, Invoice Scanning, ROW Inbound NOC",
+  "matched": false,
+  "notified": false
+ },
+ "amazon/IND/10492686": {
+  "first_seen": "2026-08-05T12:19:24.956383567Z",
+  "title": "Amazon India: Software Development Engineer - II, Verification Services-Fixed",
+  "matched": false,
+  "notified": false
+ },
  "amazon/IND/3018029": {
   "first_seen": "2026-08-03T15:10:45.778047776Z",
   "title": "Amazon India: Sr. Software Dev Engineer, Amazon Smart Vehicles, Amazon Smart Vehicles",
@@ -17144,6 +17246,12 @@
  "amazon/IND/3019093": {
   "first_seen": "2026-08-04T14:00:36.963269733Z",
   "title": "Amazon India: SDE2",
+  "matched": false,
+  "notified": false
+ },
+ "amazon/IND/3046667": {
+  "first_seen": "2026-08-05T12:19:24.967415935Z",
+  "title": "Amazon India: Sr. Software Development Engineer",
   "matched": false,
   "notified": false
  },
@@ -18881,6 +18989,12 @@
   "matched": false,
   "notified": false
  },
+ "ashby/checkout.com/18b6737d-5a8d-419d-a978-3c9092170298": {
+  "first_seen": "2026-08-05T12:15:56.708058271Z",
+  "title": "Checkout.com: Associate, Financial Control",
+  "matched": false,
+  "notified": false
+ },
  "ashby/checkout.com/19615c6a-f769-4af6-80aa-ff90bd92c34b": {
   "first_seen": "2026-07-16T19:27:53.860118387Z",
   "title": "Checkout.com: Senior Machine Learning Engineer",
@@ -20102,6 +20216,12 @@
  "ashby/checkout.com/ef5baf64-3a31-453a-9de3-2116ed1e718b": {
   "first_seen": "2026-07-16T19:27:53.860097497Z",
   "title": "Checkout.com: Enterprise Sales Executive",
+  "matched": false,
+  "notified": false
+ },
+ "ashby/checkout.com/f0d111c3-888c-456f-a8da-0c622ed8daee": {
+  "first_seen": "2026-08-05T12:15:56.704469019Z",
+  "title": "Checkout.com: Manager, Operations and Strategy (CEO Office)",
   "matched": false,
   "notified": false
  },
@@ -28493,6 +28613,12 @@
   "matched": false,
   "notified": false
  },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556872162": {
+  "first_seen": "2026-08-05T12:19:03.542678707Z",
+  "title": "Microsoft India: Product Manager II",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556872403": {
   "first_seen": "2026-08-01T14:38:14.17951592Z",
   "title": "Microsoft India: Principal Software Engineering Manager-Azure Data",
@@ -28661,6 +28787,12 @@
   "matched": false,
   "notified": false
  },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556918901": {
+  "first_seen": "2026-08-05T12:19:05.045963948Z",
+  "title": "Microsoft India: Solution Area Specialists - Cyber Security",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556922856": {
   "first_seen": "2026-08-01T14:38:14.179507978Z",
   "title": "Microsoft India: Cloud Solution Architecture Manager",
@@ -28730,7 +28862,7 @@
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556927931": {
   "first_seen": "2026-08-04T07:52:44.930476487Z",
   "title": "Microsoft India: Software Engineer II",
-  "matched": true,
+  "matched": false,
   "notified": false
  },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556928541": {
@@ -28961,6 +29093,12 @@
   "matched": false,
   "notified": false
  },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556939396": {
+  "first_seen": "2026-08-05T12:19:05.341966752Z",
+  "title": "Microsoft India: Director, Silicon Physical Design CAD",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556939440": {
   "first_seen": "2026-08-01T14:38:14.179496071Z",
   "title": "Microsoft India: Principal Silicon Design Engineer",
@@ -28988,6 +29126,12 @@
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556939488": {
   "first_seen": "2026-08-01T14:38:14.17948225Z",
   "title": "Microsoft India: Principal Firmware Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556939533": {
+  "first_seen": "2026-08-05T12:19:03.246725684Z",
+  "title": "Microsoft India: Principal Software Engineering Manager",
   "matched": false,
   "notified": false
  },
@@ -29291,6 +29435,18 @@
   "matched": false,
   "notified": false
  },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556947833": {
+  "first_seen": "2026-08-05T12:19:05.673029793Z",
+  "title": "Microsoft India: Senior Process Manager",
+  "matched": false,
+  "notified": false
+ },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556947994": {
+  "first_seen": "2026-08-05T12:19:03.845568234Z",
+  "title": "Microsoft India: Security Operations Engineering",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556950360": {
   "first_seen": "2026-08-01T14:38:14.17952297Z",
   "title": "Microsoft India: Firmware Engineer II",
@@ -29315,6 +29471,12 @@
   "matched": false,
   "notified": false
  },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556950492": {
+  "first_seen": "2026-08-05T12:19:04.157729298Z",
+  "title": "Microsoft India: Senior Consultant - (Dotnet Full stack + AI)",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556950582": {
   "first_seen": "2026-08-03T15:08:45.386671001Z",
   "title": "Microsoft India: Senior Project Manager",
@@ -29329,6 +29491,12 @@
  },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556950600": {
   "first_seen": "2026-08-04T17:08:47.596513725Z",
+  "title": "Microsoft India: Consulting Project Management IC5",
+  "matched": false,
+  "notified": false
+ },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556950605": {
+  "first_seen": "2026-08-05T12:19:04.756955179Z",
   "title": "Microsoft India: Consulting Project Management IC5",
   "matched": false,
   "notified": false
@@ -29369,6 +29537,12 @@
   "matched": false,
   "notified": false
  },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556953705": {
+  "first_seen": "2026-08-05T12:19:06.044806795Z",
+  "title": "Microsoft India: Customer Experience Engineer",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556953737": {
   "first_seen": "2026-08-04T17:08:57.786125961Z",
   "title": "Microsoft India: Principal Software Engineer",
@@ -29393,9 +29567,21 @@
   "matched": true,
   "notified": true
  },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556955113": {
+  "first_seen": "2026-08-05T12:19:04.445214682Z",
+  "title": "Microsoft India: Software Engineer 2",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556955128": {
   "first_seen": "2026-08-03T15:08:38.626577988Z",
   "title": "Microsoft India: Software Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556955130": {
+  "first_seen": "2026-08-05T12:19:02.905947189Z",
+  "title": "Microsoft India: Software Engineer II",
   "matched": false,
   "notified": false
  },
@@ -29426,6 +29612,18 @@
  "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556955755": {
   "first_seen": "2026-08-04T17:08:47.843051943Z",
   "title": "Microsoft India: Software Quality Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556955803": {
+  "first_seen": "2026-08-05T12:18:56.713515748Z",
+  "title": "Microsoft India: Senior Site Reliability Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "eightfold/apply.careers.microsoft.com/microsoft.com/1970393556955821": {
+  "first_seen": "2026-08-05T12:18:57.260070144Z",
+  "title": "Microsoft India: Site Reliability Engineer II",
   "matched": false,
   "notified": false
  },
@@ -29468,6 +29666,12 @@
  "eightfold/jobs.ericsson.com/ericsson.com/563121776986348": {
   "first_seen": "2026-08-01T12:48:33.225533108Z",
   "title": "Cradlepoint (Ericsson Enterprise Wireless): Consulting Sales Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "eightfold/morganstanley.eightfold.ai/morganstanley.com/549783041795": {
+  "first_seen": "2026-08-05T12:19:06.558640659Z",
+  "title": "Morgan Stanley India: Product Control, Director/Associate, Product Controllers",
   "matched": false,
   "notified": false
  },
@@ -29627,6 +29831,12 @@
   "matched": false,
   "notified": false
  },
+ "eightfold/morganstanley.eightfold.ai/morganstanley.com/549797635643": {
+  "first_seen": "2026-08-05T12:19:06.91824571Z",
+  "title": "Morgan Stanley India: Data Quality Controls (DQC), Vice President, Data Management",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/morganstanley.eightfold.ai/morganstanley.com/549797637128": {
   "first_seen": "2026-08-04T20:53:48.891847122Z",
   "title": "Morgan Stanley India: Assoc, Professional, P2, Product Support \u0026 Services IM : Job Level - Associate",
@@ -29735,9 +29945,21 @@
   "matched": false,
   "notified": false
  },
+ "eightfold/morganstanley.eightfold.ai/morganstanley.com/549797897147": {
+  "first_seen": "2026-08-05T12:19:07.315823606Z",
+  "title": "Morgan Stanley India: Analyst /Senior Analyst - Debt Capital Market - GCM",
+  "matched": false,
+  "notified": false
+ },
  "eightfold/morganstanley.eightfold.ai/morganstanley.com/549797897196": {
   "first_seen": "2026-08-04T20:53:48.891829566Z",
   "title": "Morgan Stanley India: Investment Banking, Associate ,  Investment Banking Division",
+  "matched": false,
+  "notified": false
+ },
+ "eightfold/morganstanley.eightfold.ai/morganstanley.com/549797897198": {
+  "first_seen": "2026-08-05T12:19:07.660877549Z",
+  "title": "Morgan Stanley India: Equity Capital Market,Analyst/Sr Analyst, Investment Banking Division",
   "matched": false,
   "notified": false
  },
@@ -36575,6 +36797,12 @@
   "matched": false,
   "notified": false
  },
+ "google/126531728385680070": {
+  "first_seen": "2026-08-05T12:19:26.593365555Z",
+  "title": "Google India: Area Environment Health Safety Program Manager, Data Center Construction",
+  "matched": false,
+  "notified": false
+ },
  "google/127209099489092294": {
   "first_seen": "2026-08-01T12:48:29.463512652Z",
   "title": "Google India: Senior Design Verification Engineer, Google Cloud",
@@ -36668,6 +36896,12 @@
  "google/131876321264313030": {
   "first_seen": "2026-08-01T12:48:29.463521279Z",
   "title": "Google India: Engineering Manager, Software Engineering",
+  "matched": false,
+  "notified": false
+ },
+ "google/132246989826859718": {
+  "first_seen": "2026-08-05T12:19:26.594884186Z",
+  "title": "Google India: SAP Release Engineer",
   "matched": false,
   "notified": false
  },
@@ -37049,6 +37283,12 @@
   "matched": false,
   "notified": false
  },
+ "google/143960911831278278": {
+  "first_seen": "2026-08-05T12:19:32.25613503Z",
+  "title": "Google India: Data Center Server Operations Manager, Global Server Operations",
+  "matched": false,
+  "notified": false
+ },
  "google/72183360398467782": {
   "first_seen": "2026-08-01T12:48:29.463548229Z",
   "title": "Google India: Product Manager, Geo User Generated Content Contributor Success",
@@ -37334,6 +37574,12 @@
  "google/82112493710648006": {
   "first_seen": "2026-08-01T12:48:29.463446269Z",
   "title": "Google India: Software Engineer III, Mobile (Android)",
+  "matched": false,
+  "notified": false
+ },
+ "google/82618883239748294": {
+  "first_seen": "2026-08-05T12:19:32.258216446Z",
+  "title": "Google India: Technical Program Manager, AI Data",
   "matched": false,
   "notified": false
  },
@@ -58301,6 +58547,12 @@
   "matched": false,
   "notified": false
  },
+ "greenhouse/datadog/8094219": {
+  "first_seen": "2026-08-05T12:15:53.518528419Z",
+  "title": "DataDog: Manager I, Engineering - Security Libraries",
+  "matched": false,
+  "notified": false
+ },
  "greenhouse/datadog/8094854": {
   "first_seen": "2026-08-01T10:43:52.854111037Z",
   "title": "DataDog: Staff Product Designer, Modern Compute",
@@ -58412,6 +58664,12 @@
  "greenhouse/datadog/8105372": {
   "first_seen": "2026-08-04T14:06:59.828726184Z",
   "title": "DataDog: Staff Software Engineer - Corporate Development",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/datadog/8108378": {
+  "first_seen": "2026-08-05T12:15:53.516005078Z",
+  "title": "DataDog: Manager I, Engineering - Code Security",
   "matched": false,
   "notified": false
  },
@@ -64439,6 +64697,12 @@
   "matched": false,
   "notified": false
  },
+ "greenhouse/dropbox/7958409": {
+  "first_seen": "2026-08-05T12:15:54.684561464Z",
+  "title": "Dropbox: Infrastructure Software Engineer, Metadata Core",
+  "matched": false,
+  "notified": false
+ },
  "greenhouse/dropbox/7961824": {
   "first_seen": "2026-07-16T19:27:49.258332406Z",
   "title": "Dropbox: Staff Site Reliability Engineer, Production Engineering",
@@ -68273,6 +68537,12 @@
   "matched": false,
   "notified": false
  },
+ "greenhouse/gitlab/8646852002": {
+  "first_seen": "2026-08-05T12:15:53.754225231Z",
+  "title": "GitLab: Customer Success Architect, CEUR",
+  "matched": false,
+  "notified": false
+ },
  "greenhouse/gitlab/8647506002": {
   "first_seen": "2026-07-23T18:38:47.581078344Z",
   "title": "GitLab: Senior Director, Associate General Counsel",
@@ -69935,6 +70205,12 @@
   "matched": false,
   "notified": false
  },
+ "greenhouse/grafanalabs/6130099004": {
+  "first_seen": "2026-08-05T12:15:53.995187912Z",
+  "title": "Grafana Labs: Senior Solutions Engineer | France | Arabic Speaker | Remote ",
+  "matched": false,
+  "notified": false
+ },
  "greenhouse/grafanalabs/6130618004": {
   "first_seen": "2026-08-01T10:44:21.227985847Z",
   "title": "Grafana Labs: Software Engineer - Synthetic Monitoring | Spain | Remote",
@@ -69986,6 +70262,30 @@
  "greenhouse/grafanalabs/6134276004": {
   "first_seen": "2026-08-04T18:57:19.190696055Z",
   "title": "Grafana Labs: Observability Architect | EST | Remote",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/grafanalabs/6134516004": {
+  "first_seen": "2026-08-05T12:15:53.99161188Z",
+  "title": "Grafana Labs: Senior Platform Engineer - Platform Metal | UK | Remote",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/grafanalabs/6134518004": {
+  "first_seen": "2026-08-05T12:15:53.988004201Z",
+  "title": "Grafana Labs: Senior Platform Engineer - Platform Metal | Spain | Remote",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/grafanalabs/6134519004": {
+  "first_seen": "2026-08-05T12:15:53.984320188Z",
+  "title": "Grafana Labs: Senior Platform Engineer - Platform Metal | Ireland | Remote",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/grafanalabs/6135042004": {
+  "first_seen": "2026-08-05T12:15:53.998374767Z",
+  "title": "Grafana Labs: Senior Solutions Engineer | Spain | Arabic Speaker | Remote ",
   "matched": false,
   "notified": false
  },
@@ -74417,6 +74717,12 @@
   "matched": false,
   "notified": false
  },
+ "greenhouse/phonepe/7827710003": {
+  "first_seen": "2026-08-05T12:15:54.914267955Z",
+  "title": "PhonePe: Associate Manager - Technology, Risk \u0026 Compliance",
+  "matched": false,
+  "notified": false
+ },
  "greenhouse/platformsh/8446142002": {
   "first_seen": "2026-07-16T17:58:50.045781707Z",
   "title": "Platform.sh: General Job Application",
@@ -78053,6 +78359,24 @@
   "matched": false,
   "notified": false
  },
+ "greenhouse/remotecom/7827648003": {
+  "first_seen": "2026-08-05T12:15:54.223430563Z",
+  "title": "Remote: Senior Mobility Specialist - Immigration Lawyer",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/remotecom/7827649003": {
+  "first_seen": "2026-08-05T12:15:54.227155476Z",
+  "title": "Remote: Senior Mobility Specialist - Immigration Lawyer",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/remotecom/7827650003": {
+  "first_seen": "2026-08-05T12:15:54.219688264Z",
+  "title": "Remote: Senior Mobility Specialist - Immigration Lawyer",
+  "matched": false,
+  "notified": false
+ },
  "greenhouse/rockstargames/6502182003": {
   "first_seen": "2026-07-16T19:27:49.259827617Z",
   "title": "Rockstar Games: UI Tools Programmer",
@@ -78566,6 +78890,18 @@
  "greenhouse/rockstargames/7812685003": {
   "first_seen": "2026-07-22T14:23:46.298680835Z",
   "title": "Rockstar Games: Senior Game Security Operations Manager",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/rockstargames/7827676003": {
+  "first_seen": "2026-08-05T12:15:55.140316222Z",
+  "title": "Rockstar Games: Senior Security Vulnerability Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/rockstargames/7827686003": {
+  "first_seen": "2026-08-05T12:15:55.137702236Z",
+  "title": "Rockstar Games: Security GRC Analyst ",
   "matched": false,
   "notified": false
  },
@@ -81356,6 +81692,12 @@
  "greenhouse/saasgroup/4942636101": {
   "first_seen": "2026-08-01T10:44:43.434180127Z",
   "title": "SaasGroup: Senior Platform Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/saasgroup/4945288101": {
+  "first_seen": "2026-08-05T12:15:54.463204662Z",
+  "title": "SaasGroup: IT Support Specialist",
   "matched": false,
   "notified": false
  },
@@ -85823,6 +86165,12 @@
   "matched": false,
   "notified": false
  },
+ "greenhouse/stripe/8089815": {
+  "first_seen": "2026-08-05T12:15:55.366102551Z",
+  "title": "Stripe: Staff Software Engineer - CI Services  ",
+  "matched": false,
+  "notified": false
+ },
  "greenhouse/stripe/8089882": {
   "first_seen": "2026-08-01T10:45:08.335801225Z",
   "title": "Stripe: Sales Strategy \u0026 Operations Business Partner",
@@ -89507,6 +89855,12 @@
   "matched": false,
   "notified": false
  },
+ "greenhouse/twilio/8108404": {
+  "first_seen": "2026-08-05T12:15:55.588450391Z",
+  "title": "Twilio: Incident Commander",
+  "matched": false,
+  "notified": false
+ },
  "greenhouse/upwork/5480839003": {
   "first_seen": "2026-07-16T17:58:51.449571203Z",
   "title": "Upwork: General Upwork Application",
@@ -92852,6 +93206,12 @@
  "greenhouse/zyngacareers/6113059004": {
   "first_seen": "2026-08-01T10:45:13.451993601Z",
   "title": "Zynga: Principal Software Developer - Full Stack (Unity, C#)",
+  "matched": false,
+  "notified": false
+ },
+ "greenhouse/zyngacareers/6113597004": {
+  "first_seen": "2026-08-05T12:15:55.817841816Z",
+  "title": "Zynga: UI Artist I",
   "matched": false,
   "notified": false
  },
@@ -96533,6 +96893,12 @@
   "matched": false,
   "notified": false
  },
+ "highergs/174557": {
+  "first_seen": "2026-08-05T12:19:25.61537166Z",
+  "title": "Goldman Sachs: Global Banking \u0026 Markets Operations-Ready To Margin-Associate-Bengaluru",
+  "matched": false,
+  "notified": false
+ },
  "highergs/174590": {
   "first_seen": "2026-08-01T12:48:29.250226336Z",
   "title": "Goldman Sachs: Asset \u0026 Wealth Management, Private Equity Investing, Analyst, Hong Kong/Beijing",
@@ -98765,6 +99131,12 @@
   "matched": false,
   "notified": false
  },
+ "highergs/178948": {
+  "first_seen": "2026-08-05T12:19:26.110635955Z",
+  "title": "Goldman Sachs: Private Wealth Management, Wealth Management Professional, Analyst, Amsterdam",
+  "matched": false,
+  "notified": false
+ },
  "highergs/178976": {
   "first_seen": "2026-08-01T12:48:29.250034208Z",
   "title": "Goldman Sachs: Private Wealth Management, Markets Coverage Group, Wealth Management Professional, Associate, London",
@@ -98972,6 +99344,12 @@
  "highergs/179269": {
   "first_seen": "2026-08-01T12:48:29.250016905Z",
   "title": "Goldman Sachs: Asset \u0026 Wealth Management, Private Wealth Management, Financial Analyst, Singapore",
+  "matched": false,
+  "notified": false
+ },
+ "highergs/179271": {
+  "first_seen": "2026-08-05T12:19:25.967681995Z",
+  "title": "Goldman Sachs: Global Banking \u0026 Markets Operations - Analyst - Loans Corporate Actions - Bengaluru",
   "matched": false,
   "notified": false
  },
@@ -99395,6 +99773,12 @@
   "matched": false,
   "notified": false
  },
+ "highergs/179871": {
+  "first_seen": "2026-08-05T12:19:26.23392402Z",
+  "title": "Goldman Sachs: Vice President, Global Markets, Prime Services, New Business Group",
+  "matched": false,
+  "notified": false
+ },
  "highergs/179877": {
   "first_seen": "2026-08-01T12:48:29.250025932Z",
   "title": "Goldman Sachs: Private Wealth Management, Goldman Partner Office Planning, Associate, London",
@@ -99422,6 +99806,12 @@
  "highergs/179889": {
   "first_seen": "2026-08-03T18:09:24.136067817Z",
   "title": "Goldman Sachs: GBM - Public Dept-Warsaw-Vice President-Client Onboarding \u0026 Documentation Negotiator",
+  "matched": false,
+  "notified": false
+ },
+ "highergs/179919": {
+  "first_seen": "2026-08-05T12:19:25.851729686Z",
+  "title": "Goldman Sachs: Global Banking \u0026 Markets Operations-Exotic Trade Review-Associate-Bengaluru",
   "matched": false,
   "notified": false
  },
@@ -101405,6 +101795,12 @@
   "matched": false,
   "notified": false
  },
+ "jio/86074047": {
+  "first_seen": "2026-08-05T12:19:48.09357364Z",
+  "title": "Reliance Jio: Engineer Tech Operations ( 86074047 )",
+  "matched": false,
+  "notified": false
+ },
  "jio/86101322": {
   "first_seen": "2026-08-01T12:48:32.996779314Z",
   "title": "Reliance Jio: L2 Backhaul (Tx/IP/MW/UBR) Engineer ( 86101322 )",
@@ -102707,6 +103103,30 @@
   "matched": false,
   "notified": false
  },
+ "jio/86681430": {
+  "first_seen": "2026-08-05T12:19:34.439785053Z",
+  "title": "Reliance Jio: Core Maintenance Fiber Engineer ( 86681430 )",
+  "matched": false,
+  "notified": false
+ },
+ "jio/86683623": {
+  "first_seen": "2026-08-05T12:19:37.585600181Z",
+  "title": "Reliance Jio: Core Maintenance Fiber Engineer ( 86683623 )",
+  "matched": false,
+  "notified": false
+ },
+ "jio/86683792": {
+  "first_seen": "2026-08-05T12:19:43.491839854Z",
+  "title": "Reliance Jio: Core Maintenance Utilities Engineer ( 86683792 )",
+  "matched": false,
+  "notified": false
+ },
+ "jio/86683850": {
+  "first_seen": "2026-08-05T12:19:40.339837132Z",
+  "title": "Reliance Jio: Core Maintenance Fiber Engineer ( 86683850 )",
+  "matched": false,
+  "notified": false
+ },
  "jubilant/IND/24062": {
   "first_seen": "2026-08-01T12:48:33.454997543Z",
   "title": "Jubilant Group India (supplied Jubilant URL): Research Associate",
@@ -103847,6 +104267,12 @@
   "matched": false,
   "notified": false
  },
+ "kula/cashfree/52314": {
+  "first_seen": "2026-08-05T12:19:24.521987263Z",
+  "title": "Cashfree: Senior Analyst - Finance Automation",
+  "matched": false,
+  "notified": false
+ },
  "kula/cashfree/5565": {
   "first_seen": "2026-08-01T12:48:27.202605782Z",
   "title": "Cashfree: Software Development Engineer 1",
@@ -104363,6 +104789,12 @@
   "matched": false,
   "notified": false
  },
+ "lever/bazaarvoice/ab4732f4-2205-4af6-ab63-a97ed8886bfa": {
+  "first_seen": "2026-08-05T12:15:56.265546077Z",
+  "title": "Bazaarvoice: Content Moderation Analyst (R8185)",
+  "matched": false,
+  "notified": false
+ },
  "lever/bazaarvoice/b6c633bc-75fe-4d0f-9908-ddc12be7096a": {
   "first_seen": "2026-07-23T16:48:04.669541109Z",
   "title": "Bazaarvoice: Implementation Team Lead",
@@ -104486,6 +104918,12 @@
  "lever/bounteous/730b398b-f830-47ab-acc4-cc86a1394361": {
   "first_seen": "2026-07-16T19:27:53.854101517Z",
   "title": "Bounteous (Accolite): Principal Databricks Architect",
+  "matched": false,
+  "notified": false
+ },
+ "lever/bounteous/74169e94-ef00-4726-a08f-fdce2d9c53f4": {
+  "first_seen": "2026-08-05T12:15:56.495269744Z",
+  "title": "Bounteous (Accolite): Incident Management",
   "matched": false,
   "notified": false
  },
@@ -104642,6 +105080,12 @@
  "lever/bounteous/f47da3be-61f0-4de2-9e49-75e3be657954": {
   "first_seen": "2026-07-16T19:27:53.854103291Z",
   "title": "Bounteous (Accolite): Senior Specialist, SEO/AEO (Contract)",
+  "matched": false,
+  "notified": false
+ },
+ "lever/bounteous/f7c33457-9b12-47c2-aac4-091917aa9746": {
+  "first_seen": "2026-08-05T12:15:56.495181503Z",
+  "title": "Bounteous (Accolite): Application Support Engineer",
   "matched": false,
   "notified": false
  },
@@ -107837,6 +108281,12 @@
   "matched": false,
   "notified": false
  },
+ "lever/toptal/dd9eacec-2e9e-4ee4-b944-32da7229a0c6": {
+  "first_seen": "2026-08-05T12:15:56.038699487Z",
+  "title": "Toptal: Engineering Manager",
+  "matched": false,
+  "notified": false
+ },
  "lever/toptal/ec532922-14c5-408e-859d-79faebabb5b2": {
   "first_seen": "2026-07-16T19:27:49.261339358Z",
   "title": "Toptal: Talent Network Social Media Brand Strategist",
@@ -108152,6 +108602,12 @@
  "makemytrip/a6a3141be51b11": {
   "first_seen": "2026-08-01T12:48:32.758317785Z",
   "title": "MakeMyTrip: Project Based Internship (Analytics)",
+  "matched": false,
+  "notified": false
+ },
+ "makemytrip/a6a33e58918e1c": {
+  "first_seen": "2026-08-05T12:19:33.356720676Z",
+  "title": "MakeMyTrip: Key Account Manager - Nurturing",
   "matched": false,
   "notified": false
  },
@@ -109646,6 +110102,12 @@
  "nutanix/osRtAfw6": {
   "first_seen": "2026-08-01T12:48:29.892531667Z",
   "title": "Nutanix: Member of Technical Staff 4",
+  "matched": false,
+  "notified": false
+ },
+ "nutanix/osUwAfwc": {
+  "first_seen": "2026-08-05T12:19:32.4821907Z",
+  "title": "Nutanix: Territory Account Manager",
   "matched": false,
   "notified": false
  },
@@ -116150,6 +116612,12 @@
  "oraclece/egug.fa.us2.oraclecloud.com/CX_1/26011938": {
   "first_seen": "2026-08-04T17:01:19.843119384Z",
   "title": "American Express: Staff AI Engineer - Servicing Enablement Platform",
+  "matched": false,
+  "notified": false
+ },
+ "oraclece/egug.fa.us2.oraclecloud.com/CX_1/26011941": {
+  "first_seen": "2026-08-05T12:19:11.913359085Z",
+  "title": "American Express: Analyst-Control Management",
   "matched": false,
   "notified": false
  },
@@ -136649,6 +137117,12 @@
   "matched": false,
   "notified": false
  },
+ "oraclece/iaziqy.fa.ocs.oraclecloud.com/CX_1/300126": {
+  "first_seen": "2026-08-05T12:19:08.22158064Z",
+  "title": "Uber: Account Manager, SMB, Uber Eats, Liverpool \u0026 Lancashire",
+  "matched": false,
+  "notified": false
+ },
  "oraclece/iaziqy.fa.ocs.oraclecloud.com/CX_1/300131": {
   "first_seen": "2026-08-01T12:48:25.000820376Z",
   "title": "Uber: Product Operations II - Catalog Ingestion",
@@ -137519,6 +137993,12 @@
   "matched": false,
   "notified": false
  },
+ "oraclece/iaziqy.fa.ocs.oraclecloud.com/CX_1/300781": {
+  "first_seen": "2026-08-05T12:19:08.612207681Z",
+  "title": "Uber: Account Manager II, GR Enterprise Strategic (Annual Plan)",
+  "matched": false,
+  "notified": false
+ },
  "oraclece/iaziqy.fa.ocs.oraclecloud.com/CX_1/300782": {
   "first_seen": "2026-08-01T12:48:25.000277343Z",
   "title": "Uber: Executive Assistant Business Partner II - EMEA Delivery \u0026 Retail",
@@ -138182,6 +138662,12 @@
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210697050": {
   "first_seen": "2026-08-01T12:48:25.394835677Z",
   "title": "JPMorgan Chase India: Financial Reporting",
+  "matched": false,
+  "notified": false
+ },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210697510": {
+  "first_seen": "2026-08-05T12:19:09.409940886Z",
+  "title": "JPMorgan Chase India: Fund Controller - Senior Associate/Associate",
   "matched": false,
   "notified": false
  },
@@ -139097,6 +139583,12 @@
   "matched": false,
   "notified": false
  },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210753658": {
+  "first_seen": "2026-08-05T12:19:09.789807391Z",
+  "title": "JPMorgan Chase India: Lead Software Engineer - Fullstack Lead - AI, LLM",
+  "matched": false,
+  "notified": false
+ },
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210753744": {
   "first_seen": "2026-08-04T10:48:28.06918088Z",
   "title": "JPMorgan Chase India: Software Engineer III",
@@ -139112,6 +139604,12 @@
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210754273": {
   "first_seen": "2026-08-04T10:48:28.229728818Z",
   "title": "JPMorgan Chase India: Data Engineer II - SRE",
+  "matched": false,
+  "notified": false
+ },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210754306": {
+  "first_seen": "2026-08-05T12:19:09.935267887Z",
+  "title": "JPMorgan Chase India: Trading Services",
   "matched": false,
   "notified": false
  },
@@ -139991,6 +140489,12 @@
   "matched": false,
   "notified": false
  },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210768463": {
+  "first_seen": "2026-08-05T12:19:10.089139235Z",
+  "title": "JPMorgan Chase India: Project Manager",
+  "matched": false,
+  "notified": false
+ },
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210768472": {
   "first_seen": "2026-08-03T11:15:55.090617611Z",
   "title": "JPMorgan Chase India: Associate - Valuation Controller",
@@ -140261,6 +140765,12 @@
   "matched": false,
   "notified": false
  },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210770984": {
+  "first_seen": "2026-08-05T12:19:10.244851802Z",
+  "title": "JPMorgan Chase India: Lead Technical Program Manager",
+  "matched": false,
+  "notified": false
+ },
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210771022": {
   "first_seen": "2026-08-01T12:48:25.3947945Z",
   "title": "JPMorgan Chase India: Risk Architecture - Sr Associate",
@@ -140438,6 +140948,12 @@
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210771878": {
   "first_seen": "2026-08-01T12:48:25.395204484Z",
   "title": "JPMorgan Chase India: Associate - Client Data Management",
+  "matched": false,
+  "notified": false
+ },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210771882": {
+  "first_seen": "2026-08-05T12:19:10.394977099Z",
+  "title": "JPMorgan Chase India: Investment Decisioning -Cards Finance-Associate",
   "matched": false,
   "notified": false
  },
@@ -140903,6 +141419,12 @@
   "matched": false,
   "notified": false
  },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210774186": {
+  "first_seen": "2026-08-05T12:19:10.541807904Z",
+  "title": "JPMorgan Chase India: Lead Software Engineer – Java, Spring Boot, React",
+  "matched": false,
+  "notified": false
+ },
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210774196": {
   "first_seen": "2026-08-04T10:48:33.924703149Z",
   "title": "JPMorgan Chase India: Analyst- External Research Management",
@@ -141014,6 +141536,12 @@
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210774645": {
   "first_seen": "2026-08-01T12:48:25.394808446Z",
   "title": "JPMorgan Chase India: Program / Project Manager - Vice President",
+  "matched": false,
+  "notified": false
+ },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210774662": {
+  "first_seen": "2026-08-05T12:19:10.686315685Z",
+  "title": "JPMorgan Chase India: Product Manager",
   "matched": false,
   "notified": false
  },
@@ -141293,6 +141821,18 @@
   "matched": false,
   "notified": false
  },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210776675": {
+  "first_seen": "2026-08-05T12:19:10.877324715Z",
+  "title": "JPMorgan Chase India: Associate - Data Domain Architect",
+  "matched": false,
+  "notified": false
+ },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210776682": {
+  "first_seen": "2026-08-05T12:19:11.029884311Z",
+  "title": "JPMorgan Chase India: Associate - Data Domain Architect",
+  "matched": false,
+  "notified": false
+ },
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210776687": {
   "first_seen": "2026-08-04T16:47:58.69577786Z",
   "title": "JPMorgan Chase India: Control Manager - Associate",
@@ -141308,6 +141848,12 @@
  "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210776698": {
   "first_seen": "2026-08-05T09:20:22.502845088Z",
   "title": "JPMorgan Chase India: Wholesale Credit Risk EMEA Associate -  Technology, Media \u0026 Telecoms",
+  "matched": false,
+  "notified": false
+ },
+ "oraclece/jpmc.fa.oraclecloud.com/CX_1001/210776712": {
+  "first_seen": "2026-08-05T12:19:11.172279754Z",
+  "title": "JPMorgan Chase India: Lead Software Engineer Java",
   "matched": false,
   "notified": false
  },
@@ -184889,6 +185435,210 @@
   "matched": false,
   "notified": false
  },
+ "smartrecruiters/BoschGroup/744000141674979": {
+  "first_seen": "2026-08-05T12:16:18.804525282Z",
+  "title": "Bosch: [BD] ネットワークエンジニア / Network Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141675519": {
+  "first_seen": "2026-08-05T12:16:18.390587815Z",
+  "title": "Bosch: Technischer Vertriebsmitarbeiter (w/m/div.) Gebäudeautomation im Außendienst",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141677513": {
+  "first_seen": "2026-08-05T12:16:13.811728566Z",
+  "title": "Bosch: Global Quality Supporter (w/m/div.) - Road Side Assistance Services für einen deutschen Premium-Automobilhersteller",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141677619": {
+  "first_seen": "2026-08-05T12:16:17.511534699Z",
+  "title": "Bosch: Internship Data Science in Manufacturing",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141677630": {
+  "first_seen": "2026-08-05T12:16:17.104332413Z",
+  "title": "Bosch: Praktikum im Bereich Data Science in der Fertigung (w/m/div.)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141678109": {
+  "first_seen": "2026-08-05T12:16:16.686742564Z",
+  "title": "Bosch: Technischer Vertriebsmitarbeiter (w/m/div.) Gebäudeautomation im Außendienst",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141678129": {
+  "first_seen": "2026-08-05T12:16:16.277112479Z",
+  "title": "Bosch: [EMN] Senior Technical Expert – Automotive HPC Embedded Platforms (POSIX Linux/QNX/Android)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141678164": {
+  "first_seen": "2026-08-05T12:16:14.787587507Z",
+  "title": "Bosch: Global Quality Supporter (w/m/div.) - Road Side Assistance Services für einen deutschen Premium-Automobilhersteller",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141678309": {
+  "first_seen": "2026-08-05T12:16:15.186504213Z",
+  "title": "Bosch: Werkstudent im Bereich SAP Process Navigator (w/m/div.)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141680290": {
+  "first_seen": "2026-08-05T12:16:07.281708237Z",
+  "title": "Bosch: Mandatory Internship Automotive Networking Innovation \u0026 Software-Defined Vehicle Technologies",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141680599": {
+  "first_seen": "2026-08-05T12:16:13.40486707Z",
+  "title": "Bosch: Workload Automation Admin/Architect",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141680868": {
+  "first_seen": "2026-08-05T12:16:12.982506639Z",
+  "title": "Bosch: Global Quality Supporter (w/m/div.) - Road Side Assistance Services für einen deutschen Premium-Automobilhersteller",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141680889": {
+  "first_seen": "2026-08-05T12:16:09.221821865Z",
+  "title": "Bosch: Engineer Product Quaity for Global eDrives and eAxles_ EM",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141680983": {
+  "first_seen": "2026-08-05T12:16:08.523934062Z",
+  "title": "Bosch: Werkstudent in der Weiterbildung und Führungskräfteentwicklung (w/m/div.)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141681601": {
+  "first_seen": "2026-08-05T12:16:07.707708505Z",
+  "title": "Bosch: Global Quality Assurance Manager (w/m/div.)- Road Side Assistance Services",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141682414": {
+  "first_seen": "2026-08-05T12:16:06.885131447Z",
+  "title": "Bosch: Pflichtpraktikum im Bereich Softwareentwicklung (Full-Stack)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141682507": {
+  "first_seen": "2026-08-05T12:16:06.048257151Z",
+  "title": "Bosch: [EMN] Technical Key Account Engineer – DNOX Component Projects (JLPT N2 \u0026 Onsite in Japan)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141682516": {
+  "first_seen": "2026-08-05T12:16:05.227594087Z",
+  "title": "Bosch: Technischer Vertriebsmitarbeiter (w/m/div.) Gebäudeautomation im Innendienst ",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141683509": {
+  "first_seen": "2026-08-05T12:16:06.453920376Z",
+  "title": "Bosch: Pflichtpraktikum im Bereich Innovation im Automotive-Networking \u0026 softwaredefinierte Fahrzeugtechnologien (w/m/div.)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141684339": {
+  "first_seen": "2026-08-05T12:16:04.815426204Z",
+  "title": "Bosch: Sales and Business Development - Deputy Manager (Bosch Fire Detection and Safety System)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141685725": {
+  "first_seen": "2026-08-05T12:16:04.01318285Z",
+  "title": "Bosch: Technischer Vertriebsmitarbeiter (w/m/div.) Gebäudeautomation im Innendienst ",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141687979": {
+  "first_seen": "2026-08-05T12:16:04.412716323Z",
+  "title": "Bosch: Technischer Vertriebsmitarbeiter (w/m/div.) Gebäudeautomation im Innendienst ",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141690170": {
+  "first_seen": "2026-08-05T12:16:02.987519662Z",
+  "title": "Bosch: Praktikum im Bereich Elektrische Entwicklung",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141690209": {
+  "first_seen": "2026-08-05T12:16:03.389683517Z",
+  "title": "Bosch: Technischer Vertriebsmitarbeiter (w/m/div.) Gebäudeautomation im Innendienst ",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141693399": {
+  "first_seen": "2026-08-05T12:16:02.074304717Z",
+  "title": "Bosch: Extracurricular Internship: Monitoring Industry 4.0. (f/m/div.)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141697304": {
+  "first_seen": "2026-08-05T12:16:01.380774232Z",
+  "title": "Bosch: Internship New Installers development",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141698822": {
+  "first_seen": "2026-08-05T12:16:00.197184749Z",
+  "title": "Bosch: HR Intern (magyar és angol nyelvű)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141698999": {
+  "first_seen": "2026-08-05T12:16:00.962962665Z",
+  "title": "Bosch: Praktikum im Bereich Einkauf - Elektronik",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141699620": {
+  "first_seen": "2026-08-05T12:15:59.190229608Z",
+  "title": "Bosch: Elektrotechniker /Servicetechniker (m/w/d) Gebäudeautomation",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141701579": {
+  "first_seen": "2026-08-05T12:15:58.799749746Z",
+  "title": "Bosch: HR gyakornok",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141701980": {
+  "first_seen": "2026-08-05T12:15:58.40728822Z",
+  "title": "Bosch: Kundendiensttechniker Raum Düsseldorf (w/m/div.)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141702496": {
+  "first_seen": "2026-08-05T12:15:57.847620074Z",
+  "title": "Bosch: SAP S4HANA Data Migration – Migration Manager",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141705059": {
+  "first_seen": "2026-08-05T12:15:57.336750733Z",
+  "title": "Bosch: Kaufmann/ Kauffrau im Projektcontrolling (w/m/div.) - befristet für 12 Monate",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/BoschGroup/744000141705489": {
+  "first_seen": "2026-08-05T12:15:56.933773674Z",
+  "title": "Bosch: Főkönyvelő helyettes | Deputy Chief Accountant",
+  "matched": false,
+  "notified": false
+ },
  "smartrecruiters/Eurofins/743999679508335": {
   "first_seen": "2026-07-17T04:42:44.951379+05:30",
   "title": "Eurofins: Business Data Analyst - Lab process reengineering.",
@@ -207137,6 +207887,72 @@
   "matched": false,
   "notified": false
  },
+ "smartrecruiters/Eurofins/744000141669844": {
+  "first_seen": "2026-08-05T12:16:24.911372538Z",
+  "title": "Eurofins: Medical Technologist",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141673838": {
+  "first_seen": "2026-08-05T12:16:25.392866716Z",
+  "title": "Eurofins: Courier Rider",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141674577": {
+  "first_seen": "2026-08-05T12:16:24.096749743Z",
+  "title": "Eurofins: Site Leader",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141676314": {
+  "first_seen": "2026-08-05T12:16:24.506561688Z",
+  "title": "Eurofins: [Bắc Ninh] Nhân viên Trả kết quả thử nghiệm (ASM)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141682220": {
+  "first_seen": "2026-08-05T12:16:23.672333154Z",
+  "title": "Eurofins: [Tu Son, Bac Ninh] ASM Executive",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141689896": {
+  "first_seen": "2026-08-05T12:16:22.356136987Z",
+  "title": "Eurofins: IT Project Analyst (ITIL, Infrastructure)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141691784": {
+  "first_seen": "2026-08-05T12:16:21.909396579Z",
+  "title": "Eurofins: IT Project Analyst (ITIL, Infrastructure)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141692980": {
+  "first_seen": "2026-08-05T12:16:21.155048008Z",
+  "title": "Eurofins: Medewerker Customer Support met focus op orderinvoer (36h)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141694464": {
+  "first_seen": "2026-08-05T12:16:20.717131355Z",
+  "title": "Eurofins: Technicien de laboratoire d'analyses médicales de nuit  (H/F)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141698677": {
+  "first_seen": "2026-08-05T12:16:20.230005823Z",
+  "title": "Eurofins: Analytical Project Manager",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Eurofins/744000141702259": {
+  "first_seen": "2026-08-05T12:16:19.75811936Z",
+  "title": "Eurofins: Responsable de production - F/H",
+  "matched": false,
+  "notified": false
+ },
  "smartrecruiters/FreeCharge/743999677062274": {
   "first_seen": "2026-07-16T19:27:53.862624504Z",
   "title": "FreeCharge: Lead Software Engineer",
@@ -208436,6 +209252,30 @@
  "smartrecruiters/Freshworks/744000141665579": {
   "first_seen": "2026-08-05T09:15:15.759880911Z",
   "title": "Freshworks: Specialist - Customer Success (EX) Top Tier ",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Freshworks/744000141678518": {
+  "first_seen": "2026-08-05T12:16:27.324513289Z",
+  "title": "Freshworks: Manager - Business Development (m/f/d)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Freshworks/744000141682069": {
+  "first_seen": "2026-08-05T12:16:26.891591962Z",
+  "title": "Freshworks: Manager - Outbound Sales (CX - NA)",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Freshworks/744000141691259": {
+  "first_seen": "2026-08-05T12:16:26.441811554Z",
+  "title": "Freshworks: Specialist - Strategic Sourcing",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Freshworks/744000141698400": {
+  "first_seen": "2026-08-05T12:16:26.015028771Z",
+  "title": "Freshworks: Manager - Customer Success",
   "matched": false,
   "notified": false
  },
@@ -211454,6 +212294,12 @@
  "smartrecruiters/Grab/744000141662639": {
   "first_seen": "2026-08-05T09:15:17.272272264Z",
   "title": "Grab: Intern, Occupational Health \u0026 Safety",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/Grab/744000141678821": {
+  "first_seen": "2026-08-05T12:16:27.942499546Z",
+  "title": "Grab: Assistant Manager, Merchant Core Operations - Onboarding",
   "matched": false,
   "notified": false
  },
@@ -217130,6 +217976,30 @@
  "smartrecruiters/RenesasElectronics/744000141666230": {
   "first_seen": "2026-08-05T09:15:25.317100221Z",
   "title": "Renesas Electronics (Steradian): Senior Principal Platform Architect",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/RenesasElectronics/744000141677812": {
+  "first_seen": "2026-08-05T12:16:32.184866626Z",
+  "title": "Renesas Electronics (Steradian): 【西条】調達・購買スペシャリスト",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/RenesasElectronics/744000141684210": {
+  "first_seen": "2026-08-05T12:16:31.55586827Z",
+  "title": "Renesas Electronics (Steradian): Staff Process Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/RenesasElectronics/744000141685757": {
+  "first_seen": "2026-08-05T12:16:30.898623451Z",
+  "title": "Renesas Electronics (Steradian): Staff Process Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/RenesasElectronics/744000141701891": {
+  "first_seen": "2026-08-05T12:16:29.74660711Z",
+  "title": "Renesas Electronics (Steradian): (Senior) Account Manager – Strategic Automotive Sales (f/m/d)",
   "matched": false,
   "notified": false
  },
@@ -225353,6 +226223,18 @@
   "matched": false,
   "notified": false
  },
+ "smartrecruiters/WesternDigital/744000141677365": {
+  "first_seen": "2026-08-05T12:16:29.10217343Z",
+  "title": "Western Digital: Senior Developer, Application Software Developer",
+  "matched": false,
+  "notified": false
+ },
+ "smartrecruiters/WesternDigital/744000141679384": {
+  "first_seen": "2026-08-05T12:16:28.640936131Z",
+  "title": "Western Digital: Logistics Digitalization \u0026 Continuous improvement",
+  "matched": false,
+  "notified": false
+ },
  "successfactors/careers.providence.in/19021344": {
   "first_seen": "2026-08-01T12:48:26.182936415Z",
   "title": "Providence India: Lead Legal Analyst",
@@ -225398,6 +226280,12 @@
  "successfactors/careers.providence.in/53010244": {
   "first_seen": "2026-08-01T12:48:26.182932898Z",
   "title": "Providence India: Principal Security Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/careers.providence.in/53251544": {
+  "first_seen": "2026-08-05T12:19:24.011551683Z",
+  "title": "Providence India: Principal Security GRC Analyst",
   "matched": false,
   "notified": false
  },
@@ -225920,6 +226808,12 @@
  "successfactors/careers.providence.in/58471044": {
   "first_seen": "2026-08-03T15:10:20.708228506Z",
   "title": "Providence India: Service Engineer 2",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/careers.providence.in/58565344": {
+  "first_seen": "2026-08-05T12:19:22.75518038Z",
+  "title": "Providence India: QA Engineer 2",
   "matched": false,
   "notified": false
  },
@@ -227060,6 +227954,12 @@
  "successfactors/jobs.sap.com/1378089433": {
   "first_seen": "2026-08-01T12:48:25.981757051Z",
   "title": "SAP Labs: Principal Finance Architect",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1378222233": {
+  "first_seen": "2026-08-05T12:19:22.177719499Z",
+  "title": "SAP Labs: (Senior) Consultant (f/m/d) SAP Procurement Delivery Services",
   "matched": false,
   "notified": false
  },
@@ -231239,6 +232139,96 @@
   "matched": false,
   "notified": false
  },
+ "successfactors/jobs.sap.com/1423258033": {
+  "first_seen": "2026-08-05T12:19:14.479095481Z",
+  "title": "SAP Labs: Head of Strategic Initiatives \u0026 Responsible Growth",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423261433": {
+  "first_seen": "2026-08-05T12:19:12.79830853Z",
+  "title": "SAP Labs: SAP Services iXp Intern - HR Recruiting Associate with German language",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423285333": {
+  "first_seen": "2026-08-05T12:19:15.713540576Z",
+  "title": "SAP Labs: (Senior) Risk Specialist (f/m/d)",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423289433": {
+  "first_seen": "2026-08-05T12:19:15.270591449Z",
+  "title": "SAP Labs: (Senior) Risk Specialist (f/m/d)",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423294233": {
+  "first_seen": "2026-08-05T12:19:16.817128082Z",
+  "title": "SAP Labs: (Senior) Site Specialist (m/f/d)",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423295933": {
+  "first_seen": "2026-08-05T12:19:13.956335888Z",
+  "title": "SAP Labs: SAP iXp Intern - Customer Success Management (Digital)",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423304233": {
+  "first_seen": "2026-08-05T12:19:14.864619891Z",
+  "title": "SAP Labs: (Senior) Site Specialist (f/m/d)",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423320233": {
+  "first_seen": "2026-08-05T12:19:17.178634931Z",
+  "title": "SAP Labs: Working Student (f/m/d) - Cloud Software SAP SuccessFactors",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423335933": {
+  "first_seen": "2026-08-05T12:19:16.077233445Z",
+  "title": "SAP Labs: Working Student (f/m/d) - Customer References \u0026 Storytelling, Middle \u0026 Eastern Europe",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423336433": {
+  "first_seen": "2026-08-05T12:19:16.466471331Z",
+  "title": "SAP Labs: Diploma Student / Intern - Commercial Sales Support for SAP Business AI Platform",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423342233": {
+  "first_seen": "2026-08-05T12:19:20.657004736Z",
+  "title": "SAP Labs: Application Engineering Senior Manager",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423352833": {
+  "first_seen": "2026-08-05T12:19:21.368765056Z",
+  "title": "SAP Labs: Principal Basis Expert (f/m/d) Sovereign Cloud Delivery",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423357033": {
+  "first_seen": "2026-08-05T12:19:20.282287437Z",
+  "title": "SAP Labs: SAP iXp Intern - Procurement (limited part-time)",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423372433": {
+  "first_seen": "2026-08-05T12:19:21.008785894Z",
+  "title": "SAP Labs: Principal Delivery Lead (f/m/d) Sovereign Cloud Delivery",
+  "matched": false,
+  "notified": false
+ },
+ "successfactors/jobs.sap.com/1423379133": {
+  "first_seen": "2026-08-05T12:19:21.781728251Z",
+  "title": "SAP Labs: Senior Basis Consultant (f/m/d) Sovereign Cloud Delivery",
+  "matched": false,
+  "notified": false
+ },
  "talentbrew/careers.moodys.com/94478108960": {
   "first_seen": "2026-07-23T09:26:19.591402191Z",
   "title": "Moody's: Subject Matter Expert, Private Credit \u0026 Alternative Investments",
@@ -233309,6 +234299,12 @@
   "matched": false,
   "notified": false
  },
+ "talentbrew/careers.moodys.com/98783420672": {
+  "first_seen": "2026-08-05T12:16:33.26723392Z",
+  "title": "Moody's: Senior Financial Data Analyst",
+  "matched": false,
+  "notified": false
+ },
  "ukg/recruiting2.ultipro.com/PRO1053PROC/d6eed263-4950-420d-b9f8-5b1a441c931e/0702085e-0e24-4f47-a466-8fa76dc88d77": {
   "first_seen": "2026-08-01T12:48:32.315739478Z",
   "title": "AppLogic Networks (formerly Sandvine): Enterprise Account Director - Remote USA",
@@ -234377,6 +235373,12 @@
   "matched": false,
   "notified": false
  },
+ "walmart/R-2552119": {
+  "first_seen": "2026-08-05T12:19:33.140707346Z",
+  "title": "Walmart Global Tech India: SYSTEMS ADMINISTRATOR, TECHNOLOGY OPERATIONS-2",
+  "matched": false,
+  "notified": false
+ },
  "walmart/R-2552133": {
   "first_seen": "2026-08-01T12:48:32.101321472Z",
   "title": "Walmart Global Tech India: STAFF, SOFTWARE ENGINEER",
@@ -234539,6 +235541,12 @@
   "matched": false,
   "notified": false
  },
+ "walmart/R-2557957": {
+  "first_seen": "2026-08-05T12:19:33.133657743Z",
+  "title": "Walmart Global Tech India: Systems Administrator, Technology Operations",
+  "matched": false,
+  "notified": false
+ },
  "walmart/R-2557962": {
   "first_seen": "2026-08-01T12:48:32.10133679Z",
   "title": "Walmart Global Tech India: DISTINGUISHED, SOFTWARE ENGINEER",
@@ -234566,6 +235574,12 @@
  "walmart/R-2558119": {
   "first_seen": "2026-08-05T03:39:17.391456262Z",
   "title": "Walmart Global Tech India: Software Engineer III",
+  "matched": false,
+  "notified": false
+ },
+ "walmart/R-2558232": {
+  "first_seen": "2026-08-05T12:19:33.137284901Z",
+  "title": "Walmart Global Tech India: SYSTEMS ADMINISTRATOR, TECHNOLOGY OPERATIONS",
   "matched": false,
   "notified": false
  },
@@ -239681,6 +240695,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Krakow-High-5ive-Development/Trust---Safety-Specialist--Content-Moderator--with-Russian-and-English_R00349401": {
+  "first_seen": "2026-08-05T12:16:43.709570556Z",
+  "title": "Accenture: Trust \u0026 Safety Specialist (Content Moderator) with Russian and English",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Krakow-High-5ive-Development/Trust---Safety-Specialist-with-English-and-German_R00347465": {
   "first_seen": "2026-07-28T14:40:13.109470418Z",
   "title": "Accenture: Trust \u0026 Safety Specialist with English and German",
@@ -239696,6 +240716,18 @@
  "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Krakow/Content-Moderator-with-English-and-Polish--Night-Shift--23--7-_R00323181": {
   "first_seen": "2026-08-04T11:07:38.805667457Z",
   "title": "Accenture: Trust \u0026 Safety Specialist (Content Moderator) with English and Polish (Night Shift: 23-7)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Kronberg-Building-Beta/IT-Consultant-Business-Analyse-Banking--all-genders-_R00277032": {
+  "first_seen": "2026-08-05T12:16:44.51745988Z",
+  "title": "Accenture: IT Consultant Business Analyse Banking (all genders)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Kronberg-Building-Beta/Manager-Fondsprozesse---Operating-Model--all-genders-_R00337416": {
+  "first_seen": "2026-08-05T12:16:44.062847359Z",
+  "title": "Accenture: Manager Fondsprozesse \u0026 Operating Model (all genders)",
   "matched": false,
   "notified": false
  },
@@ -240167,6 +241199,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/London/Tech-Architecture-Assoc-Manager_R00347114": {
+  "first_seen": "2026-08-05T12:16:38.676454494Z",
+  "title": "Accenture: Digital Workplace Specialist, Assoc Manager",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/London/Transformation-Change-Manager_R00289968": {
   "first_seen": "2026-08-01T10:51:37.439590075Z",
   "title": "Accenture: Transformation Change Manager",
@@ -240375,6 +241413,12 @@
   "first_seen": "2026-08-01T10:55:07.789071863Z",
   "title": "Accenture: S\u0026C - Retail Consulting Manager",
   "matched": true,
+  "notified": false
+ },
+ "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Malaga-Edificio-Hidalgo/AI-Engineer--Junior-Middle-_R00347456": {
+  "first_seen": "2026-08-05T12:16:39.043819879Z",
+  "title": "Accenture: AI Engineer",
+  "matched": false,
   "notified": false
  },
  "workday/https://accenture.wd103.myworkdayjobs.com/wday/cxs/accenture/AccentureCareers/job/Malaga-Edificio-Hidalgo/AI-Native-Manager_R00347443": {
@@ -242462,6 +243506,12 @@
  "workday/https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/job/London/Value-Creation-Director---Adobe-Private-Capital_R170201": {
   "first_seen": "2026-08-01T10:55:43.83035085Z",
   "title": "Adobe: Value Creation Director - Adobe Private Capital",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://adobe.wd5.myworkdayjobs.com/wday/cxs/adobe/external_experienced/job/London/Value-Creation-Director_R171065": {
+  "first_seen": "2026-08-05T12:16:45.092530543Z",
+  "title": "Adobe: Value Creation Director APC",
   "matched": false,
   "notified": false
  },
@@ -245999,6 +247049,18 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Bangalore-Area/Group-Manager---RPA---Agentic-Automation_JR10434131": {
+  "first_seen": "2026-08-05T12:16:51.210843763Z",
+  "title": "Airbus: Group Manager - RPA \u0026 Agentic Automation",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Bangalore-Area/HRBP---Digital--India_JR10434322": {
+  "first_seen": "2026-08-05T12:16:53.140860393Z",
+  "title": "Airbus: HRBP - Digital, India",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Bangalore-Area/Head-of-Digital-Workplace---Roof-Services_JR10432412": {
   "first_seen": "2026-07-27T07:54:45.623645331Z",
   "title": "Airbus: Head of Digital Workplace \u0026 Roof Services",
@@ -246248,6 +247310,12 @@
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Bangalore-Area/Technology-Analyst-SAP-Data-Migration_JR10430651-1": {
   "first_seen": "2026-07-24T17:54:41.301075218Z",
   "title": "Airbus: Technology Analyst,SAP Data Migration",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Bangalore-Area/Workday-Reporting-Prism-Specialist_JR10433989": {
+  "first_seen": "2026-08-05T12:16:51.727587517Z",
+  "title": "Airbus: Workday Reporting/Prism Specialist",
   "matched": false,
   "notified": false
  },
@@ -246557,6 +247625,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Bremen-Area/Structural-Analysis-Specialist--m-f-d----A400M-Programme--Fuselage-_JR10425877": {
+  "first_seen": "2026-08-05T12:16:45.624299734Z",
+  "title": "Airbus: Structural Analysis Specialist (m/f/d) – A400M Programme (Fuselage)",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Bremen-Area/Working-Student--d-f-m--in-Structure-Design---Fuselage-Structure---Project-Management_JR10416167": {
   "first_seen": "2026-07-20T08:30:01.830302114Z",
   "title": "Airbus: Working Student (d/f/m) in Structure Design – Fuselage Structure \u0026 Project Management",
@@ -246722,6 +247796,12 @@
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Buxtehude/Werkstudent-fr-den-Vertrieb--d-m-w-_JR10416078": {
   "first_seen": "2026-08-03T12:59:29.233470381Z",
   "title": "Airbus: Werkstudent für den Vertrieb (d/m/w)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/CPO---Copenhagen-Office/Business-Process-Architect--Maternity-Cover-_JR10434376": {
+  "first_seen": "2026-08-05T12:16:46.630602102Z",
+  "title": "Airbus: Business Process Architect (Maternity Cover)",
   "matched": false,
   "notified": false
  },
@@ -247031,6 +248111,18 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Donauwrth/Intern--d-f-m--within-the-Mission-Software-Department_JR10420463": {
+  "first_seen": "2026-08-05T12:16:52.671404685Z",
+  "title": "Airbus: Intern (d/f/m) within the Mission Software Department",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Donauwrth/Intern--d-f-m--within-the-mission-software-department_JR10430765": {
+  "first_seen": "2026-08-05T12:16:52.158813579Z",
+  "title": "Airbus: Intern (d/f/m) within the mission software department",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Donauwrth/Logistics-Field-Representative--m-w-d-_JR10412698": {
   "first_seen": "2026-07-21T12:02:37.751279505Z",
   "title": "Airbus: Logistics Field Representative (d/m/w)",
@@ -247289,6 +248381,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Getafe-Area/A400M-Material-Support-Specialist_JR10408337-1": {
+  "first_seen": "2026-08-05T12:16:46.180524135Z",
+  "title": "Airbus: A400M Material Support Specialist",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Getafe-Area/AI-Platform-Engineer_JR10410182-1": {
   "first_seen": "2026-07-22T12:05:07.705627376Z",
   "title": "Airbus: AI Platform Engineer",
@@ -247514,6 +248612,12 @@
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Getafe-Area/Manufacturing-Engineering---Ergonomist---Safety-Engineer_JR10430662": {
   "first_seen": "2026-07-22T10:09:40.516828471Z",
   "title": "Airbus: Manufacturing Engineering - Ergonomist \u0026 Safety Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Getafe-Area/Manufacturing-Engineering--Temp-Agency-_JR10433727": {
+  "first_seen": "2026-08-05T12:16:47.39294933Z",
+  "title": "Airbus: Manufacturing Engineering (Temp Agency)",
   "matched": false,
   "notified": false
  },
@@ -249086,6 +250190,12 @@
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Manching/Quality-Inspector---CAT-B1-C-Technik-Mechanik-fr-Eurofighter-und-UAS-Prototypen--d-m-w-_JR10431917-1": {
   "first_seen": "2026-08-05T09:15:39.330497632Z",
   "title": "Airbus: Quality Inspector / CAT B1/C Technik/Mechanik für Eurofighter und UAS Prototypen (d/m/w)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Manching/Quality-Inspector-Elektrik-Avionik-fr-Eurodrone-Eurofighter-Produktion--d-m-w-_JR10431765-1": {
+  "first_seen": "2026-08-05T12:16:53.501041311Z",
+  "title": "Airbus: Quality Inspector Elektrik/Avionik für Eurodrone/Eurofighter Produktion (d/m/w)",
   "matched": false,
   "notified": false
  },
@@ -252221,6 +253331,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Ulm-Area/Head-of-Site-Security-Ulm-D-M-W_JR10413278-1": {
+  "first_seen": "2026-08-05T12:16:46.991419921Z",
+  "title": "Airbus: Head of Site Security Ulm D/M/W",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://ag.wd3.myworkdayjobs.com/wday/cxs/ag/Airbus/job/Ulm-Area/Masterstudent--d-m-w--im-Bereich-Sensorfusion-und-Datenanalyse_JR10424974": {
   "first_seen": "2026-07-28T14:40:16.533237238Z",
   "title": "Airbus: Masterstudent (d/m/w) im Bereich Sensorfusion und Datenanalyse",
@@ -252443,6 +253559,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://airasia.wd3.myworkdayjobs.com/wday/cxs/airasia/Careers/job/Haikou/Senior-Product-Manager---China-Platforms--Mini-Programs---Web-App-_JR0034149": {
+  "first_seen": "2026-08-05T12:18:46.770242813Z",
+  "title": "AirAsia: Senior Product Manager – China Platforms (Mini Programs \u0026 Web/App)",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://airasia.wd3.myworkdayjobs.com/wday/cxs/airasia/Careers/job/Jakarta-TBI/Sales-Manager_JR0028768": {
   "first_seen": "2026-08-01T12:48:23.734788516Z",
   "title": "AirAsia: Sales Manager",
@@ -252500,6 +253622,12 @@
  "workday/https://airasia.wd3.myworkdayjobs.com/wday/cxs/airasia/Careers/job/KL-Sentral---Redstation/Lead--Product---Entertainment-Marketing---Movetix-_JR0034729": {
   "first_seen": "2026-08-01T12:48:23.734641051Z",
   "title": "AirAsia: Lead, Product \u0026 Entertainment Marketing  (MOVETIX)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://airasia.wd3.myworkdayjobs.com/wday/cxs/airasia/Careers/job/KL-Sentral---Redstation/Manager--Software-Engineering_JR0034635": {
+  "first_seen": "2026-08-05T12:18:46.449987504Z",
+  "title": "AirAsia: Manager, Software Engineering",
   "matched": false,
   "notified": false
  },
@@ -253052,6 +254180,12 @@
  "workday/https://airasia.wd3.myworkdayjobs.com/wday/cxs/airasia/Careers/job/The-Ampwalk/Customer-Support-Executive_JR0035112": {
   "first_seen": "2026-08-05T09:19:55.528362334Z",
   "title": "AirAsia: Customer Support Executive",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://airasia.wd3.myworkdayjobs.com/wday/cxs/airasia/Careers/job/The-Ampwalk/Intern-Ticketing--Non-JED-_JR0035079": {
+  "first_seen": "2026-08-05T12:18:45.777087484Z",
+  "title": "AirAsia: Intern Ticketing (Non JED)",
   "matched": false,
   "notified": false
  },
@@ -258317,6 +259451,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://amat.wd1.myworkdayjobs.com/wday/cxs/amat/External/job/SingaporeSGP/Manufacturing-Technician_R2625528": {
+  "first_seen": "2026-08-05T12:16:55.042002423Z",
+  "title": "Applied Materials: Manufacturing Technician",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://amat.wd1.myworkdayjobs.com/wday/cxs/amat/External/job/SingaporeSGP/Manufacturing-Test-Technician---4pm--1-30am-_R2621364": {
   "first_seen": "2026-07-28T09:29:08.008951667Z",
   "title": "Applied Materials: Manufacturing Test Technician ( 4pm -1:30am)",
@@ -259383,6 +260523,12 @@
   "first_seen": "2026-08-01T11:09:28.143129301Z",
   "title": "Analog Devices: Associate Analyst, Applications Programming",
   "matched": true,
+  "notified": false
+ },
+ "workday/https://analogdevices.wd1.myworkdayjobs.com/wday/cxs/analogdevices/External/job/India-Gandhinagar/Associate-Analyst--Supply-Chain-Planning_R264285": {
+  "first_seen": "2026-08-05T12:16:54.461479627Z",
+  "title": "Analog Devices: Associate Analyst, Supply Chain Planning",
+  "matched": false,
   "notified": false
  },
  "workday/https://analogdevices.wd1.myworkdayjobs.com/wday/cxs/analogdevices/External/job/India-Gandhinagar/Buyer--Procurement_R263394": {
@@ -262079,6 +263225,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://analogdevices.wd1.myworkdayjobs.com/wday/cxs/analogdevices/External/job/US-MA-Wilmington/System-Architect-Manager-SAU_R264328-1": {
+  "first_seen": "2026-08-05T12:16:54.191030811Z",
+  "title": "Analog Devices: System Architect Manager SAU",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://analogdevices.wd1.myworkdayjobs.com/wday/cxs/analogdevices/External/job/US-MA-Wilmington/System-Mechanical---Integration-Engineer_R264128": {
   "first_seen": "2026-07-23T16:48:31.900341067Z",
   "title": "Analog Devices: System Mechanical \u0026 Integration Engineer",
@@ -262757,6 +263909,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://aptiv.wd5.myworkdayjobs.com/wday/cxs/aptiv/APTIV_CAREERS/job/Bangalore-India/Systems-Architect---Sensor-Fusion_J000702090": {
+  "first_seen": "2026-08-05T12:16:55.674240903Z",
+  "title": "Aptiv: Systems Architect - Sensor Fusion",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://aptiv.wd5.myworkdayjobs.com/wday/cxs/aptiv/APTIV_CAREERS/job/Bangalore-India/Systems-Engineer_J000699383": {
   "first_seen": "2026-08-01T11:18:34.654648661Z",
   "title": "Aptiv: Systems Engineer",
@@ -263420,6 +264578,12 @@
  "workday/https://aptiv.wd5.myworkdayjobs.com/wday/cxs/aptiv/APTIV_CAREERS/job/Chennai-India/Senior-Embedded-Software-Engineer---Automotive-Systems_J000697824": {
   "first_seen": "2026-08-01T11:18:18.331044645Z",
   "title": "Aptiv: Senior Embedded Software Engineer – Automotive Systems",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://aptiv.wd5.myworkdayjobs.com/wday/cxs/aptiv/APTIV_CAREERS/job/Chennai-India/Senior-Engineer---ME_J000700845": {
+  "first_seen": "2026-08-05T12:16:55.974826345Z",
+  "title": "Aptiv: Senior Engineer - ME",
   "matched": false,
   "notified": false
  },
@@ -268085,6 +269249,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/GB-AC-ABERDEEN-BAKER-HUGHES-BUILDING/I-S-Geozone-Sales-Leader_R167763": {
+  "first_seen": "2026-08-05T12:18:50.04126861Z",
+  "title": "Baker Hughes: I\u0026S Geozone Sales Leader",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/GB-AC-ABERDEEN-BAKER-HUGHES-BUILDING/ITO-Project-Sourcing-Lead_R163986": {
   "first_seen": "2026-08-01T12:48:24.265032486Z",
   "title": "Baker Hughes: ITO Project Sourcing Lead",
@@ -268439,6 +269609,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/GB-SO-NAILSEA-2-HIGH-STREET/P6-Project-Planner_R166206": {
+  "first_seen": "2026-08-05T12:18:49.616341975Z",
+  "title": "Baker Hughes: P6 Project Planner",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/GB-SO-NAILSEA-2-HIGH-STREET/People---Culture-Senior-Specialist---Experience---Performance--UK_R165427": {
   "first_seen": "2026-08-01T12:48:24.264456663Z",
   "title": "Baker Hughes: People \u0026 Culture Senior Specialist - Experience \u0026 Performance- UK",
@@ -268706,6 +269882,12 @@
  "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/IN-KA-BANGALORE-NEON-BUILDING-WEST-TOWER/Audit-Analytics-Specialist_R159361-1": {
   "first_seen": "2026-08-01T12:48:24.264446714Z",
   "title": "Baker Hughes: Audit Analytics Specialist",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/IN-KA-BANGALORE-NEON-BUILDING-WEST-TOWER/Oracle--APEX-Senior-Software-Engineer_R167335": {
+  "first_seen": "2026-08-05T12:18:48.190218307Z",
+  "title": "Baker Hughes: Oracle  APEX Senior Software Engineer",
   "matched": false,
   "notified": false
  },
@@ -269951,6 +271133,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/SA-DAMMAM-CO-MEDBIT-LTD/Lead-Engineer---Fleet-Management_R163672-1": {
+  "first_seen": "2026-08-05T12:18:48.690999444Z",
+  "title": "Baker Hughes: Lead Engineer - Fleet Management (Saudi Nationals Only)",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/SA-DHAHRAN-ABQAIQ-HIGHWAY/Electro-Mechanical-Technician_R167344": {
   "first_seen": "2026-08-01T12:48:24.264389477Z",
   "title": "Baker Hughes: Electro-Mechanical Technician",
@@ -270055,6 +271243,12 @@
  },
  "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/SG-SINGAPORE-273-JALAN-AHMAD-IBRAHIM/Technician-Machinist-II_R165845-1": {
   "first_seen": "2026-08-01T12:48:24.265227169Z",
+  "title": "Baker Hughes: Technician Machinist II",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://bakerhughes.wd5.myworkdayjobs.com/wday/cxs/bakerhughes/BakerHughes/job/SG-SINGAPORE-273-JALAN-AHMAD-IBRAHIM/Technician-Machinist-II_R167765": {
+  "first_seen": "2026-08-05T12:18:49.196597833Z",
   "title": "Baker Hughes: Technician Machinist II",
   "matched": false,
   "notified": false
@@ -271436,6 +272630,18 @@
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Bengaluru-Maruthi-Onyx---TESCO-TSA/Data-Analyst_JR-0000082121": {
   "first_seen": "2026-08-04T06:01:28.506799729Z",
   "title": "Barclays: Data Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Bengaluru-Maruthi-Onyx---TESCO-TSA/Data-Engineer---AWS-Cloud-Engineer_JR-0000117547": {
+  "first_seen": "2026-08-05T12:17:05.15867877Z",
+  "title": "Barclays: Data Engineer - AWS Cloud Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Bengaluru-Maruthi-Onyx---TESCO-TSA/Data-Engineer---ETL_JR-0000118108": {
+  "first_seen": "2026-08-05T12:17:13.768077983Z",
+  "title": "Barclays: Data Engineer - ETL",
   "matched": false,
   "notified": false
  },
@@ -273137,6 +274343,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Chennai-DLF-IT-Park/Analyst---BI-Internal-Reporting_JR-0000118847": {
+  "first_seen": "2026-08-05T12:17:04.309454819Z",
+  "title": "Barclays: Analyst - BI Internal Reporting",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Chennai-DLF-IT-Park/Analyst---ST-I-MEx_JR-0000119547": {
   "first_seen": "2026-07-18T15:40:32.685028+05:30",
   "title": "Barclays: Analyst - ST\u0026I MEx",
@@ -273863,6 +275075,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Glasgow-Campus/Delivery-Manager_JR-0000121080-1": {
+  "first_seen": "2026-08-05T12:16:57.156507396Z",
+  "title": "Barclays: Delivery Manager",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Glasgow-Campus/Derivative-Confirmations-Manager--Operations-_JR-0000100626": {
   "first_seen": "2026-07-18T15:40:32.685085+05:30",
   "title": "Barclays: Derivative Confirmations Manager (Operations)",
@@ -274100,6 +275318,18 @@
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Glasgow-Campus/Programme-Director_JR-0000094889": {
   "first_seen": "2026-07-18T15:40:32.685022+05:30",
   "title": "Barclays: Programme Director",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Glasgow-Campus/Programme-Manager_JR-0000120557": {
+  "first_seen": "2026-08-05T12:17:18.764142027Z",
+  "title": "Barclays: Programme Manager",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Glasgow-Campus/Resilience-Framework-Execution-Lead_JR-0000123133-1": {
+  "first_seen": "2026-08-05T12:17:04.735967248Z",
+  "title": "Barclays: Resilience Framework Execution Lead",
   "matched": false,
   "notified": false
  },
@@ -274859,6 +276089,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Knutsford-Radbroke-Hall/Application-Security-Specialist_JR-0000096058": {
+  "first_seen": "2026-08-05T12:16:56.499203941Z",
+  "title": "Barclays: Application Security Specialist",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Knutsford-Radbroke-Hall/Application-Support-Analyst_JR-0000104974-1": {
   "first_seen": "2026-07-18T15:40:32.685068+05:30",
   "title": "Barclays: Application Support Analyst",
@@ -274898,6 +276134,12 @@
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Knutsford-Radbroke-Hall/Cloud-Security-Audit-AVP_JR-0000081853": {
   "first_seen": "2026-07-18T15:40:32.684982+05:30",
   "title": "Barclays: Cloud Security Audit AVP",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Knutsford-Radbroke-Hall/Cloud-Security-Engineer_JR-0000105160": {
+  "first_seen": "2026-08-05T12:17:09.274346348Z",
+  "title": "Barclays: Cloud Security Engineer",
   "matched": false,
   "notified": false
  },
@@ -276233,6 +277475,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Noida-Candor-TechSpace/TM-Analyst---BUK_JR-0000082728": {
+  "first_seen": "2026-08-05T12:17:19.616878277Z",
+  "title": "Barclays: TM Analyst - BUK",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Noida-Candor-TechSpace/TM-Analyst---BUK_JR-0000109699": {
   "first_seen": "2026-08-04T08:52:41.082566593Z",
   "title": "Barclays: TM Analyst - BUK",
@@ -276937,6 +278185,12 @@
  },
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Pune-Gera-Commerzone-SEZ/Business-Analyst_JR-0000111876": {
   "first_seen": "2026-07-18T15:40:32.6852+05:30",
+  "title": "Barclays: Business Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Pune-Gera-Commerzone-SEZ/Business-Analyst_JR-0000113307-3": {
+  "first_seen": "2026-08-05T12:17:19.166266581Z",
   "title": "Barclays: Business Analyst",
   "matched": false,
   "notified": false
@@ -278075,6 +279329,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Pune-Gera-Commerzone-SEZ/Scrum-Master_JR-0000116018-1": {
+  "first_seen": "2026-08-05T12:16:58.046450755Z",
+  "title": "Barclays: Scrum Master",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Pune-Gera-Commerzone-SEZ/Scrum-Master_JR-0000119631": {
   "first_seen": "2026-07-23T07:42:49.531511113Z",
   "title": "Barclays: Scrum Master",
@@ -278131,6 +279391,12 @@
  },
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Pune-Gera-Commerzone-SEZ/Senior-Analyst_JR-0000115750-1": {
   "first_seen": "2026-08-04T14:53:28.544240037Z",
+  "title": "Barclays: Senior Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Pune-Gera-Commerzone-SEZ/Senior-Analyst_JR-0000116140": {
+  "first_seen": "2026-08-05T12:16:57.569387735Z",
   "title": "Barclays: Senior Analyst",
   "matched": false,
   "notified": false
@@ -278539,6 +279805,12 @@
  },
  "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Pune-Gera-Commerzone-SEZ/Software-Engineer_JR-0000117578": {
   "first_seen": "2026-07-18T15:40:32.685053+05:30",
+  "title": "Barclays: Software Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://barclays.wd3.myworkdayjobs.com/wday/cxs/barclays/External_Career_Site_Barclays/job/Pune-Gera-Commerzone-SEZ/Software-Engineer_JR-0000118677": {
+  "first_seen": "2026-08-05T12:16:58.497893964Z",
   "title": "Barclays: Software Engineer",
   "matched": false,
   "notified": false
@@ -279935,6 +281207,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://blackrock.wd1.myworkdayjobs.com/wday/cxs/blackrock/BlackRock_Professional/job/London-Greater-London/Aladdin-Strategic-Relationship-Manager---Director---Aladdin-Client-Engagement_R264758": {
+  "first_seen": "2026-08-05T12:18:55.594625295Z",
+  "title": "BlackRock: Aladdin Strategic Relationship Manager - Director — Aladdin Client Engagement",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://blackrock.wd1.myworkdayjobs.com/wday/cxs/blackrock/BlackRock_Professional/job/London-Greater-London/Associate---Vice-President--Securities-Lending-Trader_R265102": {
   "first_seen": "2026-08-01T12:48:24.816857735Z",
   "title": "BlackRock: Associate / Vice President, Securities Lending Trader",
@@ -279950,6 +281228,12 @@
  "workday/https://blackrock.wd1.myworkdayjobs.com/wday/cxs/blackrock/BlackRock_Professional/job/London-Greater-London/Associate--EMEA-Solutions-Structuring_R265865": {
   "first_seen": "2026-08-01T12:48:24.816835814Z",
   "title": "BlackRock: Associate, EMEA Solutions Structuring",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://blackrock.wd1.myworkdayjobs.com/wday/cxs/blackrock/BlackRock_Professional/job/London-Greater-London/Associate--Java-Engineer--BGM-Data---Analytics_R265900-1": {
+  "first_seen": "2026-08-05T12:18:55.298217861Z",
+  "title": "BlackRock: Associate, Java Engineer, BGM Data \u0026 Analytics",
   "matched": false,
   "notified": false
  },
@@ -280184,6 +281468,12 @@
  "workday/https://blackrock.wd1.myworkdayjobs.com/wday/cxs/blackrock/BlackRock_Professional/job/Mumbai-India/Index-Operations--Data-Platforms-and-Security--BIS--Vice-President_R264441": {
   "first_seen": "2026-08-01T12:48:24.817260686Z",
   "title": "BlackRock: Fixed Income Data Specialist, BIS, Vice President",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://blackrock.wd1.myworkdayjobs.com/wday/cxs/blackrock/BlackRock_Professional/job/Mumbai-India/Index-Research--Index-Methodology-Expert---BlackRock-Global-Markets--Vice-President_R263281": {
+  "first_seen": "2026-08-05T12:18:55.796785925Z",
+  "title": "BlackRock: Index Research (Index Methodology Expert), BlackRock Global Markets, Vice President",
   "matched": false,
   "notified": false
  },
@@ -290279,6 +291569,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://boeing.wd1.myworkdayjobs.com/wday/cxs/boeing/EXTERNAL_CAREERS/job/USA---Tukwila-WA/Aviation-Maintenance-Technician-and-Inspector_JR2025483868-1": {
+  "first_seen": "2026-08-05T12:17:20.235052849Z",
+  "title": "Boeing: Aviation Maintenance Technician and Inspector",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://boeing.wd1.myworkdayjobs.com/wday/cxs/boeing/EXTERNAL_CAREERS/job/USA---Tukwila-WA/Business-Intelligence-Analyst---Associate-or-Mid-Level_JR2026514099-1": {
   "first_seen": "2026-08-01T11:28:25.384937658Z",
   "title": "Boeing: Business Intelligence Analyst – Associate or Mid-Level",
@@ -298313,6 +299609,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One/job/McLean-VA/Lead-Data-Engineer_R248024-1": {
+  "first_seen": "2026-08-05T12:17:20.800311403Z",
+  "title": "Capital One: Lead Data Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One/job/McLean-VA/Lead-Machine-Learning-Engineer_R243241": {
   "first_seen": "2026-07-18T15:40:32.686078+05:30",
   "title": "Capital One: Lead Machine Learning Engineer",
@@ -298580,6 +299882,12 @@
  "workday/https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One/job/McLean-VA/Lead-Software-Engineer--Full-Stack--Intelligent-Foundations-and-Experiences-_R246157-1": {
   "first_seen": "2026-08-02T21:05:23.873284779Z",
   "title": "Capital One: Lead Software Engineer, Full Stack (Intelligent Foundations and Experiences)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One/job/McLean-VA/Lead-Software-Engineer--Full-Stack--Java--GO--AWS--AI---Enterprise-Platforms-Technology-_R248421-1": {
+  "first_seen": "2026-08-05T12:17:21.191106328Z",
+  "title": "Capital One: Lead Software Engineer, Full Stack (Java, GO, AWS, AI) (Enterprise Platforms Technology)",
   "matched": false,
   "notified": false
  },
@@ -301943,6 +303251,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One/job/Nottingham--Eng/Service-Transition-Consultant_R248010": {
+  "first_seen": "2026-08-05T12:17:21.544088148Z",
+  "title": "Capital One: Service Transition Consultant",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One/job/Nottingham--Eng/Team-Manager---Workforce-Management_R246919-1": {
   "first_seen": "2026-07-18T15:40:32.685829+05:30",
   "title": "Capital One: Team Manager - Workforce Management",
@@ -302444,6 +303758,12 @@
  "workday/https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One/job/Plano-TX/Senior-Software-Engineer--Full-Stack--Java---Kafka---Cloud-Operations-Resilience-Engineering-_R248185-1": {
   "first_seen": "2026-08-01T11:36:34.297300044Z",
   "title": "Capital One: Senior Software Engineer, Full Stack (Java \u0026 Kafka) (Cloud Operations Resilience Engineering)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://capitalone.wd12.myworkdayjobs.com/wday/cxs/capitalone/Capital_One/job/Plano-TX/Senior-Staff-Auditor---Bank-and-Support-Functions-Audit--Hybrid-_R248470-1": {
+  "first_seen": "2026-08-05T12:17:21.858180336Z",
+  "title": "Capital One: Senior Staff Auditor,  Bank and Support Functions Audit (Hybrid)",
   "matched": false,
   "notified": false
  },
@@ -304889,6 +306209,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://cisco.wd5.myworkdayjobs.com/wday/cxs/cisco/Cisco_Careers/job/Bangalore-India/Hardware-Engineer_2022060": {
+  "first_seen": "2026-08-05T12:18:54.283129219Z",
+  "title": "Cisco: Hardware Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://cisco.wd5.myworkdayjobs.com/wday/cxs/cisco/Cisco_Careers/job/Bangalore-India/Hardware-Engineering-Program-Project-Manager---10-to-15-Years---Bangalore_2019592": {
   "first_seen": "2026-08-01T12:48:24.633558037Z",
   "title": "Cisco: Hardware Engineering Program/Project Manager - 10 to 15 Years - Bangalore",
@@ -306053,6 +307379,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://cisco.wd5.myworkdayjobs.com/wday/cxs/cisco/Cisco_Careers/job/Canberra-Australia/Leader--Sales---Federal-Government_2021132": {
+  "first_seen": "2026-08-05T12:18:53.863568991Z",
+  "title": "Cisco: Leader, Sales - Federal Government",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://cisco.wd5.myworkdayjobs.com/wday/cxs/cisco/Cisco_Careers/job/Canberra-Australia/Leader--Sales_2016632": {
   "first_seen": "2026-08-01T12:48:24.634100688Z",
   "title": "Cisco: Leader, Sales",
@@ -306422,6 +307754,12 @@
  "workday/https://cisco.wd5.myworkdayjobs.com/wday/cxs/cisco/Cisco_Careers/job/Galway-Ireland/Software-Engineer---App-Development_2018762-1": {
   "first_seen": "2026-08-01T12:48:24.631817802Z",
   "title": "Cisco: Software Engineer - App Development",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://cisco.wd5.myworkdayjobs.com/wday/cxs/cisco/Cisco_Careers/job/Galway-Ireland/Software-Engineer---Application-Development_2021167": {
+  "first_seen": "2026-08-05T12:18:53.424087715Z",
+  "title": "Cisco: Software Engineer - Application Development",
   "matched": false,
   "notified": false
  },
@@ -311045,6 +312383,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://cisco.wd5.myworkdayjobs.com/wday/cxs/cisco/Cisco_Careers/job/Tel-Aviv-Yafo-Israel/Splunk-Professional-Services-Consultant---Security_2018432-1": {
+  "first_seen": "2026-08-05T12:18:54.700247009Z",
+  "title": "Cisco: Splunk Professional Services Consultant - Security",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://cisco.wd5.myworkdayjobs.com/wday/cxs/cisco/Cisco_Careers/job/Thalwil-Switzerland/ASIC-Engineering-Technical-Leader_2018984": {
   "first_seen": "2026-08-01T12:48:24.633407266Z",
   "title": "Cisco: ASIC Engineering Technical Leader",
@@ -312953,6 +314297,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Chennai-Tamil-Nadu-India/Application-Developer-Global-Reconciliation-Utility-GRU_26982897": {
+  "first_seen": "2026-08-05T12:17:24.566815262Z",
+  "title": "Citi: Application Developer-Global Reconciliation Utility-GRU",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Chennai-Tamil-Nadu-India/Application-Development-Technology-Lead-Analyst---Vice-President_26978399": {
   "first_seen": "2026-07-21T14:26:36.023633455Z",
   "title": "Citi: Application Development Technology Lead Analyst - Vice President",
@@ -313067,6 +314417,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Chennai-Tamil-Nadu-India/Development-Lead-Global-Reconciliation-Utility-GRU-Vice-President_26982893": {
+  "first_seen": "2026-08-05T12:17:23.542620439Z",
+  "title": "Citi: Development Lead-Global Reconciliation Utility-GRU-Vice President",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Chennai-Tamil-Nadu-India/Digital-Acquisition-and-Onboarding---Vice-President_26979580": {
   "first_seen": "2026-07-22T10:10:20.672365081Z",
   "title": "Citi: Digital Acquisition and Onboarding - Vice President",
@@ -313157,6 +314513,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Chennai-Tamil-Nadu-India/KYC-Operations-Senior-Manager---Vice-President_26984802-1": {
+  "first_seen": "2026-08-05T12:17:28.865739965Z",
+  "title": "Citi: KYC Operations Senior Manager - Vice President",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Chennai-Tamil-Nadu-India/Lead-AI-ML-Data-Scientist--Vice-president_26982421-1": {
   "first_seen": "2026-07-29T06:21:23.640994263Z",
   "title": "Citi: Lead AI/ML Data Scientist- Vice president",
@@ -313208,6 +314570,12 @@
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Chennai-Tamil-Nadu-India/Quality-Assurance--Monitoring---Testing-Intermediate-Analyst_26977660-1": {
   "first_seen": "2026-07-24T14:15:20.120924093Z",
   "title": "Citi: Quality Assurance, Monitoring \u0026 Testing Intermediate Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Chennai-Tamil-Nadu-India/Quality-Assurance--Monitoring---Testing-Lead-Analyst---VP_26981171-1": {
+  "first_seen": "2026-08-05T12:17:25.062457798Z",
+  "title": "Citi: Quality Assurance, Monitoring \u0026 Testing Lead Analyst - VP",
   "matched": false,
   "notified": false
  },
@@ -314627,6 +315995,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/DLF-CYBERCITY-12B/IVR-AI-Analytics-Intermediate-Analyst---C11_26983595": {
+  "first_seen": "2026-08-05T12:17:26.633735766Z",
+  "title": "Citi: IVR AI Analytics Intermediate Analyst - C11",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/DLF-CYBERCITY-12B/KYC-Operations-Analyst-2---Block-Prevention----Remediation_26984063": {
   "first_seen": "2026-08-05T06:17:07.262218332Z",
   "title": "Citi: KYC Operations Analyst 2 - Block Prevention \u0026  Remediation",
@@ -315899,6 +317273,18 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Hong-Kong--Hong-Kong/Institutional-FX-Sales---AVP---HONG-KONG_26984777": {
+  "first_seen": "2026-08-05T12:17:28.441189041Z",
+  "title": "Citi: Institutional FX Sales - AVP - HONG KONG",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Hong-Kong--Hong-Kong/Markets---Sales-and-Trading--Summer-Analyst--Hong-Kong---2027_26978275": {
+  "first_seen": "2026-08-05T12:17:25.479970576Z",
+  "title": "Citi: Markets – Sales and Trading, Summer Analyst, Hong Kong - 2027",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Hong-Kong--Hong-Kong/Prime---Delta-One-Product---Structurer_26980197": {
   "first_seen": "2026-07-21T04:35:46.740837265Z",
   "title": "Citi: Prime \u0026 Delta One Product / Structurer",
@@ -316124,6 +317510,12 @@
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Irving-Texas-United-States/Apps-Dev-Tech-Sr-Lead-Analyst---Senior-Vice-President_26974206": {
   "first_seen": "2026-07-20T20:42:45.099901329Z",
   "title": "Citi: Apps Dev Tech Sr Lead Analyst - Senior Vice President",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Irving-Texas-United-States/Architecture-Senior-Lead-Analyst_26976334": {
+  "first_seen": "2026-08-05T12:17:24.110911219Z",
+  "title": "Citi: Architecture Senior Lead Analyst",
   "matched": false,
   "notified": false
  },
@@ -317531,6 +318923,18 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/London--United-Kingdom/Investment-Bank-Consumer---Retail-Analyst_26970345": {
+  "first_seen": "2026-08-05T12:17:27.922871488Z",
+  "title": "Citi: Investment Bank Consumer \u0026 Retail Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/London--United-Kingdom/Investment-Bank-Consumer---Retail-Associate_26946286-1": {
+  "first_seen": "2026-08-05T12:17:27.503583369Z",
+  "title": "Citi: Investment Bank Consumer \u0026 Retail Associate",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/London--United-Kingdom/Investment-Banking-Associate---GAM_26981664": {
   "first_seen": "2026-07-27T20:12:26.468114461Z",
   "title": "Citi: Investment Banking Associate - GAM",
@@ -317751,6 +319155,12 @@
   "first_seen": "2026-08-01T11:38:27.388903046Z",
   "title": "Citi: Relationship Analyst – Corporate Banking",
   "matched": true,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/London--United-Kingdom/Research-Analyst--Utilities-_26983089": {
+  "first_seen": "2026-08-05T12:17:25.854791208Z",
+  "title": "Citi: Research Analyst (Utilities)",
+  "matched": false,
   "notified": false
  },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/London--United-Kingdom/Research-Communications-Lead--Vice-President_26969188": {
@@ -318008,6 +319418,12 @@
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/METALICA-BUILDING/Credit-Analyst_26979870-1": {
   "first_seen": "2026-07-24T21:30:32.610460646Z",
   "title": "Citi: Credit Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Madrid--Spain/Banker-Senior-Relationship-Manager--Citi-Commercial-Bank-Spain_26969184": {
+  "first_seen": "2026-08-05T12:17:26.247190426Z",
+  "title": "Citi: Banker/Senior Relationship Manager, Citi Commercial Bank Spain",
   "matched": false,
   "notified": false
  },
@@ -319031,6 +320447,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Mumbai-Maharashtra-India/Business-Unit-Manager---SVP_26982203-1": {
+  "first_seen": "2026-08-05T12:17:22.424751224Z",
+  "title": "Citi: Business Unit Manager - SVP",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Mumbai-Maharashtra-India/Business-Unit-Manager-C14---Financial-Governance---Expense-Management-Lead-for-Wealth-Technology---MUMBAI_26982566": {
   "first_seen": "2026-08-01T11:38:28.378957696Z",
   "title": "Citi: Business Unit Manager - Financial Governance and Expense Management Lead for Wealth Technology",
@@ -319447,6 +320869,12 @@
  },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Mumbai-Maharashtra-India/Program-Management-Lead-Analyst_26980055": {
   "first_seen": "2026-07-22T04:38:02.594819864Z",
+  "title": "Citi: Program Management Lead Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Mumbai-Maharashtra-India/Program-Management-Lead-Analyst_26982871": {
+  "first_seen": "2026-08-05T12:17:29.229949717Z",
   "title": "Citi: Program Management Lead Analyst",
   "matched": false,
   "notified": false
@@ -321551,6 +322979,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Java-Developer-with-Spark_26981772-1": {
+  "first_seen": "2026-08-05T12:17:23.117508653Z",
+  "title": "Citi: Java Developer with Spark",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Java-Developer_26975831-1": {
   "first_seen": "2026-07-20T11:30:31.867585365Z",
   "title": "Citi: Java Developer",
@@ -321632,6 +323066,12 @@
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Java-Microservices-Senior-Developer---Assistant-Vice-President_26971493": {
   "first_seen": "2026-07-21T10:11:11.040946137Z",
   "title": "Citi: Java Microservices Senior Developer - Assistant Vice President",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Java-PySpark-Bigdata-Developer_26981940": {
+  "first_seen": "2026-08-05T12:17:30.731494083Z",
+  "title": "Citi: Java PySpark Bigdata Developer",
   "matched": false,
   "notified": false
  },
@@ -321965,6 +323405,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Senior-C---Developer---Assistant-Vice-President_26981952": {
+  "first_seen": "2026-08-05T12:17:27.051392266Z",
+  "title": "Citi: Senior C++ Developer - Assistant Vice President",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Senior-Core-Java-Developer---Vice-President_26977895": {
   "first_seen": "2026-07-22T12:05:34.903825638Z",
   "title": "Citi: Senior Core Java Developer - Vice President",
@@ -321974,6 +323420,12 @@
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Senior-IOS-Developer_26979045-1": {
   "first_seen": "2026-07-22T12:05:34.904214206Z",
   "title": "Citi: Senior IOS Developer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Senior-Java--Vice-President--Development-Engineer_26982390": {
+  "first_seen": "2026-08-05T12:17:30.280406135Z",
+  "title": "Citi: Senior Java (Vice President) Development Engineer",
   "matched": false,
   "notified": false
  },
@@ -322016,6 +323468,12 @@
  "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Senior-Java-Developer--Assistant-Vice-President_26979919-1": {
   "first_seen": "2026-07-22T07:27:57.593663689Z",
   "title": "Citi: Senior Java Developer, Assistant Vice President",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://citi.wd5.myworkdayjobs.com/wday/cxs/citi/2/job/Pune-Maharashtra-India/Senior-Java-Developer--Credit-Risk-domain---Assistant-Vice-President_26977843-1": {
+  "first_seen": "2026-08-05T12:17:29.780648172Z",
+  "title": "Citi: Senior Java Developer (Credit Risk domain)- Assistant Vice President",
   "matched": false,
   "notified": false
  },
@@ -325619,6 +327077,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://crowdstrike.wd5.myworkdayjobs.com/wday/cxs/crowdstrike/crowdstrikecareers/job/Germany---Remote/Sr-Security-Researcher_R29648": {
+  "first_seen": "2026-08-05T12:17:31.412843858Z",
+  "title": "CrowdStrike: Sr. Security Researcher",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://crowdstrike.wd5.myworkdayjobs.com/wday/cxs/crowdstrike/crowdstrikecareers/job/India---Bangalore/Backend-Engineer-III--Falcon-Exposure-Management_R25652-1": {
   "first_seen": "2026-08-01T11:40:26.749584806Z",
   "title": "CrowdStrike: Backend Engineer III- Falcon Exposure Management",
@@ -328541,6 +330005,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Ambattur-Chennai/Assistant-Officer--Personal-Banker--Consumer-Banking-Group_WD87509-2": {
+  "first_seen": "2026-08-05T12:17:32.195088021Z",
+  "title": "DBS: Assistant Officer, Personal Banker, Consumer Banking Group",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Ambattur-Chennai/Branch-Relationship-Manager--Distribution--Licensed--Sales-Incentive---RG0350-_WD86739-1": {
   "first_seen": "2026-07-21T07:22:44.806858203Z",
   "title": "DBS: Branch Relationship Manager, Distribution (Licensed, Sales Incentive) (RG0350)",
@@ -329957,6 +331427,18 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Mumbai/Analyst--Credit-Analyst---Supply-Chain-Finance--Small-Medium-Enterprises_WD87499": {
+  "first_seen": "2026-08-05T12:17:35.939898003Z",
+  "title": "DBS: Analyst, Credit Analyst - Supply Chain Finance, Small Medium Enterprises",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Mumbai/Analyst--Credit-Analyst--Small-Medium-Enterprises_WD87500": {
+  "first_seen": "2026-08-05T12:17:36.84430919Z",
+  "title": "DBS: Analyst, Credit Analyst, Small Medium Enterprises",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Mumbai/Analyst--Product-Manager-Schemes--Consumer-Banking-Group_WD86568": {
   "first_seen": "2026-07-28T11:47:53.373219921Z",
   "title": "DBS: Analyst, Product Manager Schemes, Consumer Banking Group",
@@ -330143,6 +331625,12 @@
   "matched": true,
   "notified": false
  },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Mylapore-Chennai/Officer--Branch-Relationship-Manger-Growth--Consumer-Banking-Group_WD87510-1": {
+  "first_seen": "2026-08-05T12:17:32.859639771Z",
+  "title": "DBS: Officer, Branch Relationship Manger Growth, Consumer Banking Group",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Mylapore-Chennai/Senior-Officer--Branch-Operations-And-Service-Head--Consumer-Banking-Group_WD87433-1": {
   "first_seen": "2026-08-04T09:20:51.611371746Z",
   "title": "DBS: Senior Officer, Branch Operations And Service Head, Consumer Banking Group",
@@ -330152,6 +331640,12 @@
  "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Mysore/Analyst--Relationship-Manager--Credit-Program-Small--Small-Medium-Enterprises_WD86768": {
   "first_seen": "2026-07-21T07:22:44.806649049Z",
   "title": "DBS: Analyst, Relationship Manager, Credit Program Small, Small Medium Enterprises",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Namakkal/Officer--Branch-Relationship-Manager--Consumer-Banking-Group_WD87502": {
+  "first_seen": "2026-08-05T12:17:33.266807057Z",
+  "title": "DBS: Officer, Branch Relationship Manager, Consumer Banking Group",
   "matched": false,
   "notified": false
  },
@@ -330716,6 +332210,12 @@
  "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Pune-DBIL/Assistant-Officer--Virtual-Relationship-Manager--Consumer-Banking-Group_WD86749": {
   "first_seen": "2026-08-01T11:41:11.066902579Z",
   "title": "DBS: Assistant Officer, Virtual Relationship Manager, Consumer Banking Group",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Pune-DBIL/Officer--Customer-Service-Officer--Consumer-Banking-Group_WD87504": {
+  "first_seen": "2026-08-05T12:17:36.406639596Z",
+  "title": "DBS: Officer, Customer Service Officer, Consumer Banking Group",
   "matched": false,
   "notified": false
  },
@@ -331985,6 +333485,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Taipei/Analyst--Finance---Data-Analytics--CRESA_WD86177": {
+  "first_seen": "2026-08-05T12:17:34.635312111Z",
+  "title": "DBS: Analyst, Finance \u0026 Data Analytics, CRESA",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Taipei/Analyst--Legal-Collections--CB-Credit--Risk-Management-Group_WD87296-1": {
   "first_seen": "2026-07-29T09:33:12.185834719Z",
   "title": "DBS: Analyst, Legal Collections, CB Credit, Risk Management Group",
@@ -332141,9 +333647,27 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Taipei/Assistant-Officer--Telemarketing-Personal-Loan-Sales--Telemarketing-Sales--Cards---Unsecured-Loans--Consumer-Banking-Group_WD87489": {
+  "first_seen": "2026-08-05T12:17:33.691080697Z",
+  "title": "DBS: Assistant Officer, Telemarketing Personal Loan Sales, Telemarketing Sales, Cards \u0026 Unsecured Loans, Consumer Banking Group",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Taipei/Asso_WD86090": {
   "first_seen": "2026-07-20T11:30:47.875361824Z",
   "title": "DBS: Associate, Treasures RM, T\u0026D, Consumer Banking Group",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Taipei/Associate--Digital-Transformation--Group-Ops-Capability-Centre_WD87484": {
+  "first_seen": "2026-08-05T12:17:35.040422756Z",
+  "title": "DBS: Associate, Digital Transformation, Group Ops Capability Centre",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Taipei/Associate--Digital-Transformation--Group-Ops-Capability-Centre_WD87485": {
+  "first_seen": "2026-08-05T12:17:35.450689303Z",
+  "title": "DBS: Associate, Digital Transformation, Group Ops Capability Centre",
   "matched": false,
   "notified": false
  },
@@ -332579,6 +334103,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Velachery/Officer--Branch-Relationship-Manager--Consumer-Banking-Group_WD87511-1": {
+  "first_seen": "2026-08-05T12:17:34.225674422Z",
+  "title": "DBS: Officer, Branch Relationship Manager, Consumer Banking Group",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://dbs.wd3.myworkdayjobs.com/wday/cxs/dbs/DBS_Careers/job/Vellore/Assistant-Officer--Personal-Banker--Consumer-Banking-Group_WD86840": {
   "first_seen": "2026-07-18T15:40:32.686199+05:30",
   "title": "DBS: Assistant Officer, Personal Banker, Consumer Banking Group",
@@ -332690,6 +334220,12 @@
  "workday/https://dupont.wd5.myworkdayjobs.com/wday/cxs/dupont/Jobs/job/Auburn-Hills-Michigan/Analytical-Chemist_249264W": {
   "first_seen": "2026-07-18T15:40:32.686294+05:30",
   "title": "DuPont: Analytical Chemist",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://dupont.wd5.myworkdayjobs.com/wday/cxs/dupont/Jobs/job/Avils-Asturias/Cloud-Senior-Engineer--M-F-D-_249938W": {
+  "first_seen": "2026-08-05T12:17:39.934739021Z",
+  "title": "DuPont: Cloud Senior Engineer (M/F/D)",
   "matched": false,
   "notified": false
  },
@@ -333728,6 +335264,18 @@
  "workday/https://dupont.wd5.myworkdayjobs.com/wday/cxs/dupont/Jobs/job/Taipei-Taiwan/Business-Development-Manager--Vespel-Taiwan_249014W": {
   "first_seen": "2026-07-18T15:40:32.686328+05:30",
   "title": "DuPont: Business Development Manager, Vespel Taiwan",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://dupont.wd5.myworkdayjobs.com/wday/cxs/dupont/Jobs/job/Tarragona-Tarragona/Regional-Commercial-Manager---Water--m-f-d-_249955W": {
+  "first_seen": "2026-08-05T12:17:37.576941516Z",
+  "title": "DuPont: Regional Commercial Manager - Water (m/f/d)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://dupont.wd5.myworkdayjobs.com/wday/cxs/dupont/Jobs/job/Tarragona-Tarragona/Regional-Commercial-Manager-LS-S--m-f-d-_249607W": {
+  "first_seen": "2026-08-05T12:17:39.497135166Z",
+  "title": "DuPont: Regional Commercial Manager LS\u0026S (m/f/d)",
   "matched": false,
   "notified": false
  },
@@ -337190,6 +338738,12 @@
  "workday/https://expedia.wd108.myworkdayjobs.com/wday/cxs/expedia/search/job/UK---London/Loyalty-Service-Manager_R-103372": {
   "first_seen": "2026-08-03T22:22:58.350524204Z",
   "title": "Expedia: Loyalty Experience Manager",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://expedia.wd108.myworkdayjobs.com/wday/cxs/expedia/search/job/UK---London/Machine-Learning-Scientist-II_R-108124-1": {
+  "first_seen": "2026-08-05T12:17:40.425810762Z",
+  "title": "Expedia: Machine Learning Scientist II",
   "matched": false,
   "notified": false
  },
@@ -350723,6 +352277,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://gehc.wd5.myworkdayjobs.com/wday/cxs/gehc/GEHC_ExternalSite/job/BeiJing/Sr-Medical-Director-Risk-Management--Global-Pharmacovigilance_R4044663-1": {
+  "first_seen": "2026-08-05T12:17:40.895282798Z",
+  "title": "GE HealthCare: Sr Medical Director Risk Management, Global Pharmacovigilance",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://gehc.wd5.myworkdayjobs.com/wday/cxs/gehc/GEHC_ExternalSite/job/BeiJing/Sr-Staff-Software-Architect----Recon_R4044586-1": {
   "first_seen": "2026-08-04T12:31:48.152166008Z",
   "title": "GE HealthCare: Sr. Staff Software Architect -- Recon",
@@ -356693,6 +358253,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India--GF11-Pritech-Park-Bangalore/Manager---Growth-Process-Transformation-4C_JR10016359": {
+  "first_seen": "2026-08-05T12:17:50.344722467Z",
+  "title": "Genpact: Manager - Growth Process Transformation 4C",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India--GF11-Pritech-Park-Bangalore/Managing-Consultant---Finance-Advisory-4D_JR10003795": {
   "first_seen": "2026-07-23T07:43:34.500322609Z",
   "title": "Genpact: Managing Consultant - Finance Advisory 4D",
@@ -357407,6 +358973,12 @@
   "matched": true,
   "notified": true
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-1st-floor-Nyati-tech-park-Pune/Lead-Data-Engineer---Data-Engineering-4C_JR10009575": {
+  "first_seen": "2026-08-05T12:17:58.914686814Z",
+  "title": "Genpact: Lead Data Engineer - Data Engineering 4C",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-1st-floor-Nyati-tech-park-Pune/Lead-Data-Engineer---Data-Engineering-4C_JR10014758": {
   "first_seen": "2026-07-21T10:12:03.490884134Z",
   "title": "Genpact: Lead Data Engineer - Data Engineering 4C",
@@ -357470,6 +359042,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-1st-floor-Nyati-tech-park-Pune/Software-Development-Engineer---Software-Development-Engineering-N-4A_JR10018506": {
   "first_seen": "2026-08-04T15:38:12.342521816Z",
   "title": "Genpact: Software Development Engineer - Software Development Engineering N 4A",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-1st-floor-Nyati-tech-park-Pune/Solution-Architect---Data-and-Analytics-3_JR10019064": {
+  "first_seen": "2026-08-05T12:17:49.353630004Z",
+  "title": "Genpact: Solution Architect - Data and Analytics 3",
   "matched": false,
   "notified": false
  },
@@ -357565,6 +359143,12 @@
  },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-1st-floor-Nyati-tech-park-Pune/Sr-Developer---Application-Development-Programming-Language-Scripting-Languages-Web-Technologies-N-4B_JR10018968": {
   "first_seen": "2026-08-05T06:17:34.095416153Z",
+  "title": "Genpact: Sr. Developer - Application Development Programming Language/Scripting Languages/Web Technologies N 4B",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-1st-floor-Nyati-tech-park-Pune/Sr-Developer---Application-Development-Programming-Language-Scripting-Languages-Web-Technologies-N-4B_JR10019142": {
+  "first_seen": "2026-08-05T12:17:59.487703692Z",
   "title": "Genpact: Sr. Developer - Application Development Programming Language/Scripting Languages/Web Technologies N 4B",
   "matched": false,
   "notified": false
@@ -357875,6 +359459,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-7th-fl-Raiaskaran-Tech-Park-Sakinaka-Mumbai/Lead-Analyst---Data-Governance-and-Quality-4C_JR10019179": {
+  "first_seen": "2026-08-05T12:17:52.201154348Z",
+  "title": "Genpact: Lead Analyst - Data Governance and Quality 4C",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-7th-fl-Raiaskaran-Tech-Park-Sakinaka-Mumbai/Network-Administrator-N-4A_JR10016715": {
   "first_seen": "2026-07-24T07:21:06.260622007Z",
   "title": "Genpact: Network Administrator N 4A",
@@ -357913,6 +359503,18 @@
  },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-7th-fl-Raiaskaran-Tech-Park-Sakinaka-Mumbai/Sr-Analyst---Data-Governance-and-Quality-4B_JR10016433": {
   "first_seen": "2026-07-23T12:15:32.988810041Z",
+  "title": "Genpact: Sr. Analyst - Data Governance and Quality 4B",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-7th-fl-Raiaskaran-Tech-Park-Sakinaka-Mumbai/Sr-Analyst---Data-Governance-and-Quality-4B_JR10019168": {
+  "first_seen": "2026-08-05T12:17:53.078580009Z",
+  "title": "Genpact: Sr. Analyst - Data Governance and Quality 4B",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-7th-fl-Raiaskaran-Tech-Park-Sakinaka-Mumbai/Sr-Analyst---Data-Governance-and-Quality-4B_JR10019180": {
+  "first_seen": "2026-08-05T12:17:51.17911779Z",
   "title": "Genpact: Sr. Analyst - Data Governance and Quality 4B",
   "matched": false,
   "notified": false
@@ -357973,6 +359575,12 @@
  },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-7th-fl-Raiaskaran-Tech-Park-Sakinaka-Mumbai/Sr-Developer---Application-Development-JAVA-P-4B_JR10018966": {
   "first_seen": "2026-08-04T15:38:10.833229204Z",
+  "title": "Genpact: Sr. Developer - Application Development JAVA P 4B",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-7th-fl-Raiaskaran-Tech-Park-Sakinaka-Mumbai/Sr-Developer---Application-Development-JAVA-P-4B_JR10019173": {
+  "first_seen": "2026-08-05T12:17:52.46883737Z",
   "title": "Genpact: Sr. Developer - Application Development JAVA P 4B",
   "matched": false,
   "notified": false
@@ -358328,6 +359936,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-DLF-Commercial-Building-3-Phase-V-Gurugram/Specialist---F-A---R2R---External-Reporting-4A_JR10018448": {
   "first_seen": "2026-08-03T10:14:44.291443768Z",
   "title": "Genpact: Specialist - F\u0026A - R2R - External Reporting 4A",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-DLF-Commercial-Building-3-Phase-V-Gurugram/Specialist---HRO---Employee-Lifecycle-Management-4A_JR10019223": {
+  "first_seen": "2026-08-05T12:17:47.11768539Z",
+  "title": "Genpact: Specialist - HRO - Employee Lifecycle Management 4A",
   "matched": false,
   "notified": false
  },
@@ -358757,6 +360371,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Floor-1-to-12-Hafeezpet-Phoenix-Hyderabad/Business-Analyst---Enterprise-Programs-4B_JR10018872": {
+  "first_seen": "2026-08-05T12:17:47.363956512Z",
+  "title": "Genpact: Business Analyst - Enterprise Programs 4B",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Floor-1-to-12-Hafeezpet-Phoenix-Hyderabad/Business-Partner---Human-Resource--4B_JR10016740": {
   "first_seen": "2026-07-27T11:44:43.367095355Z",
   "title": "Genpact: Business Partner - Human Resource -4B",
@@ -358988,6 +360608,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Floor-1-to-12-Hafeezpet-Phoenix-Hyderabad/Sr-Analyst---BI--Reporting-and-Data-Visualization-4A_JR10014712": {
   "first_seen": "2026-07-20T08:30:58.198391981Z",
   "title": "Genpact: Sr. Analyst - BI, Reporting and Data Visualization 4A",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Floor-1-to-12-Hafeezpet-Phoenix-Hyderabad/Sr-Analyst---Process-Analytics---Claims---Underwriting-4A_JR10019190": {
+  "first_seen": "2026-08-05T12:17:47.799782333Z",
+  "title": "Genpact: Sr. Analyst - Process Analytics - Claims \u0026 Underwriting 4A",
   "matched": false,
   "notified": false
  },
@@ -359411,6 +361037,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-GF-2-4--22B-STPI-Gurgaon/Sr-Analyst---Process-Analytics---Actuarial-4A_JR10019149": {
+  "first_seen": "2026-08-05T12:17:51.938930792Z",
+  "title": "Genpact: Sr. Analyst - Process Analytics - Actuarial 4A",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-GF-2-4--22B-STPI-Gurgaon/Sr-Analyst---Process-Analytics---SCM-4B_JR10015400": {
   "first_seen": "2026-07-20T11:31:06.739028663Z",
   "title": "Genpact: Sr. Analyst - Process Analytics - SCM 4B",
@@ -359450,6 +361082,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Godrej-Genesis-13-Flr-Kolkata-WB/Leader---Strategic-Deals-1_JR10017536": {
   "first_seen": "2026-07-28T18:05:26.591311906Z",
   "title": "Genpact: Leader - Strategic Deals 1",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Godrej-Genesis-13-Flr-Kolkata-WB/Program-Director-3_JR10019021": {
+  "first_seen": "2026-08-05T12:17:48.912140268Z",
+  "title": "Genpact: Program Director 3",
   "matched": false,
   "notified": false
  },
@@ -359693,6 +361331,18 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-INFOSPACE-IT-PARK-TOWER--4-JHARSA-Gurgaon/Specialist---F-A---AP-4A_JR10019143": {
+  "first_seen": "2026-08-05T12:17:48.519322184Z",
+  "title": "Genpact: Specialist - F\u0026A - AP 4A",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-INFOSPACE-IT-PARK-TOWER--4-JHARSA-Gurgaon/Specialist---F-A---AP-4B_JR10019200": {
+  "first_seen": "2026-08-05T12:17:48.707400945Z",
+  "title": "Genpact: Specialist - F\u0026A - AP 4B",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-INFOSPACE-IT-PARK-TOWER--4-JHARSA-Gurgaon/Specialist---F-A---FP-A-4A_JR10015825": {
   "first_seen": "2026-07-30T11:25:52.463684322Z",
   "title": "Genpact: Specialist - F\u0026A - FP\u0026A 4A",
@@ -359801,6 +361451,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-INFOSPACE-IT-PARK-TOWER--4-JHARSA-Gurgaon/Sr-Associate---F-A---AP-5B_JR10019198-1": {
+  "first_seen": "2026-08-05T12:17:48.110372427Z",
+  "title": "Genpact: Sr. Associate - F\u0026A - AP 5B",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-INFOSPACE-IT-PARK-TOWER--4-JHARSA-Gurgaon/Sr-Associate---F-A---I2C-5B_JR10015275": {
   "first_seen": "2026-07-28T11:48:20.60971638Z",
   "title": "Genpact: Sr. Associate - F\u0026A - I2C 5B",
@@ -359834,6 +361490,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-INFOSPACE-IT-PARK-TOWER--4-JHARSA-Gurgaon/Sr-Associate---Underwriting-5B_JR10018481": {
   "first_seen": "2026-08-03T14:00:09.929949715Z",
   "title": "Genpact: Sr. Associate - Underwriting 5B",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-INFOSPACE-IT-PARK-TOWER--4-JHARSA-Gurgaon/Sr-Specialist---F-A---AP-4C_JR10019146-1": {
+  "first_seen": "2026-08-05T12:17:48.318541792Z",
+  "title": "Genpact: Sr. Specialist - F\u0026A - AP 4C",
   "matched": false,
   "notified": false
  },
@@ -360359,6 +362021,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Pegasus-2-Plot-A-8A-Noida-UP/Specialist---Customer-Care---Collections-4A_JR10019195": {
+  "first_seen": "2026-08-05T12:17:50.136839224Z",
+  "title": "Genpact: Specialist - Customer Care - Collections 4A",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Pegasus-2-Plot-A-8A-Noida-UP/Specialist---F-A---AP-4A_JR10017730": {
   "first_seen": "2026-08-01T11:52:24.480223737Z",
   "title": "Genpact: Specialist - F\u0026A - AP 4A",
@@ -360457,6 +362125,12 @@
  },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Pegasus-2-Plot-A-8A-Noida-UP/Specialist---F-A---R2R-4A_JR10019099": {
   "first_seen": "2026-08-05T09:17:33.226990873Z",
+  "title": "Genpact: Specialist - F\u0026A - R2R 4A",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Pegasus-2-Plot-A-8A-Noida-UP/Specialist---F-A---R2R-4A_JR10019171": {
+  "first_seen": "2026-08-05T12:17:52.891822354Z",
   "title": "Genpact: Specialist - F\u0026A - R2R 4A",
   "matched": false,
   "notified": false
@@ -360671,6 +362345,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Pegasus-2-Plot-A-8A-Noida-UP/Sr-Associate---F-A---I2C-5B_JR10019157": {
+  "first_seen": "2026-08-05T12:17:59.198581233Z",
+  "title": "Genpact: Sr. Associate - F\u0026A - I2C 5B",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Pegasus-2-Plot-A-8A-Noida-UP/Sr-Associate---F-A---R2R-5B_JR10018525": {
   "first_seen": "2026-08-03T17:03:55.232621856Z",
   "title": "Genpact: Sr. Associate - F\u0026A - R2R 5B",
@@ -360734,6 +362414,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Pegasus-2-Plot-A-8A-Noida-UP/Sr-Designer---Visual-Design-4B_JR10017116": {
   "first_seen": "2026-07-28T14:43:04.801332591Z",
   "title": "Genpact: Sr. Designer - Visual Design 4B",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Pegasus-2-Plot-A-8A-Noida-UP/Sr-Developer---Enterprise-Application-Oracle-S-4B_JR10018044": {
+  "first_seen": "2026-08-05T12:17:50.52437312Z",
+  "title": "Genpact: Sr. Developer - Enterprise Application Oracle S 4B",
   "matched": false,
   "notified": false
  },
@@ -361058,6 +362744,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-RMZ-One-Paramount-Porur-Chennai/Sr-Analyst---Process-Analytics---SCM-4A_JR10016078": {
   "first_seen": "2026-07-22T14:25:21.837553719Z",
   "title": "Genpact: Sr. Analyst - Process Analytics - SCM 4A",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-RMZ-One-Paramount-Porur-Chennai/Sr-Associate---F-A---I2C-5B_JR10012757": {
+  "first_seen": "2026-08-05T12:17:49.793089741Z",
+  "title": "Genpact: Sr. Associate - F\u0026A - I2C 5B",
   "matched": false,
   "notified": false
  },
@@ -361430,6 +363122,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Stellar-STPI-Noida/Sr-Developer---Application-Development-JAVA-N-4B_JR10016940": {
   "first_seen": "2026-07-27T14:04:38.7662478Z",
   "title": "Genpact: Sr. Developer - Application Development JAVA N 4B",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-G-India-Stellar-STPI-Noida/Sr-Developer---Cloud-Technologies-N-4B_JR10019078": {
+  "first_seen": "2026-08-05T12:17:51.622936646Z",
+  "title": "Genpact: Sr. Developer - Cloud Technologies N 4B",
   "matched": false,
   "notified": false
  },
@@ -362081,6 +363779,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-GIPL-Prestige-Technology-Park-IV-Bangalore/Director---F-A---R2R-3_JR10017757": {
+  "first_seen": "2026-08-05T12:17:50.916583306Z",
+  "title": "Genpact: Director - F\u0026A - R2R 3",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-GIPL-Prestige-Technology-Park-IV-Bangalore/Engineer---Application-Support-N-4A_JR10015403": {
   "first_seen": "2026-07-20T13:32:17.119112753Z",
   "title": "Genpact: Engineer - Application Support N 4A",
@@ -362441,6 +364145,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-GIPL-Prestige-Technology-Park-IV-Bangalore/Software-Development-Engineer---Software-Development-Engineering-N-4A_JR10019158": {
+  "first_seen": "2026-08-05T12:17:53.260859807Z",
+  "title": "Genpact: Software Development Engineer - Software Development Engineering N 4A",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-GIPL-Prestige-Technology-Park-IV-Bangalore/Solution-Architect---Data-and-Analytics-3_JR10015692": {
   "first_seen": "2026-07-21T14:27:11.883740039Z",
   "title": "Genpact: Solution Architect - Data and Analytics 3",
@@ -362516,6 +364226,12 @@
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-GIPL-Prestige-Technology-Park-IV-Bangalore/Specialist---Process-Analytics---SCM-4B_JR10002004": {
   "first_seen": "2026-08-01T11:52:10.285666772Z",
   "title": "Genpact: Specialist - Process Analytics - SCM 4B",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1401-GIPL-Prestige-Technology-Park-IV-Bangalore/Specialist---S-M---Digital-Marketing-4A_JR10019174": {
+  "first_seen": "2026-08-05T12:17:52.66716701Z",
+  "title": "Genpact: Specialist - S\u0026M - Digital Marketing 4A",
   "matched": false,
   "notified": false
  },
@@ -363547,6 +365263,12 @@
  },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1417-RP-IDPL-3rd-Floor-99-Surya-Park-Bangalore/Tech-Lead---Enterprise-Application-ServiceNow-N-4C_JR10017535": {
   "first_seen": "2026-07-29T16:14:27.008060747Z",
+  "title": "Genpact: Tech Lead - Enterprise Application ServiceNow N 4C",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/1417-RP-IDPL-3rd-Floor-99-Surya-Park-Bangalore/Tech-Lead---Enterprise-Application-ServiceNow-N-4C_JR10018859": {
+  "first_seen": "2026-08-05T12:17:47.581873654Z",
   "title": "Genpact: Tech Lead - Enterprise Application ServiceNow N 4C",
   "matched": false,
   "notified": false
@@ -365801,6 +367523,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/6102-G-Romania-UBC-5-Lazar-street-Iasi-Romania/Associate---Customer-Care---Voice-5A_JR10010455": {
+  "first_seen": "2026-08-05T12:17:50.727678586Z",
+  "title": "Genpact: Associate - Customer Care - Voice 5A",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://genpact.wd108.myworkdayjobs.com/wday/cxs/genpact/External_Careers/job/6102-G-Romania-UBC-5-Lazar-street-Iasi-Romania/Front-Line-Manager---F-A---AP-4B_JR10016831": {
   "first_seen": "2026-07-27T11:44:48.219740778Z",
   "title": "Genpact: Front Line Manager - F\u0026A - AP 4B",
@@ -367703,6 +369431,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Changwon/Lead-Manufacturing-Specialist---Production-Quality_R5049083-1": {
+  "first_seen": "2026-08-05T12:17:41.422650267Z",
+  "title": "GE Vernova: Lead Manufacturing Specialist - Production Quality",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Changwon/Manufacturing-Specialist---Production-Quality_R5043396-2": {
   "first_seen": "2026-07-18T15:40:32.687162+05:30",
   "title": "GE Vernova: Manufacturing Specialist - Production Quality",
@@ -367919,6 +369653,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Chennai/Product-Security-Analyst_R5048477-2": {
+  "first_seen": "2026-08-05T12:17:42.883649694Z",
+  "title": "GE Vernova: Product Security Analyst",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Chennai/Project-Manager_R5047116-2": {
   "first_seen": "2026-07-20T08:30:47.76890318Z",
   "title": "GE Vernova: Project Manager",
@@ -368123,6 +369863,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Elblag/Mechanical-Engineer-1---Product-Definition_R5048821-2": {
+  "first_seen": "2026-08-05T12:17:43.178531498Z",
+  "title": "GE Vernova: Mechanical Engineer 1 - Product Definition",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Elblag/Mechanical-Turbine-Design-Lead-Engineer_R5043104-1": {
   "first_seen": "2026-07-18T15:40:32.687441+05:30",
   "title": "GE Vernova: Mechanical Turbine Design Lead Engineer",
@@ -368252,6 +369998,12 @@
  "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Erlanger/Quality-Control-Inspector---Intermediate-HRLY_R5034602-1": {
   "first_seen": "2026-07-28T19:56:59.064454222Z",
   "title": "GE Vernova: Fabrication Inspector - Intermediate HRLY",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Findlay-Township/Application-Engineer--Technical-Sales----Defense_R5045789-3": {
+  "first_seen": "2026-08-05T12:17:41.919850949Z",
+  "title": "GE Vernova: Application Engineer (Technical Sales) - Defense",
   "matched": false,
   "notified": false
  },
@@ -369515,6 +371267,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Hyderabad-TS-IN-26/Senior-Staff-Technical-Project-Manager_R5048504": {
+  "first_seen": "2026-08-05T12:17:42.210926114Z",
+  "title": "GE Vernova: Senior Staff Technical Project Manager",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Hyderabad-TS-IN-26/Software-Engineer_R5048615-3": {
   "first_seen": "2026-07-29T06:21:57.460036959Z",
   "title": "GE Vernova: Software Engineering Specialist",
@@ -369791,6 +371549,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Kanchipuram/EHS-Specialist_R5048382-1": {
+  "first_seen": "2026-08-05T12:17:42.563730022Z",
+  "title": "GE Vernova: EHS Specialist",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Kanchipuram/Engineer-3_R5044325-2": {
   "first_seen": "2026-07-29T09:33:24.770087927Z",
   "title": "GE Vernova: Engineer 2",
@@ -369956,6 +371720,12 @@
  "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Lagos/Customer-Support-Engineering-Intern---ECGIP_R5048156-2": {
   "first_seen": "2026-07-23T16:49:55.181433706Z",
   "title": "GE Vernova: Customer Support Engineering Intern - ECGIP",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://gevernova.wd5.myworkdayjobs.com/wday/cxs/gevernova/Vernova_ExternalSite/job/Lahore/Team-Lead-Electrical---O-M-Station-Management_R5046221-2": {
+  "first_seen": "2026-08-05T12:17:46.596929221Z",
+  "title": "GE Vernova: Team Lead Electrical - O\u0026M Station Management",
   "matched": false,
   "notified": false
  },
@@ -375479,6 +377249,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Amstelveen-North-Holland-Netherlands/Public-key-account-manager_3164590-1": {
+  "first_seen": "2026-08-05T12:18:00.525168294Z",
+  "title": "HP: Public key account manager",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Ariana-Ariana-Tunisia/CCC-MPS-VAS-Technical-Solutions-Representative---Italian-speaker_3167038-2": {
   "first_seen": "2026-07-30T09:12:07.916637565Z",
   "title": "HP: CCC MPS VAS Technical Solutions Representative - Italian speaker",
@@ -376511,6 +378287,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Gurugram-Haryana-India/Manager-Customer-Account-operation_3167033-1": {
+  "first_seen": "2026-08-05T12:18:01.751911926Z",
+  "title": "HP: Manager Customer Account operation",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Gurugram-Haryana-India/PARTNER-BUSINESS-MANAGER_3164364-1": {
   "first_seen": "2026-07-23T09:02:59.443382238Z",
   "title": "HP: PARTNER BUSINESS MANAGER",
@@ -376520,6 +378302,12 @@
  "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Gurugram-Haryana-India/SPTS-Account-Manager-India_3161922-1": {
   "first_seen": "2026-08-01T11:54:41.840522985Z",
   "title": "HP: SPTS Account Manager India",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Hangzhou-Zhejiang-China/PC_3161361-1": {
+  "first_seen": "2026-08-05T12:17:59.976587285Z",
+  "title": "HP: 商用PC产品销售",
   "matched": false,
   "notified": false
  },
@@ -377615,6 +379403,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Singapore-South-West-Singapore/Embedded-Software--Firmware-Engineer_3162702-1": {
+  "first_seen": "2026-08-05T12:18:00.960547415Z",
+  "title": "HP: Embedded Software/ Firmware Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Singapore-South-West-Singapore/Embedded-Software--Firmware-Engineer_3164416-2": {
   "first_seen": "2026-07-21T07:23:06.228188141Z",
   "title": "HP: Embedded Software/ Firmware Engineer",
@@ -378476,6 +380270,12 @@
  "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Taipei-Taipei-City-Taiwan-Region/Engineering-Strategy-Program-Manager--Commercial-Personal-Systems_3159372": {
   "first_seen": "2026-07-28T09:31:06.94458984Z",
   "title": "HP: Engineering Strategy Program Manager, Commercial Personal Systems",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://hp.wd5.myworkdayjobs.com/wday/cxs/hp/ExternalCareerSite/job/Taipei-Taipei-City-Taiwan-Region/FY25-Taiwan-Intern-Conversion---Graduate-Hiring_3164011-2": {
+  "first_seen": "2026-08-05T12:18:02.72953513Z",
+  "title": "HP: FY25 Taiwan Intern Conversion - Graduate Hiring",
   "matched": false,
   "notified": false
  },
@@ -379731,6 +381531,12 @@
   "first_seen": "2026-08-01T11:59:18.34764886Z",
   "title": "HPE (Juniper): ASIC Verification Engineer",
   "matched": true,
+  "notified": false
+ },
+ "workday/https://hpe.wd5.myworkdayjobs.com/wday/cxs/hpe/Jobsathpe/job/Bengaluru-Karntaka-India/ASIC-Verification-Engineer_1210358-2": {
+  "first_seen": "2026-08-05T12:18:03.474275879Z",
+  "title": "HPE (Juniper): ASIC Verification Engineer",
+  "matched": false,
   "notified": false
  },
  "workday/https://hpe.wd5.myworkdayjobs.com/wday/cxs/hpe/Jobsathpe/job/Bengaluru-Karntaka-India/ASIC-front-end-Design-Engineer_1207304-2": {
@@ -382361,6 +384167,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://hpe.wd5.myworkdayjobs.com/wday/cxs/hpe/Jobsathpe/job/Sofia-Sofia-Bulgaria/AP-Accountant-with-Bulgarian_1209809-2": {
+  "first_seen": "2026-08-05T12:18:03.943573363Z",
+  "title": "HPE (Juniper): AP Accountant with Bulgarian",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://hpe.wd5.myworkdayjobs.com/wday/cxs/hpe/Jobsathpe/job/Sofia-Sofia-Bulgaria/Account-Support-Manager_1209499-2": {
   "first_seen": "2026-07-18T15:40:32.687517+05:30",
   "title": "HPE (Juniper): Account Support Manager with Polish language",
@@ -383123,6 +384935,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://hpe.wd5.myworkdayjobs.com/wday/cxs/hpe/Jobsathpe/job/Winnersh-Berkshire-United-Kingdom/HPC-Senior-Technology-Consultant_1210319-2": {
+  "first_seen": "2026-08-05T12:18:04.380423943Z",
+  "title": "HPE (Juniper): HPC Senior Technology Consultant",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://hpe.wd5.myworkdayjobs.com/wday/cxs/hpe/Jobsathpe/job/Winnersh-Berkshire-United-Kingdom/Modern-Infrastructure---Platforms-Technical-Consultant_1204859-2": {
   "first_seen": "2026-07-22T10:10:56.045670634Z",
   "title": "HPE (Juniper): Modern Infrastructure \u0026 Platforms Technical Consultant",
@@ -383846,6 +385664,12 @@
  "workday/https://intel.wd1.myworkdayjobs.com/wday/cxs/intel/External/job/Israel-Petah-Tikva/Data-Science-Student-for-AI-Solutions-Group_JR0283662": {
   "first_seen": "2026-08-01T12:04:33.774991532Z",
   "title": "Intel: Data Science Student for AI Solutions Group",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://intel.wd1.myworkdayjobs.com/wday/cxs/intel/External/job/Israel-Petah-Tikva/Experienced-Logic-Design-Engineer_JR0282138-1": {
+  "first_seen": "2026-08-05T12:18:05.046122505Z",
+  "title": "Intel: Experienced Logic Design Engineer",
   "matched": false,
   "notified": false
  },
@@ -386027,6 +387851,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://intel.wd1.myworkdayjobs.com/wday/cxs/intel/External/job/US-Oregon-Hillsboro/AI-Full-Stack-Engineer_JR0286065": {
+  "first_seen": "2026-08-05T12:18:05.31632344Z",
+  "title": "Intel: AI Full Stack Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://intel.wd1.myworkdayjobs.com/wday/cxs/intel/External/job/US-Oregon-Hillsboro/AI-Security-Engineer-Contract_JR0286011": {
   "first_seen": "2026-08-01T12:01:03.281327851Z",
   "title": "Intel: AI Security Engineer Contract",
@@ -387119,6 +388949,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://jiostar.wd102.myworkdayjobs.com/wday/cxs/jiostar/JioStar/job/Bengaluru--We-Work/Director---Engineering_JR12047": {
+  "first_seen": "2026-08-05T12:18:06.85323298Z",
+  "title": "JioStar (formerly Hotstar): Director - Engineering",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://jiostar.wd102.myworkdayjobs.com/wday/cxs/jiostar/JioStar/job/Bengaluru--We-Work/Director---Engineering_JR12130": {
   "first_seen": "2026-07-21T16:09:22.07828812Z",
   "title": "JioStar (formerly Hotstar): Director - Engineering",
@@ -387224,6 +389060,12 @@
  "workday/https://jiostar.wd102.myworkdayjobs.com/wday/cxs/jiostar/JioStar/job/Bengaluru--We-Work/Senior-Software-Development-Engineer_JR12137": {
   "first_seen": "2026-07-29T09:34:01.302162815Z",
   "title": "JioStar (formerly Hotstar): Senior Software Development Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://jiostar.wd102.myworkdayjobs.com/wday/cxs/jiostar/JioStar/job/Bengaluru--We-Work/Software-Development-Engineer-II---Fullstack_JR10007": {
+  "first_seen": "2026-08-05T12:18:07.739168313Z",
+  "title": "JioStar (formerly Hotstar): Software Development Engineer II",
   "matched": false,
   "notified": false
  },
@@ -388139,6 +389981,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://jiostar.wd102.myworkdayjobs.com/wday/cxs/jiostar/JioStar/job/Mumbai---OUC/Associate-Director---Product---Revenue-Strategy--Sports_JR12170": {
+  "first_seen": "2026-08-05T12:18:05.879061801Z",
+  "title": "JioStar (formerly Hotstar): Associate Director - Product \u0026 Revenue Strategy, Sports",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://jiostar.wd102.myworkdayjobs.com/wday/cxs/jiostar/JioStar/job/Mumbai---OUC/Associate-Director---Reseller-Partnerships--GCS_JR11939-1": {
   "first_seen": "2026-08-03T10:32:57.269578533Z",
   "title": "JioStar (formerly Hotstar): Associate Director - Partnerships, Growth Customer Sales",
@@ -388232,6 +390080,12 @@
  "workday/https://jiostar.wd102.myworkdayjobs.com/wday/cxs/jiostar/JioStar/job/Mumbai---OUC/Executive-Producer---Creative-Communications--Promos---Hindi-Movies_JR12081": {
   "first_seen": "2026-07-18T15:40:32.68757+05:30",
   "title": "JioStar (formerly Hotstar): Executive Producer – Creative Communications (Promos), Hindi Movies",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://jiostar.wd102.myworkdayjobs.com/wday/cxs/jiostar/JioStar/job/Mumbai---OUC/Executive-Producer---North-Regional---Kabaddi_JR12237": {
+  "first_seen": "2026-08-05T12:18:07.261581336Z",
+  "title": "JioStar (formerly Hotstar): Executive Producer - North Regional \u0026 Kabaddi",
   "matched": false,
   "notified": false
  },
@@ -389857,6 +391711,12 @@
  },
  "workday/https://kla.wd1.myworkdayjobs.com/wday/cxs/kla/Search/job/CHN-Jiangsu-HuaiAn-Orbotech/Customer-Support-Engineer_2532796": {
   "first_seen": "2026-08-01T12:28:25.697525391Z",
+  "title": "KLA: Customer Support Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://kla.wd1.myworkdayjobs.com/wday/cxs/kla/Search/job/CHN-Shanghai-Shanghai-KLA/Customer-Support-Engineer_2637375-1": {
+  "first_seen": "2026-08-05T12:18:08.383631Z",
   "title": "KLA: Customer Support Engineer",
   "matched": false,
   "notified": false
@@ -394331,6 +396191,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://lighting.wd3.myworkdayjobs.com/wday/cxs/lighting/jobs-and-careers/job/Vantaa/Marketing-Communication-Student-Worker_364648": {
+  "first_seen": "2026-08-05T12:18:47.314212981Z",
+  "title": "Signify: Marketing Communication Student Worker",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://lighting.wd3.myworkdayjobs.com/wday/cxs/lighting/jobs-and-careers/job/Warszawa/Integrated-Communications-Manager-CEE-North-Markets_365922": {
   "first_seen": "2026-08-03T15:07:13.876140845Z",
   "title": "Signify: Integrated Communications Manager CEE North Markets",
@@ -395213,6 +397079,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Dublin-Ireland/Lead-Technical-Product-Manager_R-286709": {
+  "first_seen": "2026-08-05T12:18:12.94979169Z",
+  "title": "Mastercard: Lead Technical Product Manager",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Dublin-Ireland/Lead-Technical-Program-Manager_R-281393": {
   "first_seen": "2026-07-24T11:59:08.809129096Z",
   "title": "Mastercard: Lead Technical Program Manager",
@@ -395555,6 +397427,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Gurgaon-India/Manager--Tax_R-280804": {
+  "first_seen": "2026-08-05T12:18:12.687990408Z",
+  "title": "Mastercard: Manager, Tax",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Gurgaon-India/Manager_R-268392": {
   "first_seen": "2026-08-04T13:25:02.693005248Z",
   "title": "Mastercard: Manager, Marketing Analytics",
@@ -395618,6 +397496,12 @@
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Gurgaon-India/Senior-Specialist--Strategy-Pricing---Interchange_R-279893": {
   "first_seen": "2026-08-03T17:43:34.84401796Z",
   "title": "Mastercard: Senior Specialist, Strategy Pricing \u0026 Interchange",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Gurgaon-India/Senior-Vice-President--Business-Finance-Center_R-279834-2": {
+  "first_seen": "2026-08-05T12:18:16.955991037Z",
+  "title": "Mastercard: Senior Vice President, Business Finance Center",
   "matched": false,
   "notified": false
  },
@@ -395936,6 +397820,12 @@
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/London-England-Angel-Lane/Business-Development-Manager---Fintech-and-Digital-Partners_R-286524": {
   "first_seen": "2026-07-29T16:14:42.149367549Z",
   "title": "Mastercard: Business Development Manager - Fintech and Digital Partners",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/London-England-Angel-Lane/Commercial-Manager_R-273891": {
+  "first_seen": "2026-08-05T12:18:12.421854397Z",
+  "title": "Mastercard: Commercial Manager",
   "matched": false,
   "notified": false
  },
@@ -397193,6 +399083,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Pune-India/Data-Engineer-I_R-287442": {
+  "first_seen": "2026-08-05T12:18:13.434060444Z",
+  "title": "Mastercard: Data Engineer I",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Pune-India/Director--Accounting_R-286157": {
   "first_seen": "2026-07-23T07:43:41.288836552Z",
   "title": "Mastercard: Director, Accounting",
@@ -397375,6 +399271,12 @@
  },
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Pune-India/Lead-Software-Engineer_R-282705": {
   "first_seen": "2026-07-21T07:23:40.414094356Z",
+  "title": "Mastercard: Lead Software Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Pune-India/Lead-Software-Engineer_R-284428": {
+  "first_seen": "2026-08-05T12:18:17.49155832Z",
   "title": "Mastercard: Lead Software Engineer",
   "matched": false,
   "notified": false
@@ -397850,7 +399752,7 @@
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Pune-India/Senior-Software-Engineer_R-282415": {
   "first_seen": "2026-08-01T12:31:15.340221388Z",
   "title": "Mastercard: Senior Software Engineer",
-  "matched": true,
+  "matched": false,
   "notified": false
  },
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Pune-India/Senior-Software-Engineer_R-282442": {
@@ -397958,6 +399860,12 @@
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Pune-India/Senior-Unix-Engineer_R-281102": {
   "first_seen": "2026-07-24T11:59:09.941793103Z",
   "title": "Mastercard: Senior Unix Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Pune-India/Senior-Vice-President--Workplace-Experience--Asia-Pacific_R-273975-1": {
+  "first_seen": "2026-08-05T12:18:17.227593346Z",
+  "title": "Mastercard: Senior Vice President, Workplace Experience, Asia Pacific",
   "matched": false,
   "notified": false
  },
@@ -398801,6 +400709,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Singapore/Manager--Strategy-Pricing---Interchange_R-278401-1": {
+  "first_seen": "2026-08-05T12:18:17.75551681Z",
+  "title": "Mastercard: Manager, Strategy Pricing \u0026 Interchange",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Singapore/Manager--Technical-Accounting_R-277614": {
   "first_seen": "2026-07-23T05:00:07.943851095Z",
   "title": "Mastercard: Manager, Technical Accounting",
@@ -398948,6 +400862,12 @@
  "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Tokyo-Japan/Consultant--Advisors---Consulting-Services--Strategy---Transformation_R-246970": {
   "first_seen": "2026-07-28T11:48:34.05228393Z",
   "title": "Mastercard: Managing Consultant, Advisors \u0026 Consulting Services, Strategy \u0026 Transformation",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://mastercard.wd1.myworkdayjobs.com/wday/cxs/mastercard/CorporateCareers/job/Tokyo-Japan/Customer-Technical-Services-Analyst_R-287012": {
+  "first_seen": "2026-08-05T12:18:18.011605103Z",
+  "title": "Mastercard: Customer Technical Services Analyst",
   "matched": false,
   "notified": false
  },
@@ -402227,6 +404147,18 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://micron.wd1.myworkdayjobs.com/wday/cxs/micron/External/job/Fab-10NX-Singapore/SEM-Technician_JR107454": {
+  "first_seen": "2026-08-05T12:18:18.858014993Z",
+  "title": "Micron: SEM Technician",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://micron.wd1.myworkdayjobs.com/wday/cxs/micron/External/job/Fab-10NX-Singapore/SEM-Technician_JR107457": {
+  "first_seen": "2026-08-05T12:18:18.473304602Z",
+  "title": "Micron: SEM Technician",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://micron.wd1.myworkdayjobs.com/wday/cxs/micron/External/job/Fab-10NX-Singapore/SHIFT-ENGINEER--TD-MFG-DEV-ENGG_JR104679": {
   "first_seen": "2026-07-18T15:40:32.687793+05:30",
   "title": "Micron: SHIFT ENGINEER, TD MFG DEV ENGG",
@@ -403274,6 +405206,12 @@
  "workday/https://micron.wd1.myworkdayjobs.com/wday/cxs/micron/External/job/Hyderabad---Phoenix-Aquila-India/Senior-Engineer--Technology---AMAIS_JR105671": {
   "first_seen": "2026-07-18T15:40:32.687851+05:30",
   "title": "Micron: Senior Engineer, Advanced Process Modeling",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://micron.wd1.myworkdayjobs.com/wday/cxs/micron/External/job/Hyderabad---Phoenix-Aquila-India/Senior-Engineer-IP-Verification---Digital-Design-Verification_JR96947": {
+  "first_seen": "2026-08-05T12:18:19.632980077Z",
+  "title": "Micron: Senior Engineer IP Verification - Digital Design Verification",
   "matched": false,
   "notified": false
  },
@@ -406037,6 +407975,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://micron.wd1.myworkdayjobs.com/wday/cxs/micron/External/job/Taichung---MTB-Taiwan/SENIOR-TECHNICIAN--MTB-PWF-BOND_JR103576": {
+  "first_seen": "2026-08-05T12:18:19.235633941Z",
+  "title": "Micron: SENIOR TECHNICIAN, MTB PWF BOND",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://micron.wd1.myworkdayjobs.com/wday/cxs/micron/External/job/Taichung---MTB-Taiwan/SR-ENGINEER--MTB-PWF-THINNING-EQP_JR101954": {
   "first_seen": "2026-07-18T15:40:32.687864+05:30",
   "title": "Micron: SR ENGINEER, MTB PWF THINNING EQUIPMENT",
@@ -406634,6 +408578,12 @@
  "workday/https://nasdaq.wd1.myworkdayjobs.com/wday/cxs/nasdaq/Global_External_Site/job/India---Bangalore---Karnataka/Observability-Engineer_R0026402": {
   "first_seen": "2026-07-18T15:40:32.687897+05:30",
   "title": "Nasdaq: Observability Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://nasdaq.wd1.myworkdayjobs.com/wday/cxs/nasdaq/Global_External_Site/job/India---Bangalore---Karnataka/Senior-Analyst-AI-Engineering-and-Automation_R0026299-1": {
+  "first_seen": "2026-08-05T12:18:20.227600754Z",
+  "title": "Nasdaq: Senior Analyst AI Engineering and Automation",
   "matched": false,
   "notified": false
  },
@@ -407825,6 +409775,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://ncr.wd1.myworkdayjobs.com/wday/cxs/ncr/ext_apac/job/CEBU-CITY-PHL/L3-SW-Tech-Specialist_R0157866": {
+  "first_seen": "2026-08-05T12:18:20.733969515Z",
+  "title": "NCR Voyix: L3 SW Tech Specialist",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://ncr.wd1.myworkdayjobs.com/wday/cxs/ncr/ext_apac/job/CEBU-CITY-PHL/L3-Technical-SUpport_R0157302": {
   "first_seen": "2026-08-01T12:36:17.637627423Z",
   "title": "NCR Voyix: L3 Technical SUpport",
@@ -407858,6 +409814,12 @@
  "workday/https://ncr.wd1.myworkdayjobs.com/wday/cxs/ncr/ext_apac/job/CEBU-CITY-PHL/Senior-Supervisor_R0157763-2": {
   "first_seen": "2026-08-05T09:19:23.778624344Z",
   "title": "NCR Voyix: Senior Supervisor",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://ncr.wd1.myworkdayjobs.com/wday/cxs/ncr/ext_apac/job/CEBU-CITY-PHL/Talent-Acquisition-Senior_R0158067-2": {
+  "first_seen": "2026-08-05T12:18:21.077069888Z",
+  "title": "NCR Voyix: Talent Acquisition Senior",
   "matched": false,
   "notified": false
  },
@@ -410153,6 +412115,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/CONVERSE-RETAIL-FOS-MILANO-SCALO/Converse-Responsabile-Vendite---Converse-Store-Milano-Scalo---Part-Time-18H_R-89463": {
+  "first_seen": "2026-08-05T12:18:21.768075371Z",
+  "title": "Nike (nke): Converse Responsabile Vendite - Converse Store Milano Scalo - Part Time 18H",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/CONVERSE-RETAIL-FOS-MILANO-SCALO/Store-Manager_R-86252": {
   "first_seen": "2026-07-18T15:40:32.688172+05:30",
   "title": "Nike (nke): Store Manager",
@@ -410477,6 +412445,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/Foshan-China-Mainland/Athlete-II_R-86460": {
+  "first_seen": "2026-08-05T12:18:22.00413414Z",
+  "title": "Nike (nke): Athlete II",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/Foshan-China-Mainland/Coach_R-87280": {
   "first_seen": "2026-07-18T15:40:32.687988+05:30",
   "title": "Nike (nke): Coach",
@@ -410564,6 +412538,12 @@
  "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/Graz-Styria/Nike-Apparel-Teamleiter--Lead---w-m-d----385-h----NFS-GRAZ-MURPARK_R-86813": {
   "first_seen": "2026-07-18T15:40:32.688132+05:30",
   "title": "Nike (nke): Nike Apparel Teamleiter (Lead) (w/m/d) – 38.5(h) – NFS GRAZ MURPARK",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/Greenwich-United-Kingdom/Visual-Merchandiser--VMS-Athlete----40HR---3-Month-FTC---London-Icon_R-89259": {
+  "first_seen": "2026-08-05T12:18:22.366057207Z",
+  "title": "Nike (nke): Visual Merchandiser (VMS Athlete) - 40HR - 3 Month FTC - London Icon",
   "matched": false,
   "notified": false
  },
@@ -412217,6 +414197,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/Kildare-Ireland/Retail-Lead---Kildare_R-89392": {
+  "first_seen": "2026-08-05T12:18:21.504898254Z",
+  "title": "Nike (nke): Retail Lead - Kildare",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/Kings-Cross-United-Kingdom/Floor-Manager----Commercial-Coach--40hrs-FTC---Kings-Cross_R-87484-1": {
   "first_seen": "2026-07-18T15:40:32.687969+05:30",
   "title": "Nike (nke): Floor Manager - (Commercial Coach) 40hrs FTC - Kings Cross",
@@ -413264,6 +415250,12 @@
  "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/Pittsburgh-Pennsylvania/Lead-Assortment-Planner--Dicks-Sporting-Goods--Pittsburgh--NA_R-88700": {
   "first_seen": "2026-07-29T03:45:18.319548005Z",
   "title": "Nike (nke): Lead Assortment Planner, Dicks Sporting Goods  Pittsburgh, NA",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://nike.wd1.myworkdayjobs.com/wday/cxs/nike/nke/job/Plaisir-France/Alternance---Vendeurse-en-magasin-NIKE--Athlete----F-H_R-89453": {
+  "first_seen": "2026-08-05T12:18:23.393639592Z",
+  "title": "Nike (nke): Alternance – Vendeur·se en magasin NIKE (Athlete) – F/H",
   "matched": false,
   "notified": false
  },
@@ -425093,6 +427085,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/job/Bangalore---Carina/Software-Engineer_R-051733-1": {
+  "first_seen": "2026-08-05T12:16:37.913823779Z",
+  "title": "RedHat: Software Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/job/Bangkok---MSO---Gaysorn/Solution-Architect---Enterprise_R-052095": {
   "first_seen": "2026-08-01T10:50:38.441971346Z",
   "title": "RedHat: Solution Architect - Enterprise",
@@ -425201,6 +427199,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/job/Brno---Tech-Park-Brno---C/Software-Engineer---Automotive-Kernel-Linux-Engineering-Team_R-058780-1": {
+  "first_seen": "2026-08-05T12:16:33.926181746Z",
+  "title": "RedHat: Software Engineer - Automotive Kernel Linux Engineering Team",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/job/Buenos-Aires/OpenShift-Technical-Account-Manager_R-051235-1": {
   "first_seen": "2026-08-01T10:50:42.509833815Z",
   "title": "RedHat: OpenShift Technical Account Manager",
@@ -425240,6 +427244,12 @@
  "workday/https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/job/Durham/Software-Engineer_R-058396": {
   "first_seen": "2026-08-01T10:49:56.396590793Z",
   "title": "RedHat: Software Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/job/Frankfurt/Senior-Specialist-Solution-Architect-Ansible_R-057595-1": {
+  "first_seen": "2026-08-05T12:16:38.187126453Z",
+  "title": "RedHat: Senior Specialist Solution Architect Ansible",
   "matched": false,
   "notified": false
  },
@@ -425966,6 +427976,12 @@
  "workday/https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/job/Sao-Paulo/Associate-Technical-Account-Manager_R-058111-1": {
   "first_seen": "2026-08-01T10:50:08.968521682Z",
   "title": "RedHat: Associate Technical Account Manager",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://redhat.wd5.myworkdayjobs.com/wday/cxs/redhat/jobs/job/Sao-Paulo/Junior-Consultant_R-057635": {
+  "first_seen": "2026-08-05T12:16:33.551863044Z",
+  "title": "RedHat: Junior Consultant",
   "matched": false,
   "notified": false
  },
@@ -426806,6 +428822,12 @@
  "workday/https://sabre.wd1.myworkdayjobs.com/wday/cxs/sabre/SabreJobs/job/Krakow-Maopolskie-Poland/Lead-Service-Delivery-Engineer_JR107621": {
   "first_seen": "2026-08-01T12:37:48.554034761Z",
   "title": "Sabre: Lead Engineer - Service Delivery",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://sabre.wd1.myworkdayjobs.com/wday/cxs/sabre/SabreJobs/job/Krakow-Maopolskie-Poland/Lead-Software-Systems-Engineer_JR108486": {
+  "first_seen": "2026-08-05T12:18:23.967922854Z",
+  "title": "Sabre: Lead Software Systems Engineer",
   "matched": false,
   "notified": false
  },
@@ -428579,6 +430601,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/California---San-Francisco/Product-Deployed-Engineer_JR355102-1": {
+  "first_seen": "2026-08-05T12:18:50.678695517Z",
+  "title": "Salesforce: Product Deployed Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/California---San-Francisco/Product-Management--Sr-Manager--Health-Cloud_JR350198": {
   "first_seen": "2026-08-01T12:48:24.440913924Z",
   "title": "Salesforce: Product Management, Sr. Manager, Health Cloud",
@@ -430151,6 +432179,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/Germany---Munich/Named-Account-Executive---Retail---Consumer-Goods---Germany_JR330405": {
+  "first_seen": "2026-08-05T12:18:50.95138243Z",
+  "title": "Salesforce: Strategic Account Executive, Retail \u0026 Consumer Goods",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/Germany---Munich/Sales-Intern--SMB-Team-_JR343884-1": {
   "first_seen": "2026-08-01T12:48:24.442363035Z",
   "title": "Salesforce: Sales Intern (SMB Team)",
@@ -431009,6 +433043,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Analytics-Engineer_JR354667-1": {
+  "first_seen": "2026-08-05T12:18:51.575014994Z",
+  "title": "Salesforce: Analytics Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Associate-proactive-Monitoring-Engineer_JR341087-2": {
   "first_seen": "2026-08-01T12:48:24.439358333Z",
   "title": "Salesforce: Associate proactive Monitoring Engineer",
@@ -431018,6 +433058,18 @@
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Customer-Success-Manager--Mulesoft-exp-mandatory_JR351592": {
   "first_seen": "2026-08-01T12:48:24.43918482Z",
   "title": "Salesforce: Customer Success Manager- Mulesoft exp mandatory",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Customer-Success-Manager--Salesforce-Commerce-Cloud---Demandware-exp-mandatory-_JR331777": {
+  "first_seen": "2026-08-05T12:18:52.973526451Z",
+  "title": "Salesforce: Customer Success Manager (Salesforce Commerce Cloud / Demandware exp mandatory)",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Customer-Success-Manager--Salesforce-technical-exp-mandatory-AMER-timezone-_JR331097-1": {
+  "first_seen": "2026-08-05T12:18:51.803170389Z",
+  "title": "Salesforce: Customer Success Manager (Salesforce technical exp mandatory-AMER timezone)",
   "matched": false,
   "notified": false
  },
@@ -431207,6 +433259,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Salesforce-Success-Architect---AMER-Shifts--Salesforce-Exp-is-mandatory-_JR355094": {
+  "first_seen": "2026-08-05T12:18:52.74103937Z",
+  "title": "Salesforce: Salesforce Success Architect - AMER Shifts (Salesforce Exp is mandatory)",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Salesforce-Success-Architect_JR340003-1": {
   "first_seen": "2026-08-01T12:48:24.442571584Z",
   "title": "Salesforce: Salesforce Success Architect",
@@ -431330,7 +433388,7 @@
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Software-Engineering-LMTS_JR338174": {
   "first_seen": "2026-08-03T18:07:50.933338318Z",
   "title": "Salesforce: Software Engineering LMTS - Backend Distributed Systems",
-  "matched": true,
+  "matched": false,
   "notified": false
  },
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/India---Hyderabad/Software-Engineering-MTS-SMTS--Salesforce-Developer-_JR352358": {
@@ -434759,6 +436817,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/Portugal---Lisbon/New-Logo-Account-Executive---Portugal_JR355096": {
+  "first_seen": "2026-08-05T12:18:52.039284634Z",
+  "title": "Salesforce: New Logo Account Executive - Portugal",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/Portugal---Lisbon/Tableau-Account-Executive---Public-Sector_JR346499": {
   "first_seen": "2026-08-01T12:48:24.442093703Z",
   "title": "Salesforce: Tableau Account Executive - Public Sector",
@@ -434870,6 +436934,12 @@
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/Singapore---Singapore/Business-Development-Representative--Singapore-Market_JR354513": {
   "first_seen": "2026-08-01T12:48:24.438633412Z",
   "title": "Salesforce: Business Development Representative, Singapore Market",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/Singapore---Singapore/Business-Development-Representative_JR355032": {
+  "first_seen": "2026-08-05T12:18:52.518476264Z",
+  "title": "Salesforce: Business Development Representative",
   "matched": false,
   "notified": false
  },
@@ -435200,6 +437270,12 @@
  "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/Sweden---Remote/Prime-Named-Account-Executive-8_JR339037": {
   "first_seen": "2026-08-01T12:48:24.442077213Z",
   "title": "Salesforce: Sr. Account Executive - Informatica - Sweden Manufacturing",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://salesforce.wd12.myworkdayjobs.com/wday/cxs/salesforce/External_Career_Site/job/Sweden---Stockholm/Account-Executive---Slack---Sweden_JR354837": {
+  "first_seen": "2026-08-05T12:18:52.28035576Z",
+  "title": "Salesforce: Account Executive - Slack - Sweden",
   "matched": false,
   "notified": false
  },
@@ -442865,6 +444941,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/10500-Ulmerton-Rd-LargoFL-33771-3544/XMLNAME-4am-Inbound--Stocking---T0654-_R0000433670": {
+  "first_seen": "2026-08-05T12:18:25.684706609Z",
+  "title": "Target: 4am Inbound (Stocking) (T0654)",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/1057-Eastshore-Hwy-AlbanyCA-94710-1011/Starbucks-Barista_R0000447958": {
   "first_seen": "2026-08-03T11:04:36.587699288Z",
   "title": "Target: Starbucks Barista",
@@ -443561,6 +445643,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/13055-Highway-9-N-Milton-GA-30004-5137/Overnight-Inbound--Stocking---T2431-_R0000401508": {
+  "first_seen": "2026-08-05T12:18:24.43753412Z",
+  "title": "Target: Overnight Inbound (Stocking) (T2431)",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/1329-5th-St-SE-MinneapolisMN-55414-1390/Small-Format-Team-Leader_R0000446355": {
   "first_seen": "2026-07-21T04:36:28.056469698Z",
   "title": "Target: Small Format Team Leader",
@@ -443894,6 +445982,12 @@
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/1447-E-7th-St-MonticelloMN-55362-4666/Seasonal--4am-Inbound--Stocking---T2180--_R0000439334-1": {
   "first_seen": "2026-08-05T06:18:23.596436558Z",
   "title": "Target: Seasonal: 4am Inbound (Stocking) (T2180) ",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/1447-E-7th-St-MonticelloMN-55362-4666/XMLNAME-4am-Inbound--Stocking---T2180-_R0000448288": {
+  "first_seen": "2026-08-05T12:18:25.401679419Z",
+  "title": "Target: 4am Inbound (Stocking) (T2180)",
   "matched": false,
   "notified": false
  },
@@ -444989,6 +447083,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/21615-S-Diamond-Lake-Rd-RogersMN-55374-8893/Starbucks-Barista--T1456-_R0000448287": {
+  "first_seen": "2026-08-05T12:18:26.10481845Z",
+  "title": "Target: Starbucks Barista (T1456)",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/21637-State-Road-7-Boca-RatonFL-33428-1843/Target-Security-Specialist_R0000445208": {
   "first_seen": "2026-07-21T04:36:28.056254105Z",
   "title": "Target: Target Security Specialist",
@@ -445316,6 +447416,12 @@
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/24425-Magic-Mountain-Pkwy-ValenciaCA-91355-3403/Visual-Merchandiser_R0000442010": {
   "first_seen": "2026-07-24T04:39:30.25384427Z",
   "title": "Target: Visual Merchandiser",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/2462-Foothill-Blvd-La-VerneCA-91750-3056/Human-Resources-Expert_R0000448260": {
+  "first_seen": "2026-08-05T12:18:27.100254213Z",
+  "title": "Target: Human Resources Expert",
   "matched": false,
   "notified": false
  },
@@ -445718,6 +447824,12 @@
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/298-W-McKinley-Ave-SunnyvaleCA-94086-6193/Beauty-Team-Leader_R0000446048": {
   "first_seen": "2026-07-18T15:40:32.688663+05:30",
   "title": "Target: Beauty Team Leader",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/300-Clydesdale-Trl-MedinaMN-55340-4538/XMLNAME-6am-Inbound--Stocking---T2223-_R0000448289": {
+  "first_seen": "2026-08-05T12:18:25.002058593Z",
+  "title": "Target: 6am Inbound (Stocking) (T2223)",
   "matched": false,
   "notified": false
  },
@@ -446426,6 +448538,12 @@
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/3944-Grand-Ave-ChinoCA-91710-5422/Food-Service-Expert_R0000447152": {
   "first_seen": "2026-07-28T09:32:10.924866497Z",
   "title": "Target: Food Service Expert",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/39739-Lyndon-B-Johnson-Fwy-DallasTX-75237-3560/Target-Security-Specialist_R0000448250": {
+  "first_seen": "2026-08-05T12:18:26.65433457Z",
+  "title": "Target: Target Security Specialist",
   "matched": false,
   "notified": false
  },
@@ -448127,6 +450245,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/751-Alta-Mere-Dr-Fort-Worth-TX-76116-1526/General-Merchandise-Team-Leader--Fort-Worth--TX_R0000448230": {
+  "first_seen": "2026-08-05T12:18:27.380137969Z",
+  "title": "Target: General Merchandise Team Leader- Fort Worth, TX",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/7551-W-Morris-St-IndianapolisIN-46231-1358/CDL-A-Tractor-Trailer-Driver---Home-Daily_R0000444647": {
   "first_seen": "2026-07-24T21:31:02.50638839Z",
   "title": "Target: CDL A Tractor Trailer Driver - Home Daily",
@@ -448825,6 +450949,12 @@
  },
  "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/BangaloreIndia/Lead-Data-Analyst_R0000440436-1": {
   "first_seen": "2026-07-23T14:59:37.645866364Z",
+  "title": "Target: Lead Data Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://target.wd5.myworkdayjobs.com/wday/cxs/target/targetcareers/job/BangaloreIndia/Lead-Data-Analyst_R0000444984-1": {
+  "first_seen": "2026-08-05T12:18:26.382311151Z",
   "title": "Target: Lead Data Analyst",
   "matched": false,
   "notified": false
@@ -449795,6 +451925,18 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/Budapest-Hungary/Cloud-Application-Security-Engineer_REQ574624": {
+  "first_seen": "2026-08-05T12:18:28.205211373Z",
+  "title": "Unisys: Cloud Application Security Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/Budapest-Hungary/Cloud-Vulnerability-Management-Security-Engineer_REQ574626": {
+  "first_seen": "2026-08-05T12:18:27.886923885Z",
+  "title": "Unisys: Cloud Vulnerability Management Security Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/Budapest-Hungary/Dutch-Speaking-L1-Customer-Service-Representative--FUTURE-OPPORTUNITIES-_REQ572325": {
   "first_seen": "2026-08-01T12:40:34.168395222Z",
   "title": "Unisys: Dutch Speaking L1 IT Support Specialist",
@@ -450233,6 +452375,12 @@
   "matched": true,
   "notified": false
  },
+ "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/City-of-San-Fernando-Philippines/Civil-Registry-Associate_REQ574894": {
+  "first_seen": "2026-08-05T12:18:29.04593237Z",
+  "title": "Unisys: Civil Registry Associate",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/Citynet---Mandaluyong-City/Job-Posting-Title-Sr-Tech-Svc-Desk----ITIL_REQ569158": {
   "first_seen": "2026-08-01T12:43:12.433725363Z",
   "title": "Unisys: Service Desk Analyst L2 - ITIL",
@@ -450524,6 +452672,12 @@
  "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/Hyderabad-TS-India/Sr-Technical-Service-Desk---Level-2_REQ574578": {
   "first_seen": "2026-07-27T14:05:41.80419576Z",
   "title": "Unisys: Sr Technical Service Desk - Level 2",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/Hyderabad-Waverock/NOC-Engineer_REQ574600": {
+  "first_seen": "2026-08-05T12:18:29.548383726Z",
+  "title": "Unisys: NOC Engineer",
   "matched": false,
   "notified": false
  },
@@ -450968,6 +453122,12 @@
  "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/PSA-Tarlac/Field-Office-Personnel_REQ574586": {
   "first_seen": "2026-07-24T04:39:31.383347568Z",
   "title": "Unisys: Field Office Personnel",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://unisys.wd5.myworkdayjobs.com/wday/cxs/unisys/External/job/PSA-Valenzuela/Civil-Registry-Associate_REQ574895": {
+  "first_seen": "2026-08-05T12:18:28.626166553Z",
+  "title": "Unisys: Civil Registry Associate",
   "matched": false,
   "notified": false
  },
@@ -453149,6 +455309,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/job/IN---Bengaluru-India/Sr-Software-Engineer_REF082823W": {
+  "first_seen": "2026-08-05T12:18:37.767064833Z",
+  "title": "Visa (Workday): Sr Software Engineer",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/job/IN---Bengaluru-India/Sr-Systems-Engineer--Mac-_REF083203W": {
   "first_seen": "2026-08-01T12:45:36.650670063Z",
   "title": "Visa (Workday): Sr. Systems Engineer (Mac), 3 - 6 Years",
@@ -453644,6 +455810,12 @@
  "workday/https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/job/PL---Warsaw-Poland/Personal-Assistant_REF081738W": {
   "first_seen": "2026-08-01T12:45:07.820512247Z",
   "title": "Visa (Workday): Personal Assistant  - Warsaw",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/job/PL---Warsaw-Poland/Product-Owner--Travel---X-border---Senior-Manager_REF082451W": {
+  "first_seen": "2026-08-05T12:18:37.347205607Z",
+  "title": "Visa (Workday): Product Owner (Travel \u0026 X-border), Senior Manager",
   "matched": false,
   "notified": false
  },
@@ -454415,6 +456587,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/job/US---Austin-TX/Sr-Cybersecurity-Engineer---IAM_REF080077W": {
+  "first_seen": "2026-08-05T12:18:36.522549926Z",
+  "title": "Visa (Workday): Sr. Cybersecurity Engineer - Cloud Architecture",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/job/US---Austin-TX/Sr-ML-Engineer_REF082498W": {
   "first_seen": "2026-08-01T12:45:44.509844476Z",
   "title": "Visa (Workday): Sr. ML Engineer",
@@ -454592,6 +456770,12 @@
  "workday/https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/job/US---Denver-CO/Solutions-Designer_REF085197W": {
   "first_seen": "2026-08-01T12:43:31.533448146Z",
   "title": "Visa (Workday): Solutions Designer, Automation",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://visa.wd5.myworkdayjobs.com/wday/cxs/visa/Visa/job/US---Denver-CO/Sr-Consultant-Solutions-Management_REF087207W": {
+  "first_seen": "2026-08-05T12:18:36.967578779Z",
+  "title": "Visa (Workday): Sr. Consultant Solutions Management",
   "matched": false,
   "notified": false
  },
@@ -458063,6 +460247,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://warnerbros.wd5.myworkdayjobs.com/wday/cxs/warnerbros/global/job/Pune-Pancard-Club-Baner-Road-Baner/Software-Engineer-II---Java---Adtech-Team---Pune_R000107385": {
+  "first_seen": "2026-08-05T12:18:38.738548255Z",
+  "title": "Warner Bros. Discovery: Software Engineer II - Java ( Adtech Team), Pune",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://warnerbros.wd5.myworkdayjobs.com/wday/cxs/warnerbros/global/job/Remote-California/Social-Programmer-Basketball--Temporary-_R000106832": {
   "first_seen": "2026-08-01T12:46:40.450655065Z",
   "title": "Warner Bros. Discovery: Multi-Sport Social Programmer (Temporary)",
@@ -458462,6 +460652,12 @@
  "workday/https://warnerbros.wd5.myworkdayjobs.com/wday/cxs/warnerbros/global/job/Warsaw-166-Wiertnicza-TVN/P2P-Analyst_R000105104": {
   "first_seen": "2026-08-01T12:47:44.711204698Z",
   "title": "Warner Bros. Discovery: AP Analyst",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://warnerbros.wd5.myworkdayjobs.com/wday/cxs/warnerbros/global/job/Warsaw-166-Wiertnicza-TVN/Payments-Analyst---DTC-Financial-Solutions_R000099212": {
+  "first_seen": "2026-08-05T12:18:42.969058046Z",
+  "title": "Warner Bros. Discovery: DTC Payments Analyst - Financial Solutions",
   "matched": false,
   "notified": false
  },
@@ -460361,6 +462557,12 @@
   "matched": true,
   "notified": false
  },
+ "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Bengaluru-India/Senior-Commercial-Loan-Closing-Representative_R-556969-1": {
+  "first_seen": "2026-08-05T12:18:44.609178975Z",
+  "title": "Wells Fargo: Senior Commercial Loan Closing Representative",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Bengaluru-India/Senior-Commercial-Loan-Closing-Representative_R-557072": {
   "first_seen": "2026-08-01T12:48:23.195630785Z",
   "title": "Wells Fargo: Senior Commercial Loan Closing Representative",
@@ -460508,6 +462710,12 @@
  "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Bengaluru-India/Senior-Software-Engineer_R-564788": {
   "first_seen": "2026-08-01T12:48:23.195324565Z",
   "title": "Wells Fargo: Senior Software Engineer",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Bengaluru-India/Senior-Speciality-Software-Engineer_R-565801-1": {
+  "first_seen": "2026-08-05T12:18:44.818827045Z",
+  "title": "Wells Fargo: Senior Speciality Software Engineer",
   "matched": false,
   "notified": false
  },
@@ -460997,6 +463205,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/CHANDLER-AZ/Associate-Security-Response---Emergency-Representative_R-564736": {
+  "first_seen": "2026-08-05T12:18:44.397476665Z",
+  "title": "Wells Fargo: Associate Security Response \u0026 Emergency Representative",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/CHANDLER-AZ/Branch-Banking-Management-Military-Apprentice--SAFE--San-Tan-Valley-District_R-563509": {
   "first_seen": "2026-08-01T12:48:23.195375489Z",
   "title": "Wells Fargo: Branch Banking Management Military Apprentice (SAFE) San Tan Valley District",
@@ -461348,6 +463562,12 @@
  "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/CHARLOTTE-NC/Fargo-AI-Strategy-and-Business-Operations-Lead_R-561810": {
   "first_seen": "2026-08-01T12:48:23.195821211Z",
   "title": "Wells Fargo: Fargo AI Strategy and Business Operations Lead",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/CHARLOTTE-NC/Financial-Relationship-Advisor_R-566030-1": {
+  "first_seen": "2026-08-05T12:18:43.6455222Z",
+  "title": "Wells Fargo: Financial Relationship Advisor",
   "matched": false,
   "notified": false
  },
@@ -464447,6 +466667,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Hyderabad-India/Associate-Fraud---Claims-Operations-Representative_R-564459": {
+  "first_seen": "2026-08-05T12:18:44.183549075Z",
+  "title": "Wells Fargo: Associate Fraud \u0026 Claims Operations Representative",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Hyderabad-India/Associate-Fraud---Claims-Operations-Representative_R-564603": {
   "first_seen": "2026-08-04T13:50:07.119801028Z",
   "title": "Wells Fargo: Associate Fraud \u0026 Claims Operations Representative",
@@ -464827,6 +467053,12 @@
  },
  "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Hyderabad-India/Operations-Processor_R-562695": {
   "first_seen": "2026-08-03T18:06:16.827484946Z",
+  "title": "Wells Fargo: Operations Processor",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Hyderabad-India/Operations-Processor_R-564129": {
+  "first_seen": "2026-08-05T12:18:43.902052297Z",
   "title": "Wells Fargo: Operations Processor",
   "matched": false,
   "notified": false
@@ -471611,6 +473843,12 @@
   "matched": false,
   "notified": false
  },
+ "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Taguig-City-Philippines/Technology-Operations-Analyst--Workforce-Planning-_R-563878": {
+  "first_seen": "2026-08-05T12:18:45.112308237Z",
+  "title": "Wells Fargo: Technology Operations Analyst (Workforce Planning)",
+  "matched": false,
+  "notified": false
+ },
  "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Taguig-City-Philippines/Technology-Operations-Analyst_R-565525": {
   "first_seen": "2026-08-03T18:06:07.178111981Z",
   "title": "Wells Fargo: Technology Operations Analyst",
@@ -471620,6 +473858,12 @@
  "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Taguig-City-Philippines/Technology-Operations-Associate-Manager_R-565918": {
   "first_seen": "2026-08-04T16:59:27.928392828Z",
   "title": "Wells Fargo: Technology Operations Associate Manager",
+  "matched": false,
+  "notified": false
+ },
+ "workday/https://wd1.myworkdaysite.com/wday/cxs/wf/WellsFargoJobs/job/Taguig-City-Philippines/Technology-Operations-Senior-Manager_R-563894": {
+  "first_seen": "2026-08-05T12:18:45.327830216Z",
+  "title": "Wells Fargo: Technology Operations Senior Manager",
   "matched": false,
   "notified": false
  },
