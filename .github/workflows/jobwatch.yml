@@ -1,22 +1,29 @@
 # Runs jobwatch on a schedule so no computer of yours needs to stay on.
 #
 # State (which jobs were already seen/emailed) lives on a dedicated `state`
-# branch as a single force-pushed commit — runners are wiped between runs,
-# a branch is not. If the state branch doesn't exist yet (very first run),
-# the run seeds silently instead of emailing every currently open job. Later
+# branch as normal linear history — runners are wiped between runs, a branch
+# is not. Missing state is bootstrapped only by an explicit manual run; a
+# failed restore stops the run instead of risking replacement state. Later
 # catalog additions are seeded per source by -seed-new-sources.
 #
 # Required repository secrets (Settings → Secrets → Actions):
 #   JOBWATCH_SMTP_USERNAME  e.g. your Gmail address (also used as From)
 #   JOBWATCH_SMTP_PASSWORD  e.g. a Gmail app password
 #   JOBWATCH_EMAIL_TO       where the alerts go
+#   JOBWATCH_LLM_API_KEY     Google AI Studio key for the configured matcher
 
 name: jobwatch
 
 on:
   schedule:
     - cron: "13,43 * * * *" # every 30 minutes (UTC); odd minutes avoid the on-the-hour rush
-  workflow_dispatch: {} # allows manual runs from the Actions tab
+  workflow_dispatch:
+    inputs:
+      initialize_state:
+        description: "Initialize a missing state branch by seeding all current jobs"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write # to push the state branch
@@ -28,42 +35,42 @@ concurrency:
 jobs:
   poll:
     runs-on: ubuntu-latest
-    # Hosted runners hard-kill jobs at 360 minutes; stay just under so the
-    # always() steps below (summary, state push) still run on a long sweep.
+    # Hosted runners hard-kill jobs at 360 minutes. The poll step has its own
+    # shorter timeout so summary/publication can run after an ordinary poll
+    # failure; cancellation or the job hard limit cannot guarantee that.
     timeout-minutes: 355
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5
         with:
-          go-version: stable
+          go-version-file: go.mod
 
       - name: Restore state from the state branch
+        id: restore
         run: |
-          if git fetch --depth 1 origin state 2>/dev/null; then
-            # Extract via a temp file: `> state.json` truncates BEFORE git
-            # runs, so a failed extraction would leave a 0-byte file for the
-            # always() push step to force-push over the good state.
-            git show FETCH_HEAD:state.json > state.tmp
-            mv state.tmp state.json
-            echo "restored state: $(wc -c < state.json) bytes"
-          else
-            echo "no state branch yet - this run will seed without emailing"
-          fi
+          go run ./cmd/statebranch restore \
+            --remote origin \
+            --branch state \
+            --state state.json \
+            --allow-bootstrap="${{ github.event_name == 'workflow_dispatch' && inputs.initialize_state }}" \
+            --github-output "$GITHUB_OUTPUT"
 
       - name: Build
+        id: build
         run: |
           go test ./...
           go vet ./...
           go build -o jobwatch ./cmd/jobwatch
 
       - name: Poll job boards
+        id: poll
         # A backlog sweep (LLM-matching hundreds of new postings) can run for
         # hours. jobwatch checkpoints state to disk every minute and after
-        # every board, so however this step dies — timeout, signal, hard
-        # kill — the next run resumes from the last checkpoint instead of
-        # starting over. The 10-minute gap to the job timeout keeps the
-        # state push below alive in the worst case.
+        # every board, bounding lost work when this step fails and the later
+        # publication step is still allowed to run. The 10-minute gap to the
+        # job timeout leaves room for that publication; explicit cancellation
+        # and a job-level hard timeout intentionally publish nothing.
         timeout-minutes: 345
         env:
           JOBWATCH_SMTP_USERNAME: ${{ secrets.JOBWATCH_SMTP_USERNAME }}
@@ -76,11 +83,18 @@ jobs:
           # JOBWATCH_TELEGRAM_TOKEN: ${{ secrets.JOBWATCH_TELEGRAM_TOKEN }}
         run: |
           set -o pipefail
-          if [ -f state.json ]; then
-            ./jobwatch -config config.example.yaml -state state.json -seed-new-sources 2>&1 | tee run.log
-          else
-            ./jobwatch -config config.example.yaml -state state.json -seed 2>&1 | tee run.log
-          fi
+          case "${{ steps.restore.outputs.mode }}" in
+            restored)
+              ./jobwatch -config config.example.yaml -state state.json -seed-new-sources 2>&1 | tee run.log
+              ;;
+            bootstrap)
+              ./jobwatch -config config.example.yaml -state state.json -seed 2>&1 | tee run.log
+              ;;
+            *)
+              echo "invalid state restore mode: ${{ steps.restore.outputs.mode }}" >&2
+              exit 1
+              ;;
+          esac
 
       - name: Publish run summary
         if: always()
@@ -105,21 +119,24 @@ jobs:
             fi
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Push state back
-        if: always() # a failed run may still have pending matches worth keeping
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish state
+        id: publish
+        # A restored run may have valid checkpoints even when polling fails.
+        # A bootstrap is publishable only after the complete seed succeeds.
+        if: >-
+          ${{
+            !cancelled() &&
+            steps.restore.outcome == 'success' &&
+            steps.build.outcome == 'success' &&
+            (steps.poll.outcome == 'success' || steps.poll.outcome == 'failure') &&
+            (steps.restore.outputs.mode == 'restored' || steps.poll.outcome == 'success')
+          }}
         run: |
-          # -s, not -f: a zero-byte state.json is never valid, and pushing
-          # one would corrupt the state branch for every later run.
-          [ -s state.json ] || { echo "no usable state produced, nothing to push"; exit 0; }
-          dir=$(mktemp -d)
-          cp state.json "$dir/"
-          cd "$dir"
-          git init -q -b state
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add state.json
-          git commit -q -m "state @ $(date -u +%FT%TZ)"
-          git push -q --force \
-            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" state
+          go run ./cmd/statebranch publish \
+            --remote origin \
+            --branch state \
+            --state state.json \
+            --mode "${{ steps.restore.outputs.mode }}" \
+            --base-sha "${{ steps.restore.outputs.base_sha }}" \
+            --source-sha "$GITHUB_SHA" \
+            --github-output "$GITHUB_OUTPUT"

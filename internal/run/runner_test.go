@@ -21,13 +21,19 @@ import (
 )
 
 type fakeSource struct {
+	company     string
 	identity    string
 	statePrefix string
 	jobs        []model.Job
 	err         error
 }
 
-func (f *fakeSource) Company() string                              { return "acme" }
+func (f *fakeSource) Company() string {
+	if f.company == "" {
+		return "acme"
+	}
+	return f.company
+}
 func (f *fakeSource) Fetch(_ context.Context) ([]model.Job, error) { return f.jobs, f.err }
 func (f *fakeSource) Identity() string {
 	if f.identity == "" {
@@ -338,8 +344,13 @@ func TestDeferredErrorSummaryIsBounded(t *testing.T) {
 	if len(err.Error()) > 3000 {
 		t.Fatalf("bounded summary is %d bytes", len(err.Error()))
 	}
-	if st.Len() != 0 {
-		t.Fatalf("deferred jobs were persisted: %d records", st.Len())
+	for _, job := range jobs {
+		if st.Seen(job.ID) {
+			t.Fatalf("deferred job %s was persisted", job.ID)
+		}
+	}
+	if !st.Seen(sourceMarkerPrefix + "test/acme") {
+		t.Fatal("ordinary run did not preserve its watched-source marker")
 	}
 }
 
@@ -387,6 +398,93 @@ func TestSeedPreservesPendingDelivery(t *testing.T) {
 	}
 	if len(n.batches) != 1 || len(n.batches[0]) != 1 {
 		t.Fatalf("pending job should deliver after seed, got %v", n.batches)
+	}
+}
+
+func TestSeedOnlyIncompleteFetchReturnsErrorAfterSaving(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		badJobs []model.Job
+	}{
+		{
+			name: "partial",
+			badJobs: []model.Job{{
+				ID: "test/incomplete/1", Company: "Incomplete", Title: "Possibly incomplete", URL: "https://x/incomplete/1",
+			}},
+		},
+		{name: "failed"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "state.json")
+			st, err := store.Open(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			healthyJob := model.Job{ID: "test/healthy/1", Company: "Healthy", Title: "Dev", URL: "https://x/healthy/1"}
+			bad := &fakeSource{
+				company:     "Incomplete",
+				identity:    "test/incomplete",
+				statePrefix: "test/incomplete/",
+				jobs:        tc.badJobs,
+				err:         errors.New("fetch did not complete"),
+			}
+			var evaluated []string
+			var logs strings.Builder
+			n := &flakyNotifier{}
+			r := &Runner{
+				Sources: []source.Source{
+					&fakeSource{
+						company: "Healthy", identity: "test/healthy", statePrefix: "test/healthy/", jobs: []model.Job{healthyJob},
+					},
+					bad,
+				},
+				Matcher:     countingMatcher{ids: &evaluated},
+				Notifiers:   []notify.Notifier{n},
+				Store:       st,
+				Log:         log.New(&logs, "", 0),
+				Concurrency: 1,
+				SeedOnly:    true,
+			}
+
+			err = r.RunOnce(context.Background())
+			if err == nil || !strings.Contains(err.Error(), "1 source baseline(s) incomplete") {
+				t.Fatalf("RunOnce = %v, want one incomplete baseline", err)
+			}
+			if len(evaluated) != 0 || len(n.batches) != 0 {
+				t.Fatalf("incomplete seed evaluated %v or notified %v", evaluated, n.batches)
+			}
+			if !strings.Contains(logs.String(), "seed incomplete: saved 1 postings from complete sources") {
+				t.Fatalf("seed log did not report the safe saved count:\n%s", logs.String())
+			}
+
+			st.Close()
+			reopened, err := store.Open(path)
+			if err != nil {
+				t.Fatalf("saved state could not be reopened: %v", err)
+			}
+			t.Cleanup(reopened.Close)
+			if _, ok := reopened.Get(healthyJob.ID); !ok {
+				t.Fatal("complete source was not saved before RunOnce returned its error")
+			}
+			if !reopened.Seen(sourceMarkerPrefix + "test/healthy") {
+				t.Fatal("complete source marker was not saved")
+			}
+			for _, job := range tc.badJobs {
+				if reopened.Seen(job.ID) {
+					t.Fatalf("job %s from incomplete baseline was recorded", job.ID)
+				}
+			}
+			if reopened.Seen(sourceMarkerPrefix + "test/incomplete") {
+				t.Fatal("incomplete source received a completion marker")
+			}
+			if !reopened.Seen(sourceSeedInProgressPrefix + "test/incomplete") {
+				t.Fatal("incomplete source did not retain its in-progress marker")
+			}
+			if reopened.Seen(sourceRegistryV2ID) {
+				t.Fatal("incomplete global seed prematurely certified the exact source registry")
+			}
+		})
 	}
 }
 
@@ -494,23 +592,382 @@ func TestSeedNewSourcesBaselinesThenAlerts(t *testing.T) {
 	}
 }
 
-func TestSeedNewSourcesDoesNotSuppressKnownBoard(t *testing.T) {
+func TestOrdinaryRunThenSeedNewSourcesKeepsExistingSourceAlerting(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	oldJob := model.Job{ID: "test/existing/1", Company: "Existing", Title: "Old Dev", URL: "https://x/existing/1"}
+	newJob := model.Job{ID: "test/existing/2", Company: "Existing", Title: "New Dev", URL: "https://x/existing/2"}
+	newBoardJob := model.Job{ID: "test/new/1", Company: "New", Title: "Current Dev", URL: "https://x/new/1"}
+	existing := &fakeSource{
+		company: "Existing", identity: "test/existing", statePrefix: "test/existing/", jobs: []model.Job{oldJob},
+	}
+	r.Sources = []source.Source{existing}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !st.Seen(sourceMarkerPrefix + "test/existing") {
+		t.Fatal("ordinary run did not durably mark the source as already watched")
+	}
+	if !st.Seen(sourceRegistryV2ID) {
+		t.Fatal("completed ordinary run did not atomically certify the exact source registry")
+	}
+
+	r.SeedNewSources = true
+	existing.jobs = []model.Job{oldJob, newJob}
+	r.Sources = []source.Source{
+		existing,
+		&fakeSource{company: "New", identity: "test/new", statePrefix: "test/new/", jobs: []model.Job{newBoardJob}},
+	}
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(n.batches) != 2 || len(n.batches[1]) != 1 || n.batches[1][0].Job.ID != newJob.ID {
+		t.Fatalf("existing source's new job should alert while the new board is seeded, got %v", n.batches)
+	}
+	if !st.Seen(newBoardJob.ID) || !st.Seen(sourceMarkerPrefix+"test/new") {
+		t.Fatal("new board did not receive a silent baseline and exact completion marker")
+	}
+}
+
+func TestInterruptedOrdinaryRunStillMarksSourceAsWatched(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	firstJob := model.Job{ID: "test/interrupted/1", Company: "Interrupted", Title: "First Dev", URL: "https://x/interrupted/1"}
+	secondJob := model.Job{ID: "test/interrupted/2", Company: "Interrupted", Title: "Second Dev", URL: "https://x/interrupted/2"}
+	laterSourceJob := model.Job{ID: "test/later/1", Company: "Later", Title: "Later Dev", URL: "https://x/later/1"}
+	r.Sources = []source.Source{
+		&fakeSource{company: "Interrupted", identity: "test/interrupted", statePrefix: "test/interrupted/", jobs: []model.Job{firstJob, secondJob}},
+		&fakeSource{company: "Later", identity: "test/later", statePrefix: "test/later/", jobs: []model.Job{laterSourceJob}},
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	r.Matcher = cancellingMatcher{cancel: cancel, matched: true}
+
+	if err := r.RunOnce(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("RunOnce = %v, want context.Canceled", err)
+	}
+	if !st.Seen(sourceMarkerPrefix + "test/interrupted") {
+		t.Fatal("interrupted ordinary run lost its watched-source marker")
+	}
+	if !st.Seen(sourceMarkerPrefix + "test/later") {
+		t.Fatal("interruption before a later source left its watched identity unclassified")
+	}
+	if !st.Seen(sourceRegistryV2ID) {
+		t.Fatal("interrupted ordinary run lost its atomic source registry")
+	}
+	if st.Seen(sourceSeedInProgressPrefix + "test/interrupted") {
+		t.Fatal("ordinary run was incorrectly marked as a baseline in progress")
+	}
+
+	r.SeedNewSources = true
+	r.Matcher = matchAll{}
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 3 {
+		t.Fatalf("retry and unseen remainder should both alert after interruption, got %v", n.batches)
+	}
+	foundSecond := false
+	foundLaterSource := false
+	for _, notification := range n.batches[0] {
+		if notification.Job.ID == secondJob.ID {
+			foundSecond = true
+		}
+		if notification.Job.ID == laterSourceJob.ID {
+			foundLaterSource = true
+		}
+	}
+	if !foundSecond {
+		t.Fatalf("unseen remainder %s was silently seeded: %v", secondJob.ID, n.batches)
+	}
+	if !foundLaterSource {
+		t.Fatalf("later watched source %s was silently seeded: %v", laterSourceJob.ID, n.batches)
+	}
+}
+
+func TestSeedNewSourcesRejectsAmbiguousMarkerlessLegacyState(t *testing.T) {
 	n := &flakyNotifier{}
 	r, st := newRunner(t, n, false, false)
 	r.SeedNewSources = true
-	st.Add("test/acme/closed", store.Record{Title: "historical posting"})
-	newJob := model.Job{ID: "test/acme/2", Company: "Acme", Title: "New Junior Dev", URL: "https://x/2"}
+	oldJob := model.Job{ID: "test/legacy/1", Company: "Legacy", Title: "Old Dev", URL: "https://x/legacy/1"}
+	newJob := model.Job{ID: "test/legacy/2", Company: "Legacy", Title: "New Dev", URL: "https://x/legacy/2"}
+	st.Add(oldJob.ID, store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "Legacy: Old Dev"})
+	legacy := &fakeSource{
+		company: "Legacy", identity: "test/legacy", statePrefix: "test/legacy/", jobs: []model.Job{oldJob, newJob},
+	}
+	r.Sources = []source.Source{legacy}
+
+	err := r.RunOnce(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "existing posting records share its prefix") {
+		t.Fatalf("RunOnce = %v, want markerless-state migration error", err)
+	}
+	if len(n.batches) != 0 || st.Seen(newJob.ID) || st.Seen(sourceMarkerPrefix+"test/legacy") {
+		t.Fatalf("ambiguous markerless state was mutated or notified: batches=%v new=%v marker=%v",
+			n.batches, st.Seen(newJob.ID), st.Seen(sourceMarkerPrefix+"test/legacy"))
+	}
+
+	// The explicit safe migration is an ordinary run with the unchanged
+	// source list: existing records stay deduplicated, unseen jobs alert, and
+	// the exact identity marker becomes durable for later catalog additions.
+	r.SeedNewSources = false
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 || n.batches[0][0].Job.ID != newJob.ID {
+		t.Fatalf("ordinary migration should alert the unseen job, got %v", n.batches)
+	}
+	if !st.Seen(sourceMarkerPrefix + "test/legacy") {
+		t.Fatal("ordinary migration did not append an exact identity marker")
+	}
+	if st.Seen(sourceSeedInProgressPrefix + "test/legacy") {
+		t.Fatal("ordinary migration was incorrectly treated as a new baseline")
+	}
+	if !st.Seen(sourceRegistryV2ID) {
+		t.Fatal("ordinary migration did not atomically certify the exact source registry")
+	}
+}
+
+func TestSeedNewSourcesRejectsMixedMarkerlessLegacyState(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	st.Add(sourceMarkerPrefix+"test/a", store.Record{FirstSeen: time.Now(), Title: "source: A"})
+	st.Add("test/b/old", store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "B: Old Dev"})
+	newJob := model.Job{ID: "test/b/new", Company: "B", Title: "New Dev", URL: "https://x/b/new"}
 	r.Sources = []source.Source{&fakeSource{
-		identity:    "test/existing-board",
-		statePrefix: "test/acme/",
-		jobs:        []model.Job{newJob},
+		company: "B", identity: "test/b", statePrefix: "test/b/",
+		jobs: []model.Job{{ID: "test/b/old", Company: "B", Title: "Old Dev"}, newJob},
+	}}
+
+	err := r.RunOnce(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "existing posting records share its prefix") {
+		t.Fatalf("RunOnce = %v, want mixed-state migration error", err)
+	}
+	if len(n.batches) != 0 || st.Seen(newJob.ID) || st.Seen(sourceMarkerPrefix+"test/b") || st.Seen(sourceRegistryV2ID) {
+		t.Fatalf("mixed markerless state was mutated or notified: batches=%v new=%v marker=%v registry=%v",
+			n.batches, st.Seen(newJob.ID), st.Seen(sourceMarkerPrefix+"test/b"), st.Seen(sourceRegistryV2ID))
+	}
+}
+
+func TestSubsetSeedDoesNotCertifyOmittedLegacySources(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, true, false)
+	legacyOld := model.Job{ID: "test/shared/legacy-old", Company: "Legacy", Title: "Old Dev", URL: "https://x/legacy-old"}
+	legacyNew := model.Job{ID: "test/shared/legacy-new", Company: "Legacy", Title: "New Dev", URL: "https://x/legacy-new"}
+	newScopeJob := model.Job{ID: "test/shared/new-scope", Company: "Scoped", Title: "Current Dev", URL: "https://x/new-scope"}
+	st.Add(legacyOld.ID, store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "Legacy: Old Dev"})
+	r.Sources = []source.Source{&fakeSource{
+		company: "Scoped", identity: "test/scoped", statePrefix: "test/shared/", jobs: []model.Job{newScopeJob},
 	}}
 
 	if err := r.RunOnce(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if len(n.batches) != 1 || len(n.batches[0]) != 1 || n.batches[0][0].Job.ID != newJob.ID {
-		t.Fatalf("new posting on known board should not be seeded, got %v", n.batches)
+	if !st.Seen(sourceMarkerPrefix+"test/scoped") || !st.Seen(newScopeJob.ID) {
+		t.Fatal("explicit subset seed did not baseline its source")
+	}
+	if st.Seen(sourceRegistryV2ID) {
+		t.Fatal("subset seed against nonempty state certified omitted legacy sources")
+	}
+
+	r.SeedOnly = false
+	r.SeedNewSources = true
+	r.Sources = []source.Source{
+		&fakeSource{company: "Legacy", identity: "test/legacy", statePrefix: "test/shared/", jobs: []model.Job{legacyOld, legacyNew}},
+		&fakeSource{company: "Scoped", identity: "test/scoped", statePrefix: "test/shared/", jobs: []model.Job{newScopeJob}},
+	}
+	err := r.RunOnce(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "existing posting records share its prefix") {
+		t.Fatalf("RunOnce = %v, want omitted-legacy-source migration error", err)
+	}
+	if len(n.batches) != 0 || st.Seen(legacyNew.ID) || st.Seen(sourceMarkerPrefix+"test/legacy") || st.Seen(sourceRegistryV2ID) {
+		t.Fatalf("omitted legacy source was mutated or certified: batches=%v new=%v marker=%v registry=%v",
+			n.batches, st.Seen(legacyNew.ID), st.Seen(sourceMarkerPrefix+"test/legacy"), st.Seen(sourceRegistryV2ID))
+	}
+}
+
+func TestSeedNewSourcePartialBaselineDefersThenRecovers(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	job1 := model.Job{ID: "test/recover/1", Company: "Recover", Title: "Dev", URL: "https://x/recover/1"}
+	job2 := model.Job{ID: "test/recover/2", Company: "Recover", Title: "Dev II", URL: "https://x/recover/2"}
+	src := &fakeSource{
+		company: "Recover", identity: "test/recover", statePrefix: "test/recover/",
+		jobs: []model.Job{job1}, err: errors.New("page two returned 503"),
+	}
+	r.Sources = []source.Source{src}
+	var evaluated []string
+	r.Matcher = matcherFunc{name: "counting match", fn: func(_ context.Context, job model.Job) (match.Result, error) {
+		evaluated = append(evaluated, job.ID)
+		return match.Result{Matched: true, Reason: "test"}, nil
+	}}
+
+	err := r.RunOnce(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "1 source baseline(s) incomplete") {
+		t.Fatalf("partial baseline RunOnce = %v, want incomplete-baseline error", err)
+	}
+	if st.Seen(job1.ID) {
+		t.Fatal("job returned by partial baseline was recorded")
+	}
+	if st.Seen(sourceMarkerPrefix + "test/recover") {
+		t.Fatal("partial baseline received a completion marker")
+	}
+	if !st.Seen(sourceSeedInProgressPrefix + "test/recover") {
+		t.Fatal("partial baseline did not persist its in-progress marker")
+	}
+	if len(evaluated) != 0 || len(n.batches) != 0 {
+		t.Fatalf("partial baseline evaluated %v or notified %v", evaluated, n.batches)
+	}
+
+	src.err = nil
+	src.jobs = []model.Job{job1, job2}
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatalf("full recovery run: %v", err)
+	}
+	for _, job := range []model.Job{job1, job2} {
+		if !st.Seen(job.ID) {
+			t.Fatalf("recovery did not seed %s", job.ID)
+		}
+	}
+	if !st.Seen(sourceMarkerPrefix + "test/recover") {
+		t.Fatal("full recovery did not append the completion marker")
+	}
+	if !st.Seen(sourceSeedInProgressPrefix + "test/recover") {
+		t.Fatal("full recovery deleted the append-only in-progress marker")
+	}
+	if len(evaluated) != 0 || len(n.batches) != 0 {
+		t.Fatalf("full recovery evaluated %v or notified %v", evaluated, n.batches)
+	}
+
+	job3 := model.Job{ID: "test/recover/3", Company: "Recover", Title: "New Dev", URL: "https://x/recover/3"}
+	src.jobs = append(src.jobs, job3)
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatalf("post-completion run: %v", err)
+	}
+	if len(evaluated) != 1 || evaluated[0] != job3.ID {
+		t.Fatalf("completed source evaluated %v, want only %s", evaluated, job3.ID)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 || n.batches[0][0].Job.ID != job3.ID {
+		t.Fatalf("completed source delivered %v, want only %s", n.batches, job3.ID)
+	}
+}
+
+func TestOrdinaryRunResumesPersistedSeedInProgressMarker(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "state.json")
+	st, err := store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldJob := model.Job{ID: "test/resume/1", Company: "Resume", Title: "Old Dev", URL: "https://x/resume/1"}
+	newJob := model.Job{ID: "test/resume/2", Company: "Resume", Title: "New Dev", URL: "https://x/resume/2"}
+	progressID := sourceSeedInProgressPrefix + "test/resume"
+	st.Add(progressID, store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "source seed in progress: Resume"})
+	st.Add(oldJob.ID, store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "Resume: Old Dev"})
+	if err := st.Save(); err != nil {
+		st.Close()
+		t.Fatal(err)
+	}
+	st.Close()
+
+	st, err = store.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	var evaluated []string
+	n := &flakyNotifier{}
+	r := &Runner{
+		Sources: []source.Source{&fakeSource{
+			company: "Resume", identity: "test/resume", statePrefix: "test/resume/", jobs: []model.Job{oldJob, newJob},
+		}},
+		Matcher: matcherFunc{name: "must not run", fn: func(_ context.Context, job model.Job) (match.Result, error) {
+			evaluated = append(evaluated, job.ID)
+			return match.Result{Matched: true}, nil
+		}},
+		Notifiers:   []notify.Notifier{n},
+		Store:       st,
+		Log:         log.New(io.Discard, "", 0),
+		Concurrency: 1,
+	}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(evaluated) != 0 || len(n.batches) != 0 {
+		t.Fatalf("resumed baseline evaluated %v or notified %v", evaluated, n.batches)
+	}
+	if !st.Seen(newJob.ID) {
+		t.Fatal("resumed baseline did not seed its unseen remainder")
+	}
+	if !st.Seen(sourceMarkerPrefix + "test/resume") {
+		t.Fatal("resumed baseline did not append its completion marker")
+	}
+	if !st.Seen(progressID) {
+		t.Fatal("completion deleted the append-only in-progress marker")
+	}
+
+	laterJob := model.Job{ID: "test/resume/3", Company: "Resume", Title: "Later Dev", URL: "https://x/resume/3"}
+	r.Sources = []source.Source{&fakeSource{
+		company: "Resume", identity: "test/resume", statePrefix: "test/resume/", jobs: []model.Job{oldJob, newJob, laterJob},
+	}}
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(evaluated) != 1 || evaluated[0] != laterJob.ID {
+		t.Fatalf("post-completion ordinary run evaluated %v, want only %s", evaluated, laterJob.ID)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 || n.batches[0][0].Job.ID != laterJob.ID {
+		t.Fatalf("post-completion ordinary run delivered %v, want only %s", n.batches, laterJob.ID)
+	}
+}
+
+func TestSeedNewSourcesRejectsAmbiguousSharedPostingPrefix(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	st.Add(sourceMarkerPrefix+"test/existing-scope", store.Record{FirstSeen: time.Now(), Title: "source: existing scope"})
+	st.Add("test/shared/closed", store.Record{FirstSeen: time.Now(), Title: "historical posting"})
+	newJob := model.Job{ID: "test/shared/new-scope/2", Company: "Acme", Title: "Scoped Junior Dev", URL: "https://x/2"}
+	r.Sources = []source.Source{&fakeSource{
+		identity:    "test/new-scope",
+		statePrefix: "test/shared/",
+		jobs:        []model.Job{newJob},
+	}}
+
+	err := r.RunOnce(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "existing posting records share its prefix") {
+		t.Fatalf("RunOnce = %v, want shared-prefix ambiguity error", err)
+	}
+	if len(n.batches) != 0 || st.Seen(newJob.ID) || st.Seen(sourceMarkerPrefix+"test/new-scope") {
+		t.Fatalf("ambiguous scoped source was mutated or notified: batches=%v new=%v marker=%v",
+			n.batches, st.Seen(newJob.ID), st.Seen(sourceMarkerPrefix+"test/new-scope"))
+	}
+
+	// Explicitly seeding this source alone resolves the ambiguity without
+	// either alerting its backlog or conflating it with the existing scope.
+	r.SeedNewSources = false
+	r.SeedOnly = true
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 0 || !st.Seen(newJob.ID) || !st.Seen(sourceMarkerPrefix+"test/new-scope") || st.Seen(sourceRegistryV2ID) {
+		t.Fatalf("explicit scoped baseline failed or certified the subset: batches=%v new=%v marker=%v registry=%v",
+			n.batches, st.Seen(newJob.ID), st.Seen(sourceMarkerPrefix+"test/new-scope"), st.Seen(sourceRegistryV2ID))
+	}
+
+	r.SeedOnly = false
+	r.SeedNewSources = true
+	r.Sources = []source.Source{
+		&fakeSource{company: "Existing", identity: "test/existing-scope", statePrefix: "test/shared/", jobs: []model.Job{{ID: "test/shared/closed", Company: "Existing", Title: "Closed"}}},
+		&fakeSource{identity: "test/new-scope", statePrefix: "test/shared/", jobs: []model.Job{newJob}},
+	}
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if !st.Seen(sourceRegistryV2ID) {
+		t.Fatal("restored full exact-marker config did not certify the source registry")
 	}
 }
 
@@ -527,6 +984,35 @@ func TestPartialSourceResultsAreProcessed(t *testing.T) {
 	}
 	if len(n.batches) != 1 || len(n.batches[0]) != 1 {
 		t.Fatalf("healthy jobs from partial source should deliver, got %v", n.batches)
+	}
+}
+
+func TestKnownPartialSourceStillProcessesHealthyJobs(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	st.Add(sourceMarkerPrefix+"test/known", store.Record{FirstSeen: time.Now(), Title: "source: Known"})
+	st.Add("test/known/closed", store.Record{Title: "historical posting"})
+	newJob := model.Job{ID: "test/known/open", Company: "Known", Title: "Dev", URL: "https://x/known/open"}
+	r.Sources = []source.Source{&fakeSource{
+		company:     "Known",
+		identity:    "test/known",
+		statePrefix: "test/known/",
+		jobs:        []model.Job{newJob},
+		err:         errors.New("one detail endpoint returned 502"),
+	}}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 || n.batches[0][0].Job.ID != newJob.ID {
+		t.Fatalf("healthy jobs from known partial source should deliver, got %v", n.batches)
+	}
+	if !st.Seen(sourceMarkerPrefix + "test/known") {
+		t.Fatal("exactly marked source lost its completion marker")
+	}
+	if st.Seen(sourceSeedInProgressPrefix + "test/known") {
+		t.Fatal("known source was incorrectly treated as a baseline in progress")
 	}
 }
 
@@ -733,8 +1219,8 @@ func TestSeedMarkerNotPersistedBeforeBaseline(t *testing.T) {
 	defer cancel()
 	r := &Runner{
 		Sources: []source.Source{
-			&fakeSource{identity: "test/a", jobs: []model.Job{{ID: "test/a/1", Company: "A", Title: "Old"}, a2}},
-			&fakeSource{identity: "test/b", jobs: []model.Job{b1, b2}},
+			&fakeSource{identity: "test/a", statePrefix: "test/a/", jobs: []model.Job{{ID: "test/a/1", Company: "A", Title: "Old"}, a2}},
+			&fakeSource{identity: "test/b", statePrefix: "test/b/", jobs: []model.Job{b1, b2}},
 		},
 		Matcher:        cancellingMatcher{cancel: cancel},
 		Notifiers:      []notify.Notifier{&flakyNotifier{}},
@@ -819,6 +1305,13 @@ func TestCheckpointFailureDoesNotAbortSweep(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(st.Close)
+	for _, identity := range []string{"test/one", "test/two"} {
+		st.Add(sourceMarkerPrefix+identity, store.Record{FirstSeen: time.Now(), Title: "source: known"})
+	}
+	st.Add(sourceRegistryV2ID, store.Record{FirstSeen: time.Now(), Title: "exact source registry v2"})
+	if err := st.Save(); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.Chmod(dir, 0o500); err != nil {
 		t.Fatal(err)
 	}

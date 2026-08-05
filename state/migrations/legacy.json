@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "kind": "legacy-state-migration-ledger",
+  "replayable": false,
+  "notice": "These transitions predate the migration contract. Their state objects and related main commits were verified, but the complete commands, inputs, and fixtures required for deterministic replay were not retained.",
+  "transitions": [
+    {
+      "id": "2026-07-17-smartrecruiters-backfill",
+      "description": "Baselined the newly uncapped SmartRecruiters inventory; the related configuration change also uncapped Workday boards.",
+      "before_state_commit": "87272f920325ca2fbb80fa1fdcf728067a5a53a7",
+      "after_state_commit": "f7ab8f8131b4f671b641c4629ce72d9584e9e021",
+      "before_archive_ref": "refs/tags/state-archive/smartrecruiters-before",
+      "after_archive_ref": "refs/tags/state-archive/smartrecruiters-after",
+      "before_records": 10124,
+      "after_records": 23712,
+      "net_records": 13588,
+      "related_main_commit": "94b4ce99df2064a5e45bda56904565211048ed3b",
+      "after_state_message": "state @ 2026-07-17T01:21:18Z (SR backfill: full extraction baselined + swept)",
+      "replayable": false
+    },
+    {
+      "id": "2026-07-18-workday-id-migration",
+      "description": "Replaced detail-only Workday GUID identities with stable external-path requisition identities.",
+      "before_state_commit": "bdfc98ce889b4f22a45ae8d6a06278bd71464805",
+      "after_state_commit": "ac067d1917e666127c7d5c5a2775095d66d47455",
+      "before_archive_ref": "refs/tags/state-archive/workday-before",
+      "after_archive_ref": "refs/tags/state-archive/workday-after",
+      "before_records": 25798,
+      "after_records": 24239,
+      "net_records": -1559,
+      "related_main_commit": "6dd0b83b0bedca27f9797363be1302bfcb0c13a5",
+      "after_state_message": "state @ 2026-07-18T10:12:40Z (workday lazy-detail id migration)",
+      "replayable": false
+    },
+    {
+      "id": "2026-07-18-hubspot-board-token",
+      "description": "Baselined HubSpot after correcting its Greenhouse board token from hubspot to hubspotjobs.",
+      "before_state_commit": "96d30e5d4ac82394a71564265fef3dfc942e8cde",
+      "after_state_commit": "7b5876140a821e42683dc066f45c14f4b51a1504",
+      "before_archive_ref": "refs/tags/state-archive/hubspot-before",
+      "after_archive_ref": "refs/tags/state-archive/hubspot-after",
+      "before_records": 24239,
+      "after_records": 24413,
+      "net_records": 174,
+      "related_main_commit": "0bb6100a5da0b20765f2cdb0df6da5b3f770e52d",
+      "after_state_message": "state @ 2026-07-18T10:54:54Z (HubSpot slug fix: 173 baselined)",
+      "replayable": false
+    }
+  ]
+}

@@ -37,6 +37,7 @@ Then:
 
 ```sh
 export JOBWATCH_SMTP_PASSWORD='your app password'
+export JOBWATCH_LLM_API_KEY='your Google AI Studio API key'
 ./jobwatch -seed   # first run only: remembers current jobs WITHOUT emailing
 ./jobwatch         # from now on: emails only newly posted matches
 ```
@@ -44,24 +45,60 @@ export JOBWATCH_SMTP_PASSWORD='your app password'
 Skipping `-seed` on the first run would email you every job currently open.
 When adding boards to an existing state file, use `-seed-new-sources`: it
 baselines only those boards while existing boards continue alerting normally.
+If an older state file has posting records but no exact marker for a board,
+first run the unchanged source list once without `-seed-new-sources`; this
+atomically records the source registry while preserving normal alerts. Jobwatch
+refuses ambiguous markerless or shared-prefix sources instead of guessing. If a
+genuinely new scoped source shares an old posting prefix, first complete any
+legacy migration with the unchanged full config, then seed the new source alone
+once with `-seed` and restore the complete config with `-seed-new-sources`.
 
 ## Run it on a schedule
 
 **Easiest: GitHub Actions (no computer needed).** The repo ships a workflow
 (`.github/workflows/jobwatch.yml`) that polls every 30 minutes. Enable it by
-setting three repository secrets:
+setting four repository secrets:
 
 ```sh
 gh secret set JOBWATCH_SMTP_USERNAME   # e.g. your Gmail address
 gh secret set JOBWATCH_SMTP_PASSWORD   # e.g. a Gmail app password
 gh secret set JOBWATCH_EMAIL_TO        # where alerts go
-gh workflow run jobwatch               # optional: trigger the first run now
+gh secret set JOBWATCH_LLM_API_KEY     # Google AI Studio key for the supplied matcher
+gh workflow run jobwatch -f initialize_state=true # first run only
 ```
 
-The first run seeds automatically (no email blast); seen-job state is kept
-on a `state` branch between runs. Later catalog additions are also baselined
-per board, without suppressing alerts from boards already being watched.
-Change the cadence by editing the `cron:` line (times are UTC).
+The explicit initialization run seeds without sending an email blast. Seen-job
+state is then kept on a `state` branch between runs. Later catalog additions
+are baselined per board without suppressing alerts from boards already being
+watched. Change the cadence by editing the `cron:` line (times are UTC).
+
+### State safety
+
+Scheduled runs fail closed if the `state` branch cannot be read. A missing
+branch is initialized only by a manual run with `initialize_state=true`; a
+network, authentication, or GitHub error never falls back to an empty state.
+Every subsequent state commit is a normal child of the state that was restored,
+and a non-fast-forward push is rejected instead of overwriting another update.
+
+Protect the `state` branch in repository settings: disable force pushes and
+deletion, and apply those restrictions to administrators. The workflow itself
+writes single-parent history; requiring linear history is an optional extra
+guard. Do not require pull requests or signed commits on this branch, because
+the scheduled workflow writes its state commits directly.
+
+Normal polling may add records or update notification status, but it may not
+remove an existing job ID. A failed poll can still publish a valid partial
+checkpoint after a successful restore; a first-time bootstrap is published
+only after the complete seed succeeds. Intentional ID changes or removals are
+state migrations and must follow the deterministic, fixture-tested process in
+[`state/migrations`](state/migrations/README.md).
+
+Recovery is an intentional state migration. By default, merge verified
+known-good values into the current key set so newer deduplication IDs remain;
+any removal must be declared and checked by the migration manifest. Publish the
+repair as a new child of the current `state` head and record its exact base and
+result. Never force-push or reset the branch backward: the child commit keeps
+both the failure and recovery available for audit and another rollback.
 
 **Or locally**, pick one:
 
@@ -216,6 +253,7 @@ name in the config.
 
 ## Good to know
 
-- State lives in `~/.jobwatch/state.json`. Delete it to start over.
+- Local state lives in `~/.jobwatch/state.json`; deleting that file starts the
+  local watcher over. Do not delete the Actions `state` branch.
 - If sending fails, matches are retried next run — never silently lost.
 - Failed companies are logged and skipped; the rest still work.

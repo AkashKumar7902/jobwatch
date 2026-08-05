@@ -80,15 +80,15 @@ func (s *Store) Seen(id string) bool {
 	return ok
 }
 
-// HasPrefix reports whether any stored ID begins with prefix. It is used only
-// for catalog migration, where historical job IDs prove a source was already
-// watched even if its current openings have completely changed.
-func (s *Store) HasPrefix(prefix string) bool {
+// HasPostingPrefix reports whether a posting record exists under prefix.
+// Runner metadata is excluded. Callers use this only to reject ambiguous
+// source migrations, never to infer that two scoped source identities match.
+func (s *Store) HasPostingPrefix(prefix string) bool {
 	if prefix == "" {
 		return false
 	}
 	for id := range s.recs {
-		if strings.HasPrefix(id, prefix) {
+		if !strings.HasPrefix(id, "__jobwatch_") && strings.HasPrefix(id, prefix) {
 			return true
 		}
 	}
