@@ -105,6 +105,16 @@ notifiers:
 store:
   path: ~/.jobwatch/state.json
 
+# Each entry is {name, source, params}. One optional extra key exists and is
+# NOT a tuning knob:
+#
+#   previous_state_prefix: "icims/acme-old/"
+#
+# It adopts the stored history of a board this entry used to be, for the one
+# event nothing else can repair: an ATS move that changes the board's identity.
+# jobwatch detects that and mails you the exact line to paste — do not guess at
+# it. Applying it is idempotent (nothing is left under the old prefix after one
+# run), so it can stay in the file or be deleted. See README "A board moved".
 companies:
   # ---- Greenhouse ----
   - {name: "Canonical", source: greenhouse, params: {board_token: canonical}}

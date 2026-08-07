@@ -201,10 +201,16 @@ func publish(ctx context.Context, opts PublishOptions, beforePush func()) (Publi
 		if err != nil {
 			return PublishResult{}, fmt.Errorf("validate base state: %w", err)
 		}
+		// Removals are refused unless the candidate itself explains them; see
+		// shrink.go for the four accepted explanations and why each is
+		// checkable without config.
+		if err := checkRemovals(baseRecords, candidateRecords); err != nil {
+			return PublishResult{}, err
+		}
 		for id, baseRecord := range baseRecords {
 			candidateRecord, exists := candidateRecords[id]
 			if !exists {
-				return PublishResult{}, fmt.Errorf("candidate state removed existing job ID %q", id)
+				continue
 			}
 			if baseRecord.notified && !candidateRecord.notified {
 				return PublishResult{}, fmt.Errorf("candidate state rolled notified job ID %q back to pending", id)

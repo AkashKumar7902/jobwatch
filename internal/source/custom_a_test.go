@@ -90,7 +90,7 @@ func TestEightfoldPaginationAndLazyDetail(t *testing.T) {
 
 	src := &eightfold{
 		company: "Acme", host: "test.eightfold", domain: "acme.com", location: "India", query: "Cradlepoint",
-		base: server.URL, maxPostings: 100, client: server.Client(),
+		base: server.URL, keyPrefix: "eightfold/acme.com/", maxPostings: 100, client: server.Client(),
 	}
 	jobs, err := src.Fetch(context.Background())
 	if err != nil {
@@ -99,7 +99,8 @@ func TestEightfoldPaginationAndLazyDetail(t *testing.T) {
 	if len(jobs) != 12 || listCalls != 2 || detailCalls != 0 {
 		t.Fatalf("Fetch jobs=%d listCalls=%d detailCalls=%d", len(jobs), listCalls, detailCalls)
 	}
-	if got, want := jobs[0].ID, "eightfold/test.eightfold/acme.com/"+strconv.FormatInt(firstID, 10); got != want {
+	// The serving host is transport and must not appear in the key.
+	if got, want := jobs[0].ID, "eightfold/acme.com/"+strconv.FormatInt(firstID, 10); got != want {
 		t.Fatalf("ID=%q want %q", got, want)
 	}
 	if jobs[0].Description != "" {
@@ -365,7 +366,7 @@ func TestCustomASchemaChecks(t *testing.T) {
 	t.Run("eightfold missing count", func(t *testing.T) {
 		server := testJSONServer(t, `{"status":200,"data":{"positions":[]}}`)
 		defer server.Close()
-		src := &eightfold{company: "x", host: "x", domain: "x.com", base: server.URL, maxPostings: 10, client: server.Client()}
+		src := &eightfold{company: "x", host: "x", domain: "x.com", base: server.URL, keyPrefix: "eightfold/x.com/", maxPostings: 10, client: server.Client()}
 		if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "omitted count or positions") {
 			t.Fatalf("got %v", err)
 		}

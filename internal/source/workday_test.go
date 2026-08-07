@@ -11,6 +11,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"jobwatch/internal/model"
 )
 
 type workdayTestRequest struct {
@@ -69,7 +71,10 @@ func TestWorkdayListsLazilyThenDetails(t *testing.T) {
 
 	// Build the source directly so base points at the test server
 	// (New would construct an https:// base URL).
-	wd := &workday{company: "Acme", base: srv.URL + "/wday/cxs/acme/jobs", maxPostings: 500, client: srv.Client()}
+	wd := &workday{
+		company: "Acme", base: srv.URL + "/wday/cxs/acme/jobs",
+		keyPrefix: "workday/acme/jobs/", maxPostings: 500, client: srv.Client(),
+	}
 
 	jobs, err := wd.Fetch(context.Background())
 	if err != nil || len(jobs) != 1 {
@@ -81,8 +86,14 @@ func TestWorkdayListsLazilyThenDetails(t *testing.T) {
 	if jobs[0].Description != "" {
 		t.Error("Fetch should not populate description")
 	}
-	if !strings.HasSuffix(jobs[0].ID, "/job/Pune/SWE_R-123") {
-		t.Errorf("id should embed externalPath, got %q", jobs[0].ID)
+	// The key carries the externalPath under the STABLE prefix; the fetch URL
+	// carries the current host. They are built from different strings on
+	// purpose — see the comment on workday.keyPrefix.
+	if jobs[0].ID != "workday/acme/jobs/job/Pune/SWE_R-123" {
+		t.Errorf("id = %q, want the stable key prefix plus externalPath", jobs[0].ID)
+	}
+	if jobs[0].URL != srv.URL+"/wday/cxs/acme/jobs/job/Pune/SWE_R-123" {
+		t.Errorf("url = %q, want the live host", jobs[0].URL)
 	}
 
 	if err := wd.Detail(context.Background(), &jobs[0]); err != nil {
@@ -173,6 +184,7 @@ func TestWorkdayPagination(t *testing.T) {
 			wd := &workday{
 				company:     "Acme",
 				base:        srv.URL + "/wday/cxs/acme/jobs",
+				keyPrefix:   "workday/acme/jobs/",
 				maxPostings: tt.maxPostings,
 				client:      srv.Client(),
 			}
@@ -276,6 +288,7 @@ func TestWorkdayIncompletePaginationReturnsPartialJobs(t *testing.T) {
 			wd := &workday{
 				company:     "Acme",
 				base:        srv.URL + "/wday/cxs/acme/jobs",
+				keyPrefix:   "workday/acme/jobs/",
 				maxPostings: 500,
 				client:      srv.Client(),
 			}
@@ -330,6 +343,7 @@ func TestWorkdaySkipsInvalidRowsAndCompletesKnownTotal(t *testing.T) {
 	wd := &workday{
 		company:     "Acme",
 		base:        srv.URL + "/wday/cxs/acme/jobs",
+		keyPrefix:   "workday/acme/jobs/",
 		maxPostings: 500,
 		client:      srv.Client(),
 	}
@@ -384,6 +398,7 @@ func TestWorkdayRawPositionCapWithSkippedRows(t *testing.T) {
 	wd := &workday{
 		company:     "Acme",
 		base:        srv.URL + "/wday/cxs/acme/jobs",
+		keyPrefix:   "workday/acme/jobs/",
 		maxPostings: 25,
 		client:      srv.Client(),
 	}
@@ -429,6 +444,7 @@ func TestWorkdayRepeatedPageReturnsPartialJobs(t *testing.T) {
 	wd := &workday{
 		company:     "Acme",
 		base:        srv.URL + "/wday/cxs/acme/jobs",
+		keyPrefix:   "workday/acme/jobs/",
 		maxPostings: 500,
 		client:      srv.Client(),
 	}
@@ -442,5 +458,42 @@ func TestWorkdayRepeatedPageReturnsPartialJobs(t *testing.T) {
 	}
 	if calls != 2 {
 		t.Errorf("request count = %d, want 2", calls)
+	}
+}
+
+// A TrimPrefix that does not match returns the string UNCHANGED, so before
+// the guard existed a foreign key was pasted whole onto this board's base URL
+// and fetched. Every stored key becomes a candidate here after a migration,
+// so the answer has to be an error, not a request.
+func TestWorkdayDetailRejectsForeignIDs(t *testing.T) {
+	var requests int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.Write([]byte(`{"jobPostingInfo":{"jobDescription":"<p>x</p>"}}`))
+	}))
+	defer srv.Close()
+	wd := &workday{
+		company: "Acme", base: srv.URL + "/wday/cxs/acme/jobs",
+		keyPrefix: "workday/acme/jobs/", maxPostings: 500, client: srv.Client(),
+	}
+
+	for _, tc := range []struct {
+		name string
+		job  *model.Job
+	}{
+		{"nil job", nil},
+		{"another board", &model.Job{ID: "workday/other/jobs/job/Pune/R-1"}},
+		{"another adapter", &model.Job{ID: "greenhouse/acme/1234"}},
+		{"legacy unmigrated key", &model.Job{ID: "workday/https://acme.wd1.myworkdayjobs.com/wday/cxs/acme/jobs/job/Pune/R-1"}},
+		{"bare board prefix", &model.Job{ID: "workday/acme/jobs/"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if err := wd.Detail(context.Background(), tc.job); err == nil {
+				t.Fatal("Detail accepted a job ID that is not this board's")
+			}
+		})
+	}
+	if requests != 0 {
+		t.Fatalf("Detail made %d requests for foreign IDs, want 0", requests)
 	}
 }

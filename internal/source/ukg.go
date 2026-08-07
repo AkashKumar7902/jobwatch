@@ -70,12 +70,13 @@ func init() {
 			client = http.DefaultClient
 		}
 		return &ukg{
-			company: company,
-			host:    host,
-			tenant:  tenant,
-			board:   board,
-			baseURL: "https://" + host,
-			client:  client,
+			company:   company,
+			host:      host,
+			tenant:    tenant,
+			board:     board,
+			baseURL:   "https://" + host,
+			keyPrefix: fmt.Sprintf("ukg/%s/%s/", tenant, board),
+			client:    client,
 		}, nil
 	})
 }
@@ -86,7 +87,12 @@ type ukg struct {
 	tenant  string
 	board   string
 	baseURL string
-	client  *http.Client
+	// keyPrefix excludes the host: recruiting.ultipro.com, recruiting2, and
+	// recruiting5 are UKG's own numbered clusters, and UKG moves tenants
+	// between them. The tenant code and board UUID are the employer's.
+	// Must stay equal to source.StatePrefix for these params.
+	keyPrefix string // ukg/{tenant}/{board}/
+	client    *http.Client
 }
 
 func (s *ukg) Company() string { return s.company }
@@ -369,6 +375,4 @@ func (s *ukg) detailURL(id string) string {
 	return strings.TrimRight(s.baseURL, "/") + s.boardPath() + "/OpportunityDetail?" + query.Encode()
 }
 
-func (s *ukg) jobID(id string) string {
-	return fmt.Sprintf("ukg/%s/%s/%s/%s", s.host, s.tenant, s.board, id)
-}
+func (s *ukg) jobID(id string) string { return s.keyPrefix + id }

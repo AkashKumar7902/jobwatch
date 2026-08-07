@@ -39,6 +39,23 @@ type Company struct {
 	Name   string     `yaml:"name"`   // display name for notifications
 	Source string     `yaml:"source"` // registered source type, e.g. "greenhouse"
 	Params params.Map `yaml:"params"` // source-specific settings
+
+	// PreviousStatePrefix adopts the stored history of a board this entry used
+	// to be. It is NOT a tuning knob and has no default behaviour: it exists
+	// for the one event nothing else can repair — an ATS moving a tenant in a
+	// way that changes the board's identity, which jobwatch detects and mails
+	// you the exact line to paste (see internal/run/census.go).
+	//
+	// It lives here rather than in Params because it says nothing about how to
+	// FETCH this board: params are handed to the adapter and would have to be
+	// ignored by it, and every param is part of the board's identity by
+	// default — so putting it there would change the very identity it is
+	// supposed to reunite with its history.
+	//
+	// Applying it is idempotent: after one run nothing is left under the old
+	// prefix, so the line can stay in the file forever or be deleted, whichever
+	// the user prefers.
+	PreviousStatePrefix string `yaml:"previous_state_prefix"`
 }
 
 // Plugin selects a registered matcher or notifier by name. Matchers may

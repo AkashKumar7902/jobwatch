@@ -93,6 +93,7 @@ func init() {
 			apiKey:       apiKey,
 			requestType:  requestType,
 			companyCode:  companyCode,
+			keyPrefix:    fmt.Sprintf("hrone/%s/%s/", domainCode, companyCode),
 			apiBase:      hroneAPIBase,
 			portalBase:   hronePortalBase,
 			client:       client,
@@ -108,10 +109,15 @@ type hrone struct {
 	apiKey      string
 	requestType string
 	companyCode string
-	apiBase     string
-	portalBase  string
-	client      *http.Client
-	maxPages    int
+	// keyPrefix excludes request_type: it is an opaque per-portal token HROne
+	// regenerates whenever a customer reconfigures their career portal, and
+	// it names a request route, not an employer.
+	// Must stay equal to source.StatePrefix for these params.
+	keyPrefix  string // hrone/{domain_code}/{company_code}/
+	apiBase    string
+	portalBase string
+	client     *http.Client
+	maxPages   int
 
 	mu           sync.RWMutex
 	postingsByID map[string]hronePosting
@@ -489,12 +495,8 @@ func canonicalHROneToken(raw string, minimumLength, maximumLength int) (string, 
 	return token, nil
 }
 
-func (s *hrone) boardIdentity() string {
-	return fmt.Sprintf("hrone/%s/%s/%s", s.domainCode, s.requestType, s.companyCode)
-}
-
 func (s *hrone) jobID(encryptedPositionID string) string {
-	return s.boardIdentity() + "/" + encryptedPositionID
+	return s.keyPrefix + encryptedPositionID
 }
 
 func (s *hrone) portalURL() string {

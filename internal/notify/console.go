@@ -26,3 +26,12 @@ func (console) Notify(_ context.Context, matches []Match) error {
 	_, err := fmt.Fprintf(os.Stdout, "\n%s:\n\n%s", Headline(matches), Text(matches))
 	return err
 }
+
+// Report makes the console an operational channel too, so `jobwatch` under
+// cron reports board health through the same stdout the crontab mails.
+func (console) Report(_ context.Context, r Report) error {
+	_, err := fmt.Fprintf(os.Stdout, "\n%s\n\n%s", OneLine(r.Subject), ReportText(r))
+	return err
+}
+
+var _ Reporter = console{}

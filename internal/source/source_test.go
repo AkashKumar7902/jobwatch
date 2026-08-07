@@ -23,7 +23,9 @@ func TestIdentityUsesBoardParamsNotOperationalLimits(t *testing.T) {
 	if Identity(a) != Identity(b) {
 		t.Fatalf("operational limit/display rename changed identity: %q != %q", Identity(a), Identity(b))
 	}
-	wantPrefix := "workday/https://acme.wd1.myworkdayjobs.com/wday/cxs/acme/jobs/"
+	// The shard host is transport: it is in neither string, so a shard
+	// migration is invisible to state.
+	wantPrefix := "workday/acme/jobs/"
 	if got := StatePrefix(a); got != wantPrefix {
 		t.Fatalf("StatePrefix() = %q, want %q", got, wantPrefix)
 	}
@@ -60,7 +62,7 @@ func TestOracleIdentityIncludesLocationScope(t *testing.T) {
 	if Identity(global) == Identity(india) {
 		t.Fatalf("location-scoped boards collided at %q", Identity(global))
 	}
-	if got := Identity(india); got != "oraclece/jobs.example.com/CX/India" {
+	if got := Identity(india); got != "oraclece/jobs/CX/India" {
 		t.Fatalf("Identity() = %q", got)
 	}
 	if StatePrefix(global) != StatePrefix(india) {
@@ -81,14 +83,14 @@ func TestAddedSourceIdentitiesAndStatePrefixes(t *testing.T) {
 		{"atlassian", nil, params.Map{"max_postings": "10"}, "atlassian", "atlassian/"},
 		{"avature", params.Map{"host": "jobs.ea.com", "site": "en_US", "search_path": "search-jobs"}, params.Map{"max_postings": "10"}, "avature/jobs.ea.com/en_US/search-jobs", "avature/jobs.ea.com/en_US/"},
 		{"deshaw", nil, params.Map{"max_postings": "10"}, "deshaw", "deshaw/"},
-		{"eightfold", params.Map{"host": "apply.careers.microsoft.com", "domain": "microsoft.com", "location": "India", "query": "Cradlepoint"}, params.Map{"max_postings": "10"}, "eightfold/apply.careers.microsoft.com/microsoft.com/India/query=Cradlepoint", "eightfold/apply.careers.microsoft.com/microsoft.com/"},
+		{"eightfold", params.Map{"host": "apply.careers.microsoft.com", "domain": "microsoft.com", "location": "India", "query": "Cradlepoint"}, params.Map{"max_postings": "10"}, "eightfold/microsoft.com/India/query=Cradlepoint", "eightfold/microsoft.com/"},
 		{"kula", params.Map{"account_name": "cashfree"}, params.Map{"max_postings": "10"}, "kula/cashfree", "kula/cashfree/"},
 		{"medianet", nil, params.Map{"max_postings": "10"}, "medianet", "medianet/"},
 		{"enphase", nil, params.Map{"max_pages": "2"}, "enphase", "enphase/"},
 		{"icims", params.Map{"host": "careersus-maxlinear.icims.com"}, params.Map{"max_pages": "2"}, "icims/careersus-maxlinear.icims.com", "icims/careersus-maxlinear.icims.com/"},
-		{"ibm", params.Map{"appid": "careers", "scope": "careers2", "rc": "in"}, nil, "ibm/careers/careers2/in", "ibm/careers/careers2/in/"},
+		{"ibm", params.Map{"appid": "careers", "scope": "careers2", "rc": "in"}, nil, "ibm/in", "ibm/in/"},
 		{"jubilant", params.Map{"country_code": "IND"}, nil, "jubilant/IND", "jubilant/IND/"},
-		{"oraclece", params.Map{"host": "iaziqy.fa.ocs.oraclecloud.com", "site": "CX_1"}, params.Map{"max_pages": "2"}, "oraclece/iaziqy.fa.ocs.oraclecloud.com/CX_1", "oraclece/iaziqy.fa.ocs.oraclecloud.com/CX_1/"},
+		{"oraclece", params.Map{"host": "iaziqy.fa.ocs.oraclecloud.com", "site": "CX_1"}, params.Map{"max_pages": "2"}, "oraclece/iaziqy/CX_1", "oraclece/iaziqy/CX_1/"},
 		{"richpanel", nil, nil, "richpanel", "richpanel/"},
 		{"successfactors", params.Map{"host": "jobs.sap.com"}, params.Map{"max_pages": "2"}, "successfactors/jobs.sap.com", "successfactors/jobs.sap.com/"},
 		{"highergs", nil, params.Map{"max_postings": "10"}, "highergs", "highergs/"},
@@ -108,8 +110,8 @@ func TestAddedSourceIdentitiesAndStatePrefixes(t *testing.T) {
 		{"freshteam", params.Map{"company_slug": "kaleyra-talent"}, nil, "freshteam/kaleyra-talent", "freshteam/kaleyra-talent/"},
 		{"jio", params.Map{"functions": "0222,0206,0210,0216"}, params.Map{"max_postings": "500"}, "jio/0206+0210+0216+0222", "jio/"},
 		{"walmart", nil, nil, "walmart/IN", "walmart/"},
-		{"ukg", params.Map{"host": "recruiting2.ultipro.com", "tenant": "PRO1053PROC", "board": "d6eed263-4950-420d-b9f8-5b1a441c931e"}, nil, "ukg/recruiting2.ultipro.com/PRO1053PROC/d6eed263-4950-420d-b9f8-5b1a441c931e", "ukg/recruiting2.ultipro.com/PRO1053PROC/d6eed263-4950-420d-b9f8-5b1a441c931e/"},
-		{"zwayam", params.Map{"domain": "careers.cult.fit", "company_id": "15470"}, nil, "zwayam/careers.cult.fit/15470", "zwayam/careers.cult.fit/15470/"},
+		{"ukg", params.Map{"host": "recruiting2.ultipro.com", "tenant": "PRO1053PROC", "board": "d6eed263-4950-420d-b9f8-5b1a441c931e"}, nil, "ukg/PRO1053PROC/d6eed263-4950-420d-b9f8-5b1a441c931e", "ukg/PRO1053PROC/d6eed263-4950-420d-b9f8-5b1a441c931e/"},
+		{"zwayam", params.Map{"domain": "careers.cult.fit", "company_id": "15470"}, nil, "zwayam/15470", "zwayam/15470/"},
 		{"keka", params.Map{"host": "squadrun.keka.com", "portal": "default", "identifier": "c750f148-70b8-4a21-868e-f891a1b2d818"}, nil, "keka/squadrun.keka.com/default/c750f148-70b8-4a21-868e-f891a1b2d818", "keka/squadrun.keka.com/default/"},
 		{"fastenal", nil, nil, "fastenal", "fastenal/"},
 		{"siemensjobs", nil, nil, "siemensjobs", "siemensjobs/"},

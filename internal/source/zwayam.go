@@ -69,6 +69,7 @@ func init() {
 			companyID:     companyID,
 			companyNumber: companyNumber,
 			encodedID:     base64.StdEncoding.EncodeToString([]byte(companyID)),
+			keyPrefix:     "zwayam/" + companyID + "/",
 			origin:        "https://" + domain,
 			apiBase:       zwayamAPIBase,
 			client:        client,
@@ -77,9 +78,14 @@ func init() {
 }
 
 type zwayam struct {
-	company       string
-	domain        string
-	companyID     string
+	company   string
+	domain    string
+	companyID string
+	// keyPrefix excludes the career-site domain: that is the employer's
+	// marketing DNS and gets re-pointed on a rebrand, while company_id is
+	// Zwayam's own immutable account number.
+	// Must stay equal to source.StatePrefix for these params.
+	keyPrefix     string // zwayam/{company_id}/
 	companyNumber int64
 	encodedID     string
 	origin        string
@@ -675,6 +681,4 @@ func firstNonemptyZwayam(values ...string) string {
 	return ""
 }
 
-func (s *zwayam) jobID(postingID string) string {
-	return fmt.Sprintf("zwayam/%s/%s/%s", s.domain, s.companyID, postingID)
-}
+func (s *zwayam) jobID(postingID string) string { return s.keyPrefix + postingID }

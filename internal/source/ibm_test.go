@@ -91,7 +91,7 @@ func TestIBMRegistrationIdentityRequestPaginationAndDetailInList(t *testing.T) {
 		t.Fatalf("len(jobs) = %d, want 32", len(jobs))
 	}
 	wantFirst := model.Job{
-		ID:          "ibm/careers/careers2/in/120000",
+		ID:          "ibm/in/120000",
 		Company:     "IBM India",
 		Title:       "Software Engineer 120000",
 		Location:    "Bangalore, IN",
@@ -102,7 +102,7 @@ func TestIBMRegistrationIdentityRequestPaginationAndDetailInList(t *testing.T) {
 	if !reflect.DeepEqual(jobs[0], wantFirst) {
 		t.Fatalf("first job =\n%+v\nwant\n%+v", jobs[0], wantFirst)
 	}
-	if jobs[31].ID != "ibm/careers/careers2/in/120031" {
+	if jobs[31].ID != "ibm/in/120031" {
 		t.Fatalf("last job ID = %q", jobs[31].ID)
 	}
 }
@@ -325,12 +325,13 @@ func ibmFetchFixture(t *testing.T, page func(int) ibmSearchResponse) ([]model.Jo
 	}))
 	defer server.Close()
 	src := &ibm{
-		company: "IBM India",
-		appID:   "careers",
-		scope:   "careers2",
-		rc:      "in",
-		apiBase: server.URL,
-		client:  server.Client(),
+		company:   "IBM India",
+		appID:     "careers",
+		scope:     "careers2",
+		rc:        "in",
+		keyPrefix: "ibm/in/",
+		apiBase:   server.URL,
+		client:    server.Client(),
 	}
 	return src.Fetch(context.Background())
 }

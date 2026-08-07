@@ -64,8 +64,13 @@ func TestHROneNewValidatesAndCanonicalizesCoordinates(t *testing.T) {
 	if got.Company() != "Addverb" {
 		t.Errorf("Company = %q", got.Company())
 	}
-	if got.boardIdentity() != "hrone/addverb/request_type_token/company_code_token" {
-		t.Errorf("boardIdentity = %q", got.boardIdentity())
+	// request_type is transport (HROne regenerates it on portal changes), so
+	// it is deliberately absent from the key prefix.
+	if got.keyPrefix != "hrone/addverb/company_code_token/" {
+		t.Errorf("keyPrefix = %q", got.keyPrefix)
+	}
+	if got.keyPrefix != StatePrefix(src) {
+		t.Errorf("keyPrefix %q != StatePrefix %q", got.keyPrefix, StatePrefix(src))
 	}
 
 	portal, err := url.Parse(got.portalURL())
@@ -175,9 +180,11 @@ func TestHROneBoardIDsSurviveRenameAndAPIKeyRotation(t *testing.T) {
 		"domain_code": " AddVerb ", "api_key": testHROneAPIKey,
 		"request_type": testHROneRequestType, "company_code": testHROneCompanyCode,
 	}
+	// request_type rotates too: HROne regenerates it when a customer
+	// reconfigures their career portal, and that must not orphan the board.
 	secondConfig := params.Map{
 		"domain_code": "addverb", "api_key": strings.Repeat("z", 40),
-		"request_type": testHROneRequestType, "company_code": testHROneCompanyCode,
+		"request_type": strings.Repeat("y", 24), "company_code": testHROneCompanyCode,
 	}
 	firstSource, err := New("hrone", "Old display name", firstConfig, nil)
 	if err != nil {
@@ -190,17 +197,17 @@ func TestHROneBoardIDsSurviveRenameAndAPIKeyRotation(t *testing.T) {
 	if Identity(firstSource) != Identity(secondSource) {
 		t.Fatalf("API-key rotation changed identity: %q != %q", Identity(firstSource), Identity(secondSource))
 	}
-	if Identity(firstSource) != "hrone/addverb/request_type_token/company_code_token" {
+	if Identity(firstSource) != "hrone/addverb/company_code_token" {
 		t.Fatalf("identity = %q", Identity(firstSource))
 	}
-	if StatePrefix(firstSource) != "hrone/addverb/request_type_token/company_code_token/" {
+	if StatePrefix(firstSource) != "hrone/addverb/company_code_token/" {
 		t.Fatalf("state prefix = %q", StatePrefix(firstSource))
 	}
 
 	first := firstSource.(*identifiedSource).Source.(*hrone)
 	second := secondSource.(*identifiedSource).Source.(*hrone)
 
-	want := "hrone/addverb/request_type_token/company_code_token/encrypted_position_01"
+	want := "hrone/addverb/company_code_token/encrypted_position_01"
 	if got := first.jobID("encrypted_position_01"); got != want {
 		t.Fatalf("first jobID = %q, want %q", got, want)
 	}
@@ -258,7 +265,7 @@ func TestHROneFetchPaginatesWithExactWireModelAndNormalizes(t *testing.T) {
 	}
 
 	first := jobs[0]
-	if first.ID != "hrone/addverb/request_type_token/company_code_token/encrypted_position_001" {
+	if first.ID != "hrone/addverb/company_code_token/encrypted_position_001" {
 		t.Errorf("ID = %q", first.ID)
 	}
 	if first.Company != "Addverb" || first.Title != "Staff Robotics Engineer" {
@@ -821,6 +828,7 @@ func testHROneSource(server *httptest.Server) *hrone {
 		apiKey:       testHROneAPIKey,
 		requestType:  testHROneRequestType,
 		companyCode:  testHROneCompanyCode,
+		keyPrefix:    "hrone/" + testHROneDomain + "/" + testHROneCompanyCode + "/",
 		apiBase:      apiBase,
 		portalBase:   "https://career.example.test",
 		client:       client,

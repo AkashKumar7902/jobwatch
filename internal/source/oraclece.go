@@ -46,21 +46,29 @@ func init() {
 		if err != nil {
 			return nil, err
 		}
+		pod, _, _ := strings.Cut(host, ".")
 		return &oracleCE{
 			company: company, host: host, site: site, base: "https://" + host,
-			location: location, maxPages: maxPages, client: client,
+			keyPrefix: fmt.Sprintf("oraclece/%s/%s/", pod, site),
+			location:  location, maxPages: maxPages, client: client,
 		}, nil
 	})
 }
 
 type oracleCE struct {
-	company  string
-	host     string
-	site     string
-	base     string
-	location string
-	maxPages int
-	client   *http.Client
+	company string
+	host    string
+	site    string
+	base    string
+	// keyPrefix drops the host's DNS suffix: "eofe.fa.us2.oraclecloud.com" is
+	// a customer pod (eofe) inside an Oracle data-centre region
+	// (fa.us2.oraclecloud.com), and Oracle relocates pods between regions.
+	// Only the pod goes into job IDs; the live URL is rebuilt from base.
+	// Must stay equal to source.StatePrefix for these params.
+	keyPrefix string // oraclece/{pod}/{site}/
+	location  string
+	maxPages  int
+	client    *http.Client
 }
 
 func (o *oracleCE) Company() string { return o.company }
@@ -157,7 +165,7 @@ func (o *oracleCE) Fetch(ctx context.Context) ([]model.Job, error) {
 				location = strings.TrimSpace(posting.PrimaryLocationCountry)
 			}
 			jobs = append(jobs, model.Job{
-				ID:       fmt.Sprintf("oraclece/%s/%s/%s", o.host, o.site, id),
+				ID:       o.keyPrefix + id,
 				Company:  o.company,
 				Title:    title,
 				Location: location,
@@ -200,12 +208,10 @@ type oracleCEDetail struct {
 }
 
 func (o *oracleCE) Detail(ctx context.Context, job *model.Job) error {
-	const prefixSeparator = "/"
-	prefix := fmt.Sprintf("oraclece/%s/%s%s", o.host, o.site, prefixSeparator)
-	if job == nil || !strings.HasPrefix(job.ID, prefix) {
+	if job == nil || !strings.HasPrefix(job.ID, o.keyPrefix) {
 		return fmt.Errorf("oraclece %s: job ID does not belong to this board", o.host)
 	}
-	id := strings.TrimPrefix(job.ID, prefix)
+	id := strings.TrimPrefix(job.ID, o.keyPrefix)
 	if id == "" || strings.Contains(id, "/") {
 		return fmt.Errorf("oraclece %s: invalid job ID %q", o.host, job.ID)
 	}

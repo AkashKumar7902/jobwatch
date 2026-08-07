@@ -50,8 +50,9 @@ func TestOracleCEFetchAndLazyDetail(t *testing.T) {
 	defer server.Close()
 
 	src := &oracleCE{
-		company: "Acme", host: "jobs.example.com", site: "CX", base: server.URL,
-		location: "India", maxPages: 2, client: server.Client(),
+		company: "Acme", host: "acmepod.fa.us2.oraclecloud.com", site: "CX", base: server.URL,
+		keyPrefix: "oraclece/acmepod/CX/",
+		location:  "India", maxPages: 2, client: server.Client(),
 	}
 	jobs, err := src.Fetch(context.Background())
 	if err != nil {
@@ -63,7 +64,9 @@ func TestOracleCEFetchAndLazyDetail(t *testing.T) {
 	if len(jobs) != 3 {
 		t.Fatalf("got %d jobs, want 3", len(jobs))
 	}
-	if jobs[0].ID != "oraclece/jobs.example.com/CX/101" ||
+	// Only the pod (acmepod) survives into the key; the region suffix is the
+	// part Oracle relocates and it is deliberately absent.
+	if jobs[0].ID != "oraclece/acmepod/CX/101" ||
 		jobs[0].URL != server.URL+"/hcmUI/CandidateExperience/en/sites/CX/job/101" ||
 		jobs[0].PostedAt.Format("2006-01-02") != "2026-07-30" {
 		t.Fatalf("unexpected first job: %+v", jobs[0])
@@ -82,7 +85,7 @@ func TestOracleCEPaginationCap(t *testing.T) {
 		fmt.Fprint(w, `{"items":[{"TotalJobsCount":2,"Offset":0,"Limit":100,"SiteNumber":"CX","requisitionList":[{"Id":"1","Title":"One"}]}]}`)
 	}))
 	defer server.Close()
-	src := &oracleCE{company: "Acme", host: "jobs.example.com", site: "CX", base: server.URL, maxPages: 1, client: server.Client()}
+	src := &oracleCE{company: "Acme", host: "acmepod.fa.us2.oraclecloud.com", site: "CX", base: server.URL, keyPrefix: "oraclece/acmepod/CX/", maxPages: 1, client: server.Client()}
 	if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "max_pages") {
 		t.Fatalf("expected pagination-cap error, got %v", err)
 	}

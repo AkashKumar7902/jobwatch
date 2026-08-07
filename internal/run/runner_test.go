@@ -13,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"jobwatch/internal/health"
 	"jobwatch/internal/match"
 	"jobwatch/internal/model"
 	"jobwatch/internal/notify"
@@ -971,6 +972,129 @@ func TestSeedNewSourcesRejectsAmbiguousSharedPostingPrefix(t *testing.T) {
 	}
 }
 
+// A board whose IDENTITY changed is not a new board, and seeding it is
+// destructive rather than merely silent.
+//
+// This is the shape of the run that ships the transport-coordinate rekey: 83 of
+// the 260 catalog boards get a brand-new identity, marker keys embed the OLD one
+// and are deliberately never rewritten, and migrateStateKeys has already moved
+// the postings under the new prefix. Production polls with -seed-new-sources, so
+// without adoption every one of those boards would take the baseline path and
+// write the postings that appeared since the previous cycle as history —
+// unevaluated, unmailed, and permanently skipped afterwards because a seeded
+// record reads as processed forever.
+func TestIdentityChangeAdoptsInsteadOfReseeding(t *testing.T) {
+	n := &reportingNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	clk := &testClock{t: time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)}
+	r.now = clk.now
+
+	// State exactly as production has it: the registry is long since certified,
+	// the marker still names the pre-rekey identity, and the history has already
+	// been moved under the current prefix.
+	st.Add(sourceRegistryV2ID, store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "exact source registry v2"})
+	st.Add(sourceMarkerPrefix+"workday/redhat.wd5.myworkdayjobs.com/redhat/jobs",
+		store.Record{FirstSeen: time.Now().Add(-30 * 24 * time.Hour), Title: "source: Red Hat"})
+	st.Add("workday/redhat/jobs/job/A", store.Record{
+		FirstSeen: time.Now().Add(-24 * time.Hour), Title: "Red Hat: Analyst", Matched: true, Notified: true,
+	})
+
+	appeared := model.Job{ID: "workday/redhat/jobs/job/NEW", Company: "Red Hat", Title: "Junior Dev", URL: "https://x/new"}
+	src := &fakeSource{
+		company: "Red Hat", identity: "workday/redhat/jobs", statePrefix: "workday/redhat/jobs/",
+		jobs: []model.Job{{ID: "workday/redhat/jobs/job/A", Company: "Red Hat", Title: "Analyst"}, appeared},
+	}
+	r.Sources = []source.Source{src}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 1 || len(n.batches[0]) != 1 || n.batches[0][0].Job.ID != appeared.ID {
+		t.Fatalf("the posting that appeared since the last cycle was swallowed by a re-seed: %v", n.batches)
+	}
+	if rec, _ := st.Get(appeared.ID); !rec.Matched || !rec.Notified {
+		t.Fatalf("delivered posting was recorded as unevaluated history: %+v", rec)
+	}
+	if !st.Seen(sourceMarkerPrefix + "workday/redhat/jobs") {
+		t.Fatal("the adopted board did not record a marker under its new identity")
+	}
+	if st.Seen(sourceSeedInProgressPrefix + "workday/redhat/jobs") {
+		t.Fatal("an inherited board was treated as a baseline in progress")
+	}
+	// Baselined means "we watched this board from birth" and is the ONLY guard
+	// keeping the one-run stillborn rule off established boards. Claiming it for
+	// a board that inherited thousands of records turns that rule loose on 47%
+	// of the fleet the first time one of them has no openings.
+	if h := boardHealth(t, st, "workday/redhat/jobs"); h.Baselined || h.Kind != "" {
+		t.Fatalf("an inherited board was marked as baselined by us: %+v", h)
+	}
+}
+
+// The mirror-image case, and the reason adoption cannot simply trust
+// HasPostingPrefix: two scoped views of ONE board share a state prefix (two
+// eightfold `query=` entries, two avature search paths). A genuinely new view
+// must still be baselined in silence, or adding one mails its whole backlog —
+// the exact blast -seed-new-sources exists to prevent.
+func TestNewScopedViewOfAnAdoptedBoardIsStillSeeded(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	st.Add(sourceRegistryV2ID, store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "exact source registry v2"})
+	st.Add(sourceMarkerPrefix+"test/scope-a", store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "source: Scope A"})
+	st.Add("test/shared/1", store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "Acme: Analyst", Matched: true, Notified: true})
+
+	backlog := model.Job{ID: "test/shared/2", Company: "Acme", Title: "Scoped Junior Dev", URL: "https://x/2"}
+	r.Sources = []source.Source{
+		&fakeSource{company: "Acme", identity: "test/scope-a", statePrefix: "test/shared/",
+			jobs: []model.Job{{ID: "test/shared/1", Company: "Acme", Title: "Analyst"}}},
+		&fakeSource{company: "Acme", identity: "test/scope-b", statePrefix: "test/shared/", jobs: []model.Job{backlog}},
+	}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 0 {
+		t.Fatalf("a newly added scoped view mailed the backlog it shares a prefix with: %v", n.batches)
+	}
+	if rec, ok := st.Get(backlog.ID); !ok || rec.Matched {
+		t.Fatalf("the new scope's backlog was not baselined: %+v (stored=%v)", rec, ok)
+	}
+	if !st.Seen(sourceSeedInProgressPrefix + "test/scope-b") {
+		t.Fatal("a genuine baseline did not record its resumable in-progress marker")
+	}
+}
+
+// An explicit -seed-only is a request for a BASELINE and must never be quietly
+// downgraded to adoption, however much history the board owns. The in-progress
+// marker is the whole point: without it an interrupted baseline resumes as an
+// ordinary run and mails the half of the board it never reached.
+func TestSeedOnlyIsNeverDowngradedToAdoption(t *testing.T) {
+	n := &flakyNotifier{}
+	r, st := newRunner(t, n, true, false)
+	st.Add(sourceRegistryV2ID, store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "exact source registry v2"})
+	st.Add("test/legacy/1", store.Record{FirstSeen: time.Now().Add(-time.Hour), Title: "Legacy: Old Dev"})
+
+	newJob := model.Job{ID: "test/legacy/2", Company: "Legacy", Title: "New Dev", URL: "https://x/legacy/2"}
+	r.Sources = []source.Source{&fakeSource{
+		company: "Legacy", identity: "test/legacy", statePrefix: "test/legacy/",
+		jobs: []model.Job{{ID: "test/legacy/1", Company: "Legacy", Title: "Old Dev"}, newJob},
+	}}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.batches) != 0 {
+		t.Fatalf("an explicit seed notified: %v", n.batches)
+	}
+	if !st.Seen(sourceSeedInProgressPrefix + "test/legacy") {
+		t.Fatal("an explicit seed skipped the in-progress marker that makes interruption resumable")
+	}
+	if rec, _ := st.Get(newJob.ID); rec.Matched {
+		t.Fatalf("an explicit seed evaluated a posting instead of recording it: %+v", rec)
+	}
+}
+
 func TestPartialSourceResultsAreProcessed(t *testing.T) {
 	n := &flakyNotifier{}
 	r, _ := newRunner(t, n, false, false)
@@ -1037,6 +1161,467 @@ func TestDryRunPersistsNothing(t *testing.T) {
 
 func testSources() []source.Source {
 	return []source.Source{&fakeSource{jobs: []model.Job{testJob}}}
+}
+
+// ---------------------------------------------------------------------------
+// Board health
+//
+// The failure these tests pin down is the one that produces no symptom at all:
+// an ATS answers a renamed slug with HTTP 200 and an empty list, which reads
+// exactly like a company with no openings, and RunOnce stays green. Everything
+// below is about making that observable WITHOUT inventing alarms — so several
+// of these assert silence just as hard as they assert delivery.
+// ---------------------------------------------------------------------------
+
+// reportingNotifier is a channel that opted into notify.Reporter. Embedding
+// flakyNotifier keeps the match path identical to the other tests, so a
+// regression in reporting can never be mistaken for one in delivery.
+type reportingNotifier struct {
+	flakyNotifier
+	reportFailures int
+	reports        []notify.Report
+}
+
+func (r *reportingNotifier) Name() string { return "reporting" }
+
+func (r *reportingNotifier) Report(_ context.Context, rep notify.Report) error {
+	if r.reportFailures > 0 {
+		r.reportFailures--
+		return errors.New("smtp down")
+	}
+	r.reports = append(r.reports, rep)
+	return nil
+}
+
+// testClock drives ONLY the health rules, so a 72-hour threshold and a 30-day
+// cadence can both be crossed inside one test without sleeping.
+type testClock struct{ t time.Time }
+
+func (c *testClock) now() time.Time          { return c.t }
+func (c *testClock) advance(d time.Duration) { c.t = c.t.Add(d) }
+
+func subjects(reports []notify.Report) []string {
+	out := make([]string, 0, len(reports))
+	for _, r := range reports {
+		out = append(out, r.Subject)
+	}
+	return out
+}
+
+func boardHealth(t *testing.T, st *store.Store, identity string) store.Health {
+	t.Helper()
+	rec, ok := st.Get(health.KeyPrefix + identity)
+	if !ok || rec.Health == nil {
+		t.Fatalf("no health record for %s", identity)
+	}
+	return *rec.Health
+}
+
+// A board whose fetch failed must be OBSERVED but must never be marked
+// baselined. This is the one interaction where getting health wrong causes
+// real damage rather than a missed alert: a source marker written for a board
+// that was never walked tells the next run "already baselined", and the run
+// after that emails the company's entire back catalogue.
+func TestFailedFetchNeverCreatesMarker(t *testing.T) {
+	n := &reportingNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	clk := &testClock{t: time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)}
+	r.now = clk.now
+	src := &fakeSource{
+		company: "Acme", identity: "test/acme", statePrefix: "test/acme/",
+		err: errors.New("dial tcp: no route to host"),
+	}
+	r.Sources = []source.Source{src}
+
+	if err := r.RunOnce(context.Background()); err == nil {
+		t.Fatal("a board that could not be fetched at all should surface an error")
+	}
+	if st.Seen(sourceMarkerPrefix + "test/acme") {
+		t.Fatal("a failed fetch wrote a completion marker; the next run would seed nothing and then email the whole board")
+	}
+	h := boardHealth(t, st, "test/acme")
+	if h.ErrRuns != 1 || h.LastErr == "" {
+		t.Fatalf("hard-failing board was not observed above the failure continue: %+v", h)
+	}
+	if h.Baselined || h.Fetches != 0 {
+		t.Fatalf("a failed fetch counted as an adoption or a success: %+v", h)
+	}
+	if len(n.reports) != 1 || !strings.Contains(n.reports[0].Subject, "monthly board report") {
+		t.Fatalf("first run should send exactly the install-confirmation digest, got %v", subjects(n.reports))
+	}
+
+	// Recovery must still baseline the board SILENTLY — the backlog it now
+	// returns is history, not news.
+	clk.advance(time.Hour)
+	src.err = nil
+	src.jobs = []model.Job{testJob}
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatalf("recovery run: %v", err)
+	}
+	if len(n.batches) != 0 {
+		t.Fatalf("recovered board delivered its backlog instead of baselining it: %v", n.batches)
+	}
+	if !st.Seen(sourceMarkerPrefix+"test/acme") || !st.Seen(testJob.ID) {
+		t.Fatal("recovery did not baseline the board")
+	}
+	h = boardHealth(t, st, "test/acme")
+	if !h.Baselined || h.ErrRuns != 0 || h.LastNonEmptyN != 1 {
+		t.Fatalf("recovery was not folded into health: %+v", h)
+	}
+}
+
+// The stillborn check is the ONLY mechanism that catches the incident this
+// feature exists for: a greenhouse token renamed before the board was ever
+// watched answers 200 with a real board name and zero postings, so probing the
+// endpoint proves nothing. Caught at adoption it costs one run; left to the
+// cliff test it would take 21-30 days, and the cliff test can never fire on a
+// board that was never seen non-empty.
+func TestNewBoardWithZeroPostingsReports(t *testing.T) {
+	n := &reportingNotifier{}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	clk := &testClock{t: time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)}
+	r.now = clk.now
+	r.Sources = []source.Source{&fakeSource{
+		company: "HubSpot", identity: "greenhouse/us/hubspot", statePrefix: "greenhouse/hubspot/",
+	}}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	var trip *notify.Report
+	for i := range n.reports {
+		if strings.Contains(n.reports[i].Subject, "returned nothing when added") {
+			trip = &n.reports[i]
+		}
+	}
+	if trip == nil {
+		t.Fatalf("a board baselined with zero postings was not reported: %v", subjects(n.reports))
+	}
+	if !strings.Contains(trip.Subject, "HubSpot") {
+		t.Errorf("report subject does not name the board: %q", trip.Subject)
+	}
+	if body := strings.Join(trip.Lines, "\n"); !strings.Contains(body, "greenhouse/us/hubspot") {
+		t.Errorf("report body does not name the identity the user has to edit:\n%s", body)
+	}
+	if h := boardHealth(t, st, "greenhouse/us/hubspot"); h.SentAt.IsZero() || h.Kind != health.Stillborn {
+		t.Fatalf("delivered report was not stamped on the health record: %+v", h)
+	}
+
+	// It fires ONCE. A standing condition that re-mails every half hour is a
+	// condition the user filters away, taking the next real one with it.
+	before := len(n.reports)
+	for i := 0; i < 3; i++ {
+		clk.advance(time.Hour)
+		if err := r.RunOnce(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if len(n.reports) != before {
+		t.Fatalf("stillborn board reported again: %v", subjects(n.reports[before:]))
+	}
+}
+
+// Dry runs exist to tune the matcher against real boards. Writing health from
+// one would let a laptop experiment stamp SentAt and swallow the report the
+// scheduled run was about to send.
+func TestDryRunWritesNoHealth(t *testing.T) {
+	n := &reportingNotifier{}
+	r, st := newRunner(t, n, false, true)
+	r.now = (&testClock{t: time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)}).now
+	r.Sources = []source.Source{
+		&fakeSource{company: "Acme", identity: "test/acme", jobs: []model.Job{testJob}},
+		&fakeSource{company: "Broken", identity: "test/broken", err: errors.New("404")},
+	}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if st.Len() != 0 {
+		var ids []string
+		st.Range(func(id string, _ store.Record) bool { ids = append(ids, id); return true })
+		t.Fatalf("dry run persisted %v", ids)
+	}
+	if len(n.reports) != 0 {
+		t.Fatalf("dry run delivered reports: %v", subjects(n.reports))
+	}
+}
+
+// The digest is the heartbeat, and a heartbeat is only meaningful if its
+// cadence is exact: too early and it becomes noise, too late (or skipped after
+// a failed send) and a month of silence stops proving anything.
+func TestDigestCadence(t *testing.T) {
+	n := &reportingNotifier{}
+	r, st := newRunner(t, n, false, false)
+	start := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	clk := &testClock{t: start}
+	r.now = clk.now
+	r.Sources = testSources()
+
+	// The first one doubles as install confirmation: it is the only way to
+	// learn on day one that reports can be delivered at all.
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.reports) != 1 {
+		t.Fatalf("first run sent %v, want one install-confirmation digest", subjects(n.reports))
+	}
+
+	clk.advance(29 * 24 * time.Hour)
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.reports) != 1 {
+		t.Fatalf("digest sent after 29 days: %v", subjects(n.reports))
+	}
+
+	// At 31 days it is due — but a failed send must NOT advance the cadence,
+	// or one flaky SMTP night silently costs a whole month of heartbeat.
+	clk.advance(2 * 24 * time.Hour)
+	n.reportFailures = 1
+	if err := r.RunOnce(context.Background()); err == nil {
+		t.Fatal("a failed report delivery should surface as a run error")
+	}
+	if len(n.reports) != 1 {
+		t.Fatalf("failed digest was recorded as delivered: %v", subjects(n.reports))
+	}
+	rec, ok := st.Get(health.RunKey)
+	if !ok || rec.Run == nil {
+		t.Fatal("no run record")
+	}
+	if !rec.Run.DigestSentAt.Equal(start) {
+		t.Fatalf("failed digest advanced the cadence to %s, want it left at %s", rec.Run.DigestSentAt, start)
+	}
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.reports) != 2 {
+		t.Fatalf("digest was not retried after the failure: %v", subjects(n.reports))
+	}
+	rec, _ = st.Get(health.RunKey)
+	if !rec.Run.DigestSentAt.Equal(clk.t) {
+		t.Fatalf("delivered digest was not stamped: %+v", rec.Run)
+	}
+}
+
+// Report delivery follows the same at-least-once discipline as matches: the
+// SentAt stamp is written only after the channel accepts the report, so a
+// failure retries instead of vanishing.
+func TestReportRetriedUntilDelivered(t *testing.T) {
+	n := &reportingNotifier{reportFailures: 1}
+	r, st := newRunner(t, n, false, false)
+	r.SeedNewSources = true
+	clk := &testClock{t: time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)}
+	r.now = clk.now
+	r.Sources = []source.Source{&fakeSource{
+		company: "Newco", identity: "test/newco", statePrefix: "test/newco/",
+	}}
+
+	if err := r.RunOnce(context.Background()); err == nil {
+		t.Fatal("an undelivered report should surface as a run error")
+	}
+	if len(n.reports) != 0 {
+		t.Fatalf("failed delivery recorded %v", subjects(n.reports))
+	}
+	if h := boardHealth(t, st, "test/newco"); !h.SentAt.IsZero() {
+		t.Fatalf("report stamped delivered despite the channel failing: %+v", h)
+	}
+
+	clk.advance(time.Hour)
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.reports) != 2 {
+		t.Fatalf("retry delivered %v, want the pending board report and the digest", subjects(n.reports))
+	}
+	if h := boardHealth(t, st, "test/newco"); h.SentAt.IsZero() {
+		t.Fatalf("delivered report was not stamped: %+v", h)
+	}
+
+	clk.advance(time.Hour)
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.reports) != 2 {
+		t.Fatalf("report re-sent after being delivered: %v", subjects(n.reports))
+	}
+}
+
+// Reporter is discovered by type assertion, exactly like source.Detailer, so
+// that webhook and telegram keep compiling and keep delivering matches without
+// growing a method they have no rendering for.
+func TestNonReporterNotifierIsSkipped(t *testing.T) {
+	plain := &flakyNotifier{}
+	if _, ok := notify.Notifier(plain).(notify.Reporter); ok {
+		t.Fatal("fixture unexpectedly implements Reporter; this test proves nothing")
+	}
+
+	t.Run("mixed", func(t *testing.T) {
+		rep := &reportingNotifier{}
+		r, _ := newRunner(t, plain, false, false)
+		r.Notifiers = []notify.Notifier{plain, rep}
+		r.now = (&testClock{t: time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)}).now
+		r.Sources = testSources()
+
+		if err := r.RunOnce(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if len(rep.reports) == 0 {
+			t.Fatal("the reporting channel received nothing")
+		}
+		if len(plain.batches) != 1 {
+			t.Fatalf("the non-reporting channel stopped receiving matches: %v", plain.batches)
+		}
+	})
+
+	t.Run("none", func(t *testing.T) {
+		var logs strings.Builder
+		only := &flakyNotifier{}
+		r, _ := newRunner(t, only, false, false)
+		r.Log = log.New(&logs, "", 0)
+		r.now = (&testClock{t: time.Date(2026, 8, 7, 12, 0, 0, 0, time.UTC)}).now
+		r.Sources = testSources()
+
+		// An unroutable report must not fail the poll — the matches still
+		// need to go out — but it must never be silent either.
+		if err := r.RunOnce(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(logs.String(), "no configured notifier implements notify.Reporter") {
+			t.Fatalf("undeliverable report was dropped silently:\n%s", logs.String())
+		}
+	})
+}
+
+// 193 of 260 boards sit behind five vendors, so one vendor change trips a
+// whole cohort in the same cycle. Forty-seven emails about one incident is
+// indistinguishable from spam, and a monitoring channel that gets filtered
+// takes the next real alert with it.
+func TestMassEventCollapsesToOneReport(t *testing.T) {
+	n := &reportingNotifier{}
+	r, st := newRunner(t, n, false, false)
+	base := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	r.now = (&testClock{t: base}).now
+
+	const boards = 8
+	var sources []source.Source
+	identities := make([]string, 0, boards)
+	for i := 0; i < boards; i++ {
+		identity := fmt.Sprintf("greenhouse/us/co%d", i)
+		identities = append(identities, identity)
+		company := fmt.Sprintf("Co %d", i)
+		sources = append(sources, &fakeSource{company: company, identity: identity, statePrefix: identity + "/"})
+		st.Add(sourceMarkerPrefix+identity, store.Record{FirstSeen: base, Title: "source: " + company})
+		// One observation short of the zero-run floor, with the elapsed-time
+		// floor already met: this cycle's empty answer is what trips it.
+		st.Add(health.KeyPrefix+identity, store.Record{
+			FirstSeen: base, Title: "board health: " + company,
+			Health: &store.Health{
+				Company: company, SrcType: "greenhouse",
+				FirstFetch: base.Add(-60 * 24 * time.Hour), LastOK: base.Add(-time.Hour),
+				LastNonEmpty: base.Add(-100 * time.Hour), LastNonEmptyN: 40,
+				NonEmptyDays: 5, Fetches: 200,
+				Recent: []int{40, 0, 0}, Nonzero: []int{40}, Typical: 40,
+				ZeroRuns: health.MinZeroRuns - 1, ZeroSince: base.Add(-100 * time.Hour),
+			},
+		})
+	}
+	st.Add(sourceRegistryV2ID, store.Record{FirstSeen: base, Title: "exact source registry v2"})
+	// Heartbeat recently sent, so the only thing this cycle can produce is the
+	// incident report.
+	st.Add(health.RunKey, store.Record{
+		FirstSeen: base, Title: "jobwatch run",
+		Run: &store.Run{LastRunAt: base.Add(-time.Hour), DigestSentAt: base.Add(-time.Hour)},
+	})
+	r.Sources = sources
+
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.reports) != 1 {
+		t.Fatalf("%d simultaneous trips produced %d reports, want 1: %v", boards, len(n.reports), subjects(n.reports))
+	}
+	rep := n.reports[0]
+	if !strings.Contains(rep.Subject, fmt.Sprintf("%d boards went quiet", boards)) {
+		t.Errorf("subject does not say how many boards tripped: %q", rep.Subject)
+	}
+	body := strings.Join(rep.Lines, "\n")
+	if !strings.Contains(body, fmt.Sprintf("greenhouse %d", boards)) {
+		t.Errorf("report does not group the trips by the adapter they share:\n%s", body)
+	}
+	for _, identity := range identities {
+		h := boardHealth(t, st, identity)
+		if h.Kind != health.Dead || h.SentAt.IsZero() {
+			t.Fatalf("%s was not recorded as reported: %+v", identity, h)
+		}
+	}
+
+	// And the collapsed report is not re-sent on the next cycle.
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	if len(n.reports) != 1 {
+		t.Fatalf("collapsed report re-sent: %v", subjects(n.reports))
+	}
+}
+
+// Two consecutive cycles in which EVERY board failed means the watcher itself
+// is not working — until now visible only as a red CI check nobody opens. One
+// cycle is not enough: a runner can simply lose the network for a minute.
+func TestAllBoardsFailingReportsOncePerOutage(t *testing.T) {
+	n := &reportingNotifier{}
+	r, st := newRunner(t, n, false, false)
+	base := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+	clk := &testClock{t: base}
+	r.now = clk.now
+	src := &fakeSource{company: "Acme", identity: "test/acme", err: errors.New("dial tcp: i/o timeout")}
+	r.Sources = []source.Source{src}
+	st.Add(sourceMarkerPrefix+"test/acme", store.Record{FirstSeen: base, Title: "source: Acme"})
+	st.Add(sourceRegistryV2ID, store.Record{FirstSeen: base, Title: "exact source registry v2"})
+	st.Add(health.RunKey, store.Record{
+		FirstSeen: base, Title: "jobwatch run",
+		Run: &store.Run{LastRunAt: base.Add(-time.Hour), DigestSentAt: base.Add(-time.Hour)},
+	})
+
+	outage := func() []string {
+		clk.advance(30 * time.Minute)
+		if err := r.RunOnce(context.Background()); err == nil {
+			t.Fatal("a run where every board failed should report an error")
+		}
+		return subjects(n.reports)
+	}
+
+	if got := outage(); len(got) != 0 {
+		t.Fatalf("one failed cycle already mailed: %v", got)
+	}
+	if got := outage(); len(got) != 1 || !strings.Contains(got[0], "not reaching any job board") {
+		t.Fatalf("second consecutive total failure did not report: %v", got)
+	}
+	for i := 0; i < 3; i++ {
+		if got := outage(); len(got) != 1 {
+			t.Fatalf("outage re-mailed on every cycle: %v", got)
+		}
+	}
+
+	// Recovery re-arms it: the next outage is a new incident.
+	clk.advance(30 * time.Minute)
+	src.err = nil
+	src.jobs = []model.Job{testJob}
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	rec, _ := st.Get(health.RunKey)
+	if rec.Run.AllFailRuns != 0 || !rec.Run.AllFailSentAt.IsZero() {
+		t.Fatalf("recovery did not re-arm the outage report: %+v", rec.Run)
+	}
+	src.err = errors.New("dial tcp: i/o timeout")
+	src.jobs = nil
+	outage()
+	if got := outage(); len(got) != 2 {
+		t.Fatalf("the second outage was not reported: %v", got)
+	}
 }
 
 // cancellingMatcher cancels the run's context from inside a match call,

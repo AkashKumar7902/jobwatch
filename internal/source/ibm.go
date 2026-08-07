@@ -56,12 +56,13 @@ func init() {
 			client = http.DefaultClient
 		}
 		return &ibm{
-			company: company,
-			appID:   appID,
-			scope:   scope,
-			rc:      rc,
-			apiBase: ibmAPIBase,
-			client:  client,
+			company:   company,
+			appID:     appID,
+			scope:     scope,
+			rc:        rc,
+			keyPrefix: "ibm/" + rc + "/",
+			apiBase:   ibmAPIBase,
+			client:    client,
 		}, nil
 	})
 }
@@ -82,8 +83,13 @@ type ibm struct {
 	appID   string
 	scope   string
 	rc      string
-	apiBase string
-	client  *http.Client
+	// keyPrefix excludes appid and scope. Those name IBM's Watson Discovery
+	// search collection ("careers"/"careers2"), which IBM has already
+	// renumbered once; the country code is the board.
+	// Must stay equal to source.StatePrefix for these params.
+	keyPrefix string // ibm/{rc}/
+	apiBase   string
+	client    *http.Client
 }
 
 type ibmSearchResponse struct {
@@ -282,7 +288,7 @@ func (s *ibm) normalize(result ibmSearchResult) (model.Job, string, error) {
 	}
 
 	return model.Job{
-		ID:          fmt.Sprintf("ibm/%s/%s/%s/%s", s.appID, s.scope, s.rc, externalID),
+		ID:          s.keyPrefix + externalID,
 		Company:     s.company,
 		Title:       title,
 		Location:    location,

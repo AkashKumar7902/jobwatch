@@ -87,10 +87,24 @@ guard. Do not require pull requests or signed commits on this branch, because
 the scheduled workflow writes its state commits directly.
 
 Normal polling may add records or update notification status, but it may not
-remove an existing job ID. A failed poll can still publish a valid partial
-checkpoint after a successful restore; a first-time bootstrap is published
-only after the complete seed succeeds. Intentional ID changes or removals are
-state migrations and must follow the deterministic, fixture-tested process in
+remove an existing job ID unless the published state itself explains where that
+record went. Exactly four explanations are accepted, and each is checkable from
+the old and new state files alone — no config, no clock, no network:
+
+- the key was rewritten by the frozen rules that strip a vendor's mutable host
+  out of a job ID, and it is present at the rule's output with `notified` intact;
+- it was one of the 18 bare board-base URLs no adapter can produce any more, and
+  it was never notified;
+- it was a `__jobwatch_source__/` marker for a board that owns no surviving
+  postings, which is derived bookkeeping rather than a posting;
+- a board declared `previous_state_prefix` (see "A board moved" below) and the
+  record is present under the new prefix with `notified` intact.
+
+Anything else still fails the push, loudly, before anything is written. A failed
+poll can still publish a valid partial checkpoint after a successful restore; a
+first-time bootstrap is published only after the complete seed succeeds. Other
+intentional ID changes or removals are state migrations and must follow the
+deterministic, fixture-tested process in
 [`state/migrations`](state/migrations/README.md).
 
 Recovery is an intentional state migration. By default, merge verified
@@ -177,6 +191,64 @@ The `webhook` notifier's `format: text` also works for ntfy.sh-style
 plain-text endpoints. When running via GitHub Actions, add the matching
 secret and expose it in the workflow's `env:` block.
 
+### Is it still working?
+
+Most ATS platforms answer a renamed slug, token or tenant with a perfectly
+valid, perfectly empty `200` — indistinguishable from a company that simply
+has no openings. So jobwatch also watches its own boards, and mails you (over
+the same SMTP settings, no extra secret) when:
+
+- a **newly added board returns nothing at all** on the run that baselines it,
+- a board that reliably listed **10+ openings** goes empty for **72 hours**
+  across at least **12 successful fetches**, or keeps failing outright for the
+  same stretch,
+- **every** board fails to fetch for two cycles in a row.
+
+Partial drops never alert — a hiring freeze looks exactly like a broken
+adapter, and it is far more common. Those go in a **monthly report** that also
+lists boards well below normal, boards never proven alive, boards too small
+for the cliff test to cover at all, and how many postings were evaluated,
+matched and deferred since the last one. That report is a heartbeat: if it
+stops arriving, the watcher has stopped, and quiet weeks stop meaning
+"nothing matched". Expect roughly 14-16 mails a year from all of this.
+
+Nothing is backfilled, so switching this on is silent — no board can prove
+itself alive on two distinct days before the second day. The `console` and
+`email` channels deliver these reports; if none of your configured channels
+can, jobwatch says so at startup.
+
+### A board moved
+
+ATS vendors move tenants between shards without telling anyone — Workday walks
+boards from `wd3` to `wd5` to `wd103` — and the only fix on your side is editing
+`host` in the config. For the seven adapters where the host is provably just
+transport (workday, oraclece, ukg, eightfold, zwayam, ibm, hrone) that edit is
+now free: the host appears in no job ID and no board identity, so the board keeps
+its entire history and keeps alerting.
+
+Where the host really is the employer (icims, successfactors, avature, and the
+rest), changing it genuinely is a different board. jobwatch cannot repair that,
+but it does notice: when a board with stored history disappears from your config
+and a board of the **same ATS type** appears with none, in the same run, you get
+one email naming both, the number of postings at stake, and the line to paste:
+
+```yaml
+- {name: "Acme", source: icims, params: {host: careers-acme}, previous_state_prefix: "icims/acme-old/"}
+```
+
+That moves the stored history onto the new board's keys on the next run,
+including which postings you were already emailed about, so you are not
+re-alerted about jobs you have already seen. It is idempotent — after one run
+nothing is left under the old prefix — so the line can stay in the file or be
+deleted, whichever you prefer. jobwatch refuses to start if the prefix you paste
+overlaps a board you are still watching, since that would move *its* history
+instead.
+
+Doing nothing is safe but lossy: the new board starts empty, so postings it
+already had are silently baselined rather than mailed. The message is sent once
+per board and never repeats. Adding a company, or removing one, never triggers
+it — only the two together, in one run, look like a move.
+
 ## Change what counts as a match
 
 Matchers are composable building blocks — combine them with `all`, `any`,
@@ -250,6 +322,8 @@ name in the config.
   Message formatting is already shared (`format.go` gives you `Headline`,
   `Text`, and per-job `Block` renderings), so a new channel is delivery
   code only — the console notifier is 12 lines, the generic webhook ~80.
+  Optionally also implement `Reporter` (`report.go`) to carry board-health
+  reports; channels that skip it keep working unchanged.
 
 ## Good to know
 

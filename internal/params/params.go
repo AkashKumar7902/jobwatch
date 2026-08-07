@@ -2,9 +2,10 @@
 // sources, matchers and notifiers receive from the config file. Keeping one
 // shared type means every pluggable component is configured the same way:
 //
-//	- name: greenhouse
-//	  params:
-//	    board_token: gitlab
+//	companies:
+//	  - name: greenhouse
+//	    params:
+//	      board_token: gitlab
 package params
 
 import (

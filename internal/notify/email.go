@@ -118,20 +118,39 @@ func (e *email) Notify(ctx context.Context, matches []Match) error {
 	return nil
 }
 
-func (e *email) compose(matches []Match) []byte {
-	subject := OneLine(e.prefix) + Headline(matches)
-	body := Headline(matches) + " for your experience criteria.\n\n" + Text(matches) + "\n- jobwatch\n"
+// Report delivers an operational report over the same SMTP session and the
+// same credentials as a match email. Reusing them is the point: a health
+// channel that needed its own secret would need a workflow change to enable,
+// and a monitoring channel nobody finished wiring up monitors nothing.
+func (e *email) Report(ctx context.Context, r Report) error {
+	if err := e.send(ctx, e.message(r.Subject, ReportText(r))); err != nil {
+		return fmt.Errorf("sending report via %s: %w", e.addr, err)
+	}
+	return nil
+}
 
+// Compile-time proof that the email channel keeps the optional capability. A
+// silent loss here would look exactly like a healthy fleet.
+var _ Reporter = (*email)(nil)
+
+func (e *email) compose(matches []Match) []byte {
+	return e.message(Headline(matches), Headline(matches)+" for your experience criteria.\n\n"+Text(matches))
+}
+
+// message builds one RFC 5322 message. Both callers pass text that includes
+// remote-controlled fragments, so the subject is flattened here rather than
+// being each caller's job to remember.
+func (e *email) message(subject, body string) []byte {
 	msg := strings.Join([]string{
 		"From: " + e.from,
 		"To: " + strings.Join(e.to, ", "),
-		"Subject: " + subject,
+		"Subject: " + OneLine(e.prefix) + OneLine(subject),
 		"Date: " + time.Now().Format(time.RFC1123Z),
 		"MIME-Version: 1.0",
 		"Content-Type: text/plain; charset=UTF-8",
 		"Content-Transfer-Encoding: 8bit",
 		"",
-		strings.ReplaceAll(body, "\n", "\r\n"),
+		strings.ReplaceAll(body+"\n- jobwatch\n", "\n", "\r\n"),
 	}, "\r\n")
 	return []byte(msg)
 }

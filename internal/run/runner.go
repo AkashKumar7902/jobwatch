@@ -61,6 +61,14 @@ type Runner struct {
 	// jobs are re-evaluated next run. Good for tuning the matcher.
 	DryRun bool
 
+	// PreviousStatePrefixes maps a board identity to a state prefix it should
+	// ABSORB: the `previous_state_prefix` config escape hatch, for an ATS move
+	// the frozen rekey rules cannot infer. It is keyed by identity rather than
+	// carried on the Source because it is a statement about STATE, not about
+	// how to fetch anything, and the source adapters must stay ignorant of the
+	// store. Expected to be non-empty about twice a decade.
+	PreviousStatePrefixes map[string]string
+
 	// SaveEvery bounds how much matcher work a killed process can lose:
 	// state is checkpointed to disk at least this often while evaluating
 	// jobs. LLM matching can spend seconds per posting, so a big board
@@ -68,37 +76,146 @@ type Runner struct {
 	// SIGTERM would discard all of it and the next run would repeat the
 	// identical work forever. Zero means the one-minute default.
 	SaveEvery time.Duration
+
+	// now supplies the clock for board-health bookkeeping ONLY (see clock()
+	// in report.go). It is unexported because nothing outside this package
+	// has any business moving it: its whole purpose is letting a test span
+	// 72 hours and 30 days in microseconds.
+	now func() time.Time
+}
+
+// adoptedStatePrefixes collects the posting namespaces that a CONFIGURED board
+// with a marker already owns, as of the start of this cycle. It exists solely
+// to answer inheritsHistory's second question, and it is snapshotted before the
+// marker pass so that two boards which BOTH lost their identity in the same
+// change do not race — neither one may block the other from being adopted.
+func (r *Runner) adoptedStatePrefixes() map[string]bool {
+	out := make(map[string]bool, len(r.Sources))
+	for _, src := range r.Sources {
+		if r.Store.Seen(sourceMarkerPrefix + source.Identity(src)) {
+			out[source.StatePrefix(src)] = true
+		}
+	}
+	return out
+}
+
+// inheritsHistory reports whether a markerless board is one we have already
+// been watching under a DIFFERENT identity — the case where re-seeding it is
+// destructive rather than merely silent.
+//
+// The seven adapters whose identity dropped a vendor transport coordinate give
+// 83 of the 260 catalog boards a brand-new identity on the run that ships that
+// change, and marker keys embed the OLD identity and are deliberately not
+// rewritten (they are not parseable). migrateStateKeys has already moved those
+// boards' postings under the new state prefix by the time this runs, so owning
+// records there is proof of prior adoption. Without it, production — which
+// polls with -seed-new-sources — would take the seeding path for 47% of the
+// fleet and write everything that appeared since the previous cycle as history:
+// unevaluated, unmailed and, because a seeded record reads as processed
+// forever, unrecoverable short of -rescan.
+//
+// Two conjuncts keep it from over-reaching:
+//
+//   - The exact-marker registry must exist. Without it a markerless board with
+//     records is genuinely ambiguous — it is a state file from before markers
+//     were exact — and the guard in RunOnce must still refuse the run with an
+//     explanation rather than silently adopting it.
+//   - No other configured board that IS adopted may own the same prefix. Two
+//     scoped views of one board (two eightfold `query=` entries, two avature
+//     search paths) share a state prefix, so a genuinely NEW view would
+//     otherwise inherit the old view's history and mail its whole backlog —
+//     exactly the blast -seed-new-sources exists to prevent.
+//
+// An explicit -seed-only is never overridden: the user asked for a baseline,
+// and adopting instead would skip the in-progress marker that makes an
+// interrupted baseline resume as one.
+func (r *Runner) inheritsHistory(src source.Source, adoptedPrefixes map[string]bool) bool {
+	if r.SeedOnly || !r.Store.Seen(sourceRegistryV2ID) {
+		return false
+	}
+	prefix := source.StatePrefix(src)
+	return !adoptedPrefixes[prefix] && r.Store.HasPostingPrefix(prefix)
 }
 
 // RunOnce performs a single poll cycle. One company failing to fetch is
 // logged and skipped — it must not block alerts from the others.
 func (r *Runner) RunOnce(ctx context.Context) error {
 	stateWasEmpty := r.Store.Len() == 0
-	if !r.DryRun && !r.SeedOnly && !r.SeedNewSources {
-		changed := false
+
+	// Repair keys that baked a vendor's transport coordinate into a board's
+	// history, then take the board census. Both are pure state arithmetic and
+	// run before any fetch, so neither can be suppressed by a network outage.
+	censusReports, err := r.prePass()
+	if err != nil {
+		return err
+	}
+
+	if !r.DryRun {
+		// Source markers are refreshed on EVERY run, not only seeding ones,
+		// because the census can only tell an orphaned board from a board that
+		// never had history if the marker recorded its state prefix while the
+		// board was still configured. Production runs with -seed-new-sources,
+		// so a marker written only on the seeding path would leave the census
+		// blind on exactly the boards that have been watched the longest.
+		//
+		// Refreshing is not adopting. A board with no marker is still claimed
+		// here only in ordinary mode — the marker means "already baselined",
+		// and writing one for a board that is about to be seeded would turn an
+		// interrupted first pass into a full-board notification blast.
+		//
+		// The one exception to "not in a seeding mode, so leave it alone" is a
+		// board that is markerless because its IDENTITY changed. See
+		// inheritsHistory: those boards were adopted long ago and re-seeding
+		// them destroys a cycle's postings, so they are claimed here in any
+		// mode that is not an explicit baseline.
+		ordinary := !r.SeedOnly && !r.SeedNewSources
+		adoptedPrefixes := r.adoptedStatePrefixes()
+		claimed := false
 		for _, src := range r.Sources {
 			identity := source.Identity(src)
-			if !r.Store.Seen(sourceMarkerPrefix+identity) && !r.Store.Seen(sourceSeedInProgressPrefix+identity) {
-				r.Store.Add(sourceMarkerPrefix+identity, store.Record{
-					FirstSeen: time.Now(),
-					Title:     "source: " + src.Company(),
-				})
-				changed = true
+			if !r.Store.Seen(sourceMarkerPrefix + identity) {
+				if r.Store.Seen(sourceSeedInProgressPrefix + identity) {
+					continue // an interrupted baseline must finish as a baseline
+				}
+				if !ordinary && !r.inheritsHistory(src, adoptedPrefixes) {
+					continue
+				}
+				r.writeMarker(src)
+				claimed = true
+				continue
 			}
+			// A refresh of an existing marker deliberately does NOT force the
+			// save below. It changes no classification — the board was already
+			// watched — so it rides along with the saves this run performs
+			// anyway, exactly like the health observations. Forcing a save here
+			// would mean an unwritable disk aborts the whole cycle over
+			// bookkeeping, and a run killed before its first save simply
+			// records the prefix on the next one.
+			r.writeMarker(src)
 		}
-		if !r.Store.Seen(sourceRegistryV2ID) {
+		if ordinary && !r.Store.Seen(sourceRegistryV2ID) {
 			r.Store.Add(sourceRegistryV2ID, store.Record{
 				FirstSeen: time.Now(),
 				Title:     "exact source registry v2",
 			})
-			changed = true
+			claimed = true
 		}
-		if changed {
-			// Ordinary mode explicitly means every configured source is watched.
+		if claimed {
 			// Persist the complete classification before any fetch or job work so
-			// interruption cannot leave later sources looking newly added.
+			// interruption cannot leave later sources looking newly added. It also
+			// makes the census's own decisions (a swept marker, a raised
+			// announcement) durable before anything can be delivered.
 			if err := r.Store.Save(); err != nil {
 				return fmt.Errorf("saving watched-source registry: %w", err)
+			}
+		}
+
+		// Declared prefix moves run AFTER the marker pass: the marker is what
+		// records the move in the state file, and the state-branch gate reads
+		// that record to authorize the removals the move produces.
+		if moved, _ := r.applyPreviousStatePrefixes(); moved > 0 {
+			if err := r.Store.Save(); err != nil {
+				return fmt.Errorf("saving state after previous_state_prefix move: %w", err)
 			}
 		}
 	}
@@ -151,11 +268,15 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		}(i, s)
 	}
 	wg.Wait()
+	// One instant for every board's observation, taken once the fetches are
+	// in: they ran concurrently, so pretending they landed at different
+	// moments would be less accurate, not more.
+	observedAt := r.clock()
 
 	var matches []notify.Match
 	var matchedIDs []string
 	totalJobs, newJobs, retries, failures, partials, deferred := 0, 0, 0, 0, 0, 0
-	newSources, seededJobs := 0, 0
+	newSources, seededJobs, evaluated := 0, 0, 0
 	var matchFailures deferredErrors
 	var seedFailures seedErrors
 
@@ -185,6 +306,23 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 
 	for _, res := range results {
 		totalJobs += len(res.jobs)
+
+		// Observe FIRST, above every `continue` below. A board that hard-fails
+		// is exactly the board worth reporting, and the failure path returns
+		// early — observing anywhere further down would cover only the boards
+		// that already work. Dry runs write nothing, health included.
+		//
+		// Deliberately NOT counted as dirty. Every board writes a health
+		// record every cycle, so counting them would make checkpoint() fire
+		// once per board — 260 full marshals and fsyncs of a 70,000-record
+		// state file per run, to protect counters that are approximate by
+		// design. Health rides along with saves that happen anyway and is
+		// always persisted by the final Save below; a run killed mid-sweep
+		// simply does not advance them, which is the same "learned forward
+		// only" behaviour that makes cold start silent.
+		if !r.DryRun {
+			r.observe(res.src, len(res.jobs), res.err, observedAt)
+		}
 
 		seedSource := r.SeedOnly
 		seedNewSource := false
@@ -315,6 +453,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				}
 			}
 
+			evaluated++
 			verdict, err := r.Matcher.Match(ctx, job)
 			if err != nil {
 				if ctx.Err() != nil {
@@ -354,14 +493,21 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		// baseline itself, or an interrupted first pass would turn into a
 		// full-board notification blast on the next run.
 		if markerID != "" {
-			r.Store.Add(markerID, store.Record{
-				FirstSeen: time.Now(),
-				Title:     "source: " + res.src.Company(),
-			})
+			// Same writer as the refresh pass above, so a board adopted here
+			// records its state prefix exactly like every other board: an
+			// orphan that never recorded one is indistinguishable from a board
+			// that never had history, and gets swept in silence.
+			r.writeMarker(res.src)
 			dirty++
 			if seedNewSource {
 				newSources++
 			}
+			// A completed baseline is the ONE moment we can tell "this board
+			// is new to us" apart from "this board is quiet today". A board
+			// adopted here that returned nothing is stillborn — which is how
+			// the hubspot incident (a renamed greenhouse token answering 200
+			// with an empty board) gets caught in one run instead of a month.
+			r.markBaselined(res.src)
 		}
 		// One line per board keeps CI logs scannable: what was fetched,
 		// how long it took, and whether anything new turned up.
@@ -406,15 +552,15 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		r.Log.Printf("seeded %d new sources (%d previously unseen postings) without notifying", newSources, seededJobs)
 	}
 	deferredErr := matchFailures.err()
-	if failures == len(r.Sources) && len(r.Sources) > 0 {
-		allFailedErr := fmt.Errorf("all %d sources failed to fetch", failures)
-		// A global seed must save its safe progress before reporting any
-		// incomplete source. Ordinary polling has no progress to preserve when
-		// every fetch failed, so retain its existing early return.
-		if !r.SeedOnly && seedErr == nil {
-			return errors.Join(allFailedErr, deferredErr, seedErr)
-		}
-		seedErr = errors.Join(allFailedErr, seedErr)
+	allFailed := len(r.Sources) > 0 && failures == len(r.Sources)
+	if allFailed {
+		// This used to return early for ordinary polling, on the grounds that
+		// a run where every fetch failed has no progress worth saving. It does
+		// now: the consecutive-all-fail counter is the only thing that can
+		// turn a total outage into an email, and every board's health
+		// observation was just recorded. Returning here would throw both away
+		// and leave the outage visible solely as a red CI check.
+		seedErr = errors.Join(fmt.Errorf("all %d sources failed to fetch", failures), seedErr)
 	}
 
 	if r.DryRun {
@@ -426,34 +572,62 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		return errors.Join(deliverErr, deferredErr, seedErr)
 	}
 
+	// Fold board health forward and decide which reports this cycle owes. It
+	// runs before the save below so the observations and the decision become
+	// durable together; delivery happens after, on the same at-least-once
+	// discipline the matches use.
+	// The census's report goes first: "your board moved and its history is
+	// orphaned" is the only message in this system that asks the user to edit
+	// a file, and it must not queue behind a monthly digest that may fail.
+	reports := append(censusReports, r.healthPass(r.clock(), allFailed, funnel{
+		evaluated: evaluated, matched: len(matches), deferred: deferred,
+	})...)
+
 	// Persist first: matches are now on disk as pending (Notified=false),
 	// so a crash below retries them instead of losing them.
 	if err := r.Store.Save(); err != nil {
 		return errors.Join(fmt.Errorf("saving state: %w", err), deferredErr, seedErr)
 	}
 	r.Log.Printf("state saved: %d records", r.Store.Len())
+
+	// Reports go out here — above the seed and zero-match returns below. A
+	// board that stopped answering is precisely a board with nothing to
+	// report, so gating operational mail on "did anything match" would silence
+	// it exactly when it matters. Only after a report is accepted does its
+	// SentAt stamp get written and saved; a failed send leaves the condition
+	// standing for the next cycle to raise again.
+	var reportErr error
+	if committed, err := r.deliverReports(ctx, reports); err != nil {
+		reportErr = err
+		if committed > 0 {
+			reportErr = errors.Join(reportErr, r.Store.Save())
+		}
+	} else if committed > 0 {
+		reportErr = r.Store.Save()
+	}
+
 	if r.SeedOnly {
 		if seedErr != nil {
 			r.Log.Printf("seed incomplete: saved %d postings from complete sources; retry before enabling alerts", seededJobs)
 		} else {
 			r.Log.Printf("seeded %d postings without notifying; future runs alert on new ones", seededJobs)
 		}
-		return errors.Join(deferredErr, seedErr)
+		return errors.Join(reportErr, deferredErr, seedErr)
 	}
 	if len(matches) == 0 {
-		return errors.Join(deferredErr, seedErr)
+		return errors.Join(reportErr, deferredErr, seedErr)
 	}
 
 	if err := r.deliver(ctx, matches); err != nil {
 		// Leave the matches pending; the next cycle re-delivers them.
-		return errors.Join(err, deferredErr, seedErr)
+		return errors.Join(err, reportErr, deferredErr, seedErr)
 	}
 	for _, id := range matchedIDs {
 		rec, _ := r.Store.Get(id)
 		rec.Notified = true
 		r.Store.Add(id, rec)
 	}
-	return errors.Join(r.Store.Save(), deferredErr, seedErr)
+	return errors.Join(r.Store.Save(), reportErr, deferredErr, seedErr)
 }
 
 const deferredErrorSampleLimit = 5

@@ -60,14 +60,23 @@ func init() {
 		}
 		return &workday{
 			company: company, maxPostings: maxPostings, client: client,
-			base: fmt.Sprintf("https://%s/wday/cxs/%s/%s", host, tenant, site),
+			base:      fmt.Sprintf("https://%s/wday/cxs/%s/%s", host, tenant, site),
+			keyPrefix: fmt.Sprintf("workday/%s/%s/", tenant, site),
 		}, nil
 	})
 }
 
 type workday struct {
-	company     string
+	company string
+	// base is where we FETCH from and changes when Workday moves this tenant
+	// to another shard. keyPrefix is what we REMEMBER postings under and does
+	// not. They used to be the same string — job IDs were literally
+	// "workday/" + base + externalPath — which is how the shard hostname got
+	// baked into 34,241 stored keys and why a one-character host edit
+	// orphaned a whole board. Nothing may re-couple them: keyPrefix must stay
+	// equal to source.StatePrefix for these params.
 	base        string // https://{host}/wday/cxs/{tenant}/{site}
+	keyPrefix   string // workday/{tenant}/{site}/
 	maxPostings int
 	client      *http.Client
 }
@@ -241,14 +250,18 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 	}
 	jobs := make([]model.Job, 0, len(postings))
 	for _, p := range postings {
+		// externalPath (starts with "/job/...") carries the stable req ID, so
+		// it works as the identity without a detail request. Normalizing the
+		// leading slash away for the key and back for the URL keeps the two
+		// derivable from each other: the key is exactly keyPrefix + path, and
+		// Detail can rebuild the URL from the CURRENT host.
+		path := strings.TrimPrefix(p.ExternalPath, "/")
 		jobs = append(jobs, model.Job{
-			// externalPath (starts with "/job/...") carries the stable req
-			// ID, so it works as the identity without a detail request.
-			ID:       "workday/" + w.base + p.ExternalPath,
+			ID:       w.keyPrefix + path,
 			Company:  w.company,
 			Title:    p.Title,
 			Location: p.LocationsText,
-			URL:      w.base + p.ExternalPath,
+			URL:      w.base + "/" + path,
 			// Description and EmploymentType arrive via Detail on demand.
 		})
 	}
@@ -260,7 +273,23 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 // eager mode meant ~500 GETs per board per run, which Workday's WAF
 // answered with 429s and HTML challenges across ~50 boards.
 func (w *workday) Detail(ctx context.Context, job *model.Job) error {
-	externalPath := strings.TrimPrefix(job.ID, "workday/"+w.base)
+	// The guard is not decoration. TrimPrefix on a non-matching string
+	// returns the string UNCHANGED, so a foreign ID used to be pasted whole
+	// onto the base URL and fetched — an unrelated board's key silently
+	// became a request. Every stored key is also a candidate here after a
+	// migration, so "does this key belong to this board" must be answered,
+	// not assumed.
+	if job == nil {
+		return fmt.Errorf("workday %s: nil job", w.company)
+	}
+	if !strings.HasPrefix(job.ID, w.keyPrefix) {
+		return fmt.Errorf("workday %s: job ID %q does not belong to this board", w.company, job.ID)
+	}
+	path := strings.TrimPrefix(job.ID, w.keyPrefix)
+	if path == "" {
+		return fmt.Errorf("workday %s: job ID %q has no posting path", w.company, job.ID)
+	}
+	externalPath := "/" + path
 	var detail struct {
 		JobPostingInfo struct {
 			JobDescription string `json:"jobDescription"`

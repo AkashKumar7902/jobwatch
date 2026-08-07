@@ -50,19 +50,27 @@ func init() {
 		}
 		return &eightfold{
 			company: company, host: host, domain: domain, location: strings.TrimSpace(p.Get("location")),
-			query: strings.TrimSpace(p.Get("query")),
-			base:  "https://" + host, maxPostings: maxPostings, client: client,
+			query:       strings.TrimSpace(p.Get("query")),
+			base:        "https://" + host,
+			keyPrefix:   "eightfold/" + domain + "/",
+			maxPostings: maxPostings, client: client,
 		}, nil
 	})
 }
 
 type eightfold struct {
-	company     string
-	host        string
-	domain      string
-	location    string
-	query       string
-	base        string
+	company  string
+	host     string
+	domain   string
+	location string
+	query    string
+	base     string
+	// keyPrefix excludes the host. Eightfold serves the same board from a
+	// vanity domain (jobs.ericsson.com) or its own (morganstanley.eightfold.ai)
+	// and customers move between them; `domain` is the employer key Eightfold's
+	// API itself is queried with, so it is what survives.
+	// Must stay equal to source.StatePrefix for these params.
+	keyPrefix   string // eightfold/{domain}/
 	maxPostings int
 	client      *http.Client
 }
@@ -199,7 +207,7 @@ func (s *eightfold) normalize(posting eightfoldPosition) (model.Job, error) {
 		postedAt = time.Unix(posting.PostedTS, 0)
 	}
 	return model.Job{
-		ID:       fmt.Sprintf("eightfold/%s/%s/%s", s.host, s.domain, idText),
+		ID:       s.keyPrefix + idText,
 		Company:  s.company,
 		Title:    title,
 		Location: strings.Join(distinctStrings(posting.Locations), "; "),
@@ -209,11 +217,13 @@ func (s *eightfold) normalize(posting eightfoldPosition) (model.Job, error) {
 }
 
 func (s *eightfold) Detail(ctx context.Context, job *model.Job) error {
-	prefix := fmt.Sprintf("eightfold/%s/%s/", s.host, s.domain)
-	if !strings.HasPrefix(job.ID, prefix) {
-		return fmt.Errorf("eightfold %s: job id %q does not have prefix %q", s.host, job.ID, prefix)
+	if job == nil {
+		return fmt.Errorf("eightfold %s: nil job", s.host)
 	}
-	positionID := strings.TrimPrefix(job.ID, prefix)
+	if !strings.HasPrefix(job.ID, s.keyPrefix) {
+		return fmt.Errorf("eightfold %s: job id %q does not have prefix %q", s.host, job.ID, s.keyPrefix)
+	}
+	positionID := strings.TrimPrefix(job.ID, s.keyPrefix)
 	numericID, err := strconv.ParseInt(positionID, 10, 64)
 	if err != nil || numericID <= 0 {
 		return fmt.Errorf("eightfold %s: invalid position id %q", s.host, positionID)

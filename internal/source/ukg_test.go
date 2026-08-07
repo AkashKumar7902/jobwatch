@@ -206,7 +206,8 @@ func TestUKGFetchPaginatesAndNormalizes(t *testing.T) {
 
 	firstID := testUKGUUID(1)
 	first := jobs[0]
-	if first.ID != "ukg/recruiting.example.test/PRO1053PROC/"+testUKGBoard+"/"+firstID {
+	// The UKG cluster host is transport and stays out of the key.
+	if first.ID != "ukg/PRO1053PROC/"+testUKGBoard+"/"+firstID {
 		t.Errorf("ID = %q", first.ID)
 	}
 	if first.Company != "AppLogic Networks" {
@@ -236,7 +237,7 @@ func TestUKGFetchPaginatesAndNormalizes(t *testing.T) {
 	if jobs[1].EmploymentType != "Part Time" {
 		t.Errorf("second EmploymentType = %q", jobs[1].EmploymentType)
 	}
-	if jobs[50].ID != "ukg/recruiting.example.test/PRO1053PROC/"+testUKGBoard+"/"+testUKGUUID(51) {
+	if jobs[50].ID != "ukg/PRO1053PROC/"+testUKGBoard+"/"+testUKGUUID(51) {
 		t.Errorf("last ID = %q", jobs[50].ID)
 	}
 }
@@ -563,7 +564,7 @@ func TestUKGDetailRejectsForeignJobWithoutRequest(t *testing.T) {
 		{name: "nil", job: nil, wantErr: "nil job"},
 		{name: "another source", job: &model.Job{ID: "workday/example/job/1"}, wantErr: "does not belong"},
 		{name: "another board", job: &model.Job{
-			ID: "ukg/recruiting.example.test/PRO1053PROC/11111111-1111-1111-1111-111111111111/" + testUKGUUID(1),
+			ID: "ukg/PRO1053PROC/11111111-1111-1111-1111-111111111111/" + testUKGUUID(1),
 		}, wantErr: "does not belong"},
 		{name: "invalid posting UUID", job: &model.Job{ID: src.jobID("not-a-uuid")}, wantErr: "invalid job ID"},
 	}
@@ -724,12 +725,13 @@ func TestParseUKGDetailUsesCompleteJSONValue(t *testing.T) {
 
 func testUKGSource(server *httptest.Server) *ukg {
 	return &ukg{
-		company: "AppLogic Networks",
-		host:    "recruiting.example.test",
-		tenant:  "PRO1053PROC",
-		board:   testUKGBoard,
-		baseURL: server.URL,
-		client:  server.Client(),
+		company:   "AppLogic Networks",
+		host:      "recruiting.example.test",
+		tenant:    "PRO1053PROC",
+		board:     testUKGBoard,
+		baseURL:   server.URL,
+		keyPrefix: "ukg/PRO1053PROC/" + testUKGBoard + "/",
+		client:    server.Client(),
 	}
 }
 

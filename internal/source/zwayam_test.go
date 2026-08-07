@@ -53,10 +53,12 @@ func TestZwayamNewValidatesCanonicalCoordinates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if Identity(src) != "zwayam/careers.cult.fit/15470" || Identity(src) != Identity(canonical) {
+	// The career-site domain is transport: it is absent from both strings, so
+	// a rebrand that re-points it keeps the board's history.
+	if Identity(src) != "zwayam/15470" || Identity(src) != Identity(canonical) {
 		t.Errorf("identities = %q and %q", Identity(src), Identity(canonical))
 	}
-	if StatePrefix(src) != "zwayam/careers.cult.fit/15470/" {
+	if StatePrefix(src) != "zwayam/15470/" {
 		t.Errorf("state prefix = %q", StatePrefix(src))
 	}
 
@@ -199,7 +201,7 @@ func TestZwayamFetchDiscoversSitePaginatesAndNormalizes(t *testing.T) {
 		t.Fatalf("jobs = %d, want %d", len(jobs), len(hits))
 	}
 	first := jobs[0]
-	if first.ID != "zwayam/"+testZwayamDomain+"/"+testZwayamCompanyID+"/1" {
+	if first.ID != "zwayam/"+testZwayamCompanyID+"/1" {
 		t.Errorf("ID = %q", first.ID)
 	}
 	if first.Company != "Cult.fit" || first.Title != "Fitness Manager" {
@@ -218,7 +220,7 @@ func TestZwayamFetchDiscoversSitePaginatesAndNormalizes(t *testing.T) {
 	if !first.PostedAt.Equal(wantDate) {
 		t.Errorf("PostedAt = %s, want %s", first.PostedAt, wantDate)
 	}
-	if jobs[10].ID != "zwayam/"+testZwayamDomain+"/"+testZwayamCompanyID+"/11" {
+	if jobs[10].ID != "zwayam/"+testZwayamCompanyID+"/11" {
 		t.Errorf("last ID = %q", jobs[10].ID)
 	}
 }
@@ -1102,6 +1104,7 @@ func testZwayamSource(server *httptest.Server) *zwayam {
 		companyID:     testZwayamCompanyID,
 		companyNumber: 15470,
 		encodedID:     base64.StdEncoding.EncodeToString([]byte(testZwayamCompanyID)),
+		keyPrefix:     "zwayam/" + testZwayamCompanyID + "/",
 		origin:        server.URL,
 		apiBase:       server.URL,
 		client:        server.Client(),
