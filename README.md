@@ -156,14 +156,14 @@ companies:
 ./jobwatch -dry-run    # prints matches, sends nothing, saves nothing
 ```
 
-`config.example.yaml` ships with 260 verified job-board identities. The
+`config.example.yaml` ships with 263 verified job-board identities. The
 catalog ledgers account for every source row in two upstream lists: 145
 distinct identities are represented by the 483-row
 [`moreThanFAANGM` audit](catalog/morethanfaangm-audit.tsv), and 68 distinct
 validated boards appear in the 131-row
 [`List_OF_Companies` audit](catalog/list-of-companies-audit.tsv). Five board
 identities overlap, for 208 unique identities across both audits; the other
-52 boards were verified when they were added. Dead, duplicate, and
+55 boards were verified when they were added. Dead, duplicate, and
 manual-review rows are documented but are not configured.
 
 ## Notifications
