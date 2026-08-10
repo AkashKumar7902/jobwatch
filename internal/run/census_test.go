@@ -209,7 +209,7 @@ func TestCensusAnnouncesOnlyOnTheMigrationSignature(t *testing.T) {
 // only ever check one run. The halves are not symmetric: a fresh board is fresh
 // for exactly one cycle, but an orphan stays an orphan forever, so without a
 // latch on the orphan side the rule silently decays into "a board was EVER
-// removed AND one appeared now". 193 of 260 boards sit behind five vendors, so
+// removed AND one appeared now". 196 of 263 boards sit behind five vendors, so
 // a deletion in March and an unrelated addition in September collide on ATS type
 // as a matter of course — and the mail would offer a previous_state_prefix line
 // that grafts the deleted board's history onto a company that never had it.

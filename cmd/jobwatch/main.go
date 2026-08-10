@@ -132,7 +132,7 @@ type absorber struct {
 // namespace may not OVERLAP a live one in either direction. Containment is the
 // dangerous shape, equality is just its degenerate case, and the check costs one
 // comparison per configured board at startup. An orphaned board's prefix cannot
-// legitimately overlap a live board's — the 260 catalog prefixes are pairwise
+// legitimately overlap a live board's — the 263 catalog prefixes are pairwise
 // non-overlapping — so nothing correct is rejected here.
 func checkPreviousStatePrefixes(absorbers []absorber, livePrefixes map[string]string) (map[string]string, error) {
 	if len(absorbers) == 0 {

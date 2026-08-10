@@ -199,6 +199,7 @@ companies:
 
   # ---- Lever ----
   - {name: "Envato", source: lever, params: {site: envato-2}}
+  - {name: "HighLevel", source: lever, params: {site: gohighlevel}}
   - {name: "JumpCloud", source: lever, params: {site: jumpcloud}}
   - {name: "Redox", source: lever, params: {site: redoxengine}}
   - {name: "Sonatype", source: lever, params: {site: sonatype}}
@@ -289,7 +290,9 @@ companies:
   - {name: "Moody's", source: talentbrew, params: {host: careers.moodys.com}}
 
   # ---- Workday ----
+  - {name: "Cohesity", source: workday, params: {host: cohesity.wd5.myworkdayjobs.com, tenant: cohesity, site: Cohesity_Careers}}
   - {name: "DataRobot", source: workday, params: {host: datarobot.wd1.myworkdayjobs.com, tenant: datarobot, site: DataRobot_External_Careers}}
+  - {name: "Proofpoint", source: workday, params: {host: proofpoint.wd5.myworkdayjobs.com, tenant: proofpoint, site: ProofpointCareers}}
   - {name: "RedHat", source: workday, params: {host: redhat.wd5.myworkdayjobs.com, tenant: redhat, site: jobs}}
 
   # Imported from moreThanFAANGM; see catalog/morethanfaangm-audit.tsv.

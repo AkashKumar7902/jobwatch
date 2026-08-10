@@ -5,7 +5,7 @@ package run
 // The problem: about 41 of the ~50 ATS adapters answer a renamed slug, token
 // or tenant with HTTP 200 and an empty list, which is byte-identical to a
 // company with genuinely no openings — and RunOnce only fails when EVERY board
-// fails. So 259 of 260 boards can be dead while CI stays green. The user reads
+// fails. So 262 of 263 boards can be dead while CI stays green. The user reads
 // email; a red check and a step summary never reach them.
 //
 // The policy (what counts as dead, how long emptiness must persist, what only
@@ -28,7 +28,7 @@ import (
 	"jobwatch/internal/store"
 )
 
-// maxReportBoards bounds the per-board list in an INCIDENT report. 193 of 260
+// maxReportBoards bounds the per-board list in an INCIDENT report. 196 of 263
 // boards sit behind five vendors, so one vendor change can trip a hundred at
 // once; past a couple of dozen names the adapter breakdown above the list
 // already says everything actionable, and an unbounded list turns the one

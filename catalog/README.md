@@ -24,8 +24,8 @@ Jobwatch's independent ATS verification and disposition:
 
 Five validated identities in the second ledger already occur in the legacy
 ledger, so the audits represent 208 unique verified identities
-(`145 + 68 - 5`). Alongside 52 other boards verified when they were added,
-`config.example.yaml` now contains 260 unique job-board identities.
+(`145 + 68 - 5`). Alongside 55 other boards verified when they were added,
+`config.example.yaml` now contains 263 unique job-board identities.
 
 The List_OF_Companies repository has no license file. Its ledger therefore
 retains only factual company/career-target provenance; it does not reproduce
