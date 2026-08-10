@@ -129,7 +129,7 @@ func (o *oracleCE) Fetch(ctx context.Context) ([]model.Job, error) {
 		if result.Offset != offset {
 			return nil, fmt.Errorf("oraclece %s page %d: response offset %d, requested %d", o.host, pageNumber, result.Offset, offset)
 		}
-		if result.Limit <= 0 {
+		if result.Limit <= 0 || result.Limit > oracleCEPageSize {
 			return nil, fmt.Errorf("oraclece %s page %d: invalid response limit %d", o.host, pageNumber, result.Limit)
 		}
 		if result.SiteNumber != "" && result.SiteNumber != o.site {
@@ -143,8 +143,19 @@ func (o *oracleCE) Fetch(ctx context.Context) ([]model.Job, error) {
 		} else if total != result.TotalJobsCount {
 			return nil, fmt.Errorf("oraclece %s page %d: total changed from %d to %d", o.host, pageNumber, total, result.TotalJobsCount)
 		}
-		if len(result.Requisitions) == 0 && offset < total {
+		if offset > total {
+			return nil, fmt.Errorf("oraclece %s page %d: response offset %d exceeds reported total %d", o.host, pageNumber, offset, total)
+		}
+		window := min(result.Limit, total-offset)
+		if len(result.Requisitions) > window {
+			return nil, fmt.Errorf("oraclece %s page %d: returned %d postings for cursor window %d", o.host, pageNumber, len(result.Requisitions), window)
+		}
+		nextOffset := offset + result.Limit
+		if len(result.Requisitions) == 0 && nextOffset < total {
 			return nil, fmt.Errorf("oraclece %s page %d: empty page before reported total %d", o.host, pageNumber, total)
+		}
+		if len(result.Requisitions) == 0 && total > 0 && len(jobs) == 0 {
+			return nil, fmt.Errorf("oraclece %s page %d: reported positive total %d but returned no visible postings", o.host, pageNumber, total)
 		}
 		for index, posting := range result.Requisitions {
 			id := strings.TrimSpace(string(posting.ID))
@@ -177,15 +188,12 @@ func (o *oracleCE) Fetch(ctx context.Context) ([]model.Job, error) {
 				PostedAt:       postedAt,
 			})
 		}
-		offset += len(result.Requisitions)
+		offset = nextOffset
 		if offset >= total {
-			if offset != total {
-				return nil, fmt.Errorf("oraclece %s: received %d postings, reported total is %d", o.host, offset, total)
-			}
 			return jobs, nil
 		}
 	}
-	return nil, fmt.Errorf("oraclece %s: pagination exceeded max_pages=%d after %d of %d postings", o.host, o.maxPages, offset, total)
+	return nil, fmt.Errorf("oraclece %s: pagination exceeded max_pages=%d after cursor offset %d of reported total %d", o.host, o.maxPages, offset, total)
 }
 
 type oracleCEDetail struct {

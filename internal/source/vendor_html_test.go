@@ -29,13 +29,13 @@ func TestOracleCEFetchAndLazyDetail(t *testing.T) {
 			}
 			offset := 0
 			postings := `[{"Id":101,"Title":"Platform Engineer","PostedDate":"2026-07-30","PrimaryLocation":"Bengaluru, IN","WorkplaceType":"Hybrid"},{"Id":"102","Title":"Data Engineer","PostedDate":"2026-07-29","PrimaryLocationCountry":"India"}]`
-			if strings.Contains(finder, "offset=2") {
-				offset = 2
+			if strings.Contains(finder, "offset=100") {
+				offset = 100
 				postings = `[{"Id":"103","Title":"Security Engineer","PostedDate":"2026-07-28","PrimaryLocation":"Pune, IN"}]`
 			} else if !strings.Contains(finder, "siteNumber=CX,limit=100,offset=0") {
 				t.Errorf("unexpected finder: %q", finder)
 			}
-			fmt.Fprintf(w, `{"items":[{"TotalJobsCount":3,"Offset":%d,"Limit":100,"SiteNumber":"CX","requisitionList":%s}],"count":1,"hasMore":%t,"limit":25,"offset":0}`,
+			fmt.Fprintf(w, `{"items":[{"TotalJobsCount":101,"Offset":%d,"Limit":100,"SiteNumber":"CX","requisitionList":%s}],"count":1,"hasMore":%t,"limit":25,"offset":0}`,
 				offset, postings, offset == 0)
 		case "/hcmRestApi/resources/latest/recruitingCEJobRequisitionDetails":
 			detailRequests.Add(1)
@@ -82,11 +82,12 @@ func TestOracleCEFetchAndLazyDetail(t *testing.T) {
 
 func TestOracleCEPaginationCap(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		fmt.Fprint(w, `{"items":[{"TotalJobsCount":2,"Offset":0,"Limit":100,"SiteNumber":"CX","requisitionList":[{"Id":"1","Title":"One"}]}]}`)
+		fmt.Fprint(w, `{"items":[{"TotalJobsCount":101,"Offset":0,"Limit":100,"SiteNumber":"CX","requisitionList":[{"Id":"1","Title":"One"}]}]}`)
 	}))
 	defer server.Close()
 	src := &oracleCE{company: "Acme", host: "acmepod.fa.us2.oraclecloud.com", site: "CX", base: server.URL, keyPrefix: "oraclece/acmepod/CX/", maxPages: 1, client: server.Client()}
-	if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "max_pages") {
+	if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "max_pages") ||
+		!strings.Contains(err.Error(), "cursor offset 100 of reported total 101") {
 		t.Fatalf("expected pagination-cap error, got %v", err)
 	}
 }
@@ -228,6 +229,7 @@ func TestEnphaseFetchHeadersAndNormalization(t *testing.T) {
 				"applyUrl":           "http://app.jobvite.com/CompanyJobs/Careers.aspx?c=abc&amp;j=" + jid + "&amp;k=Apply",
 				"description__value": "&amp;lt;p&amp;gt;Build clean energy.&amp;lt;/p&amp;gt;",
 				"location":           "Bengaluru, IN",
+				"requisitionid":      "9001",
 			}},
 			"pager": map[string]any{
 				"current_page": page, "total_items": "2", "total_pages": 2, "items_per_page": "1",
@@ -264,7 +266,7 @@ func TestEnphaseRejectsInconsistentTotal(t *testing.T) {
 	}))
 	defer server.Close()
 	src := &enphase{company: "Enphase", base: server.URL, maxPages: 2, client: server.Client()}
-	if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "reported 2") {
+	if _, err := src.Fetch(context.Background()); err == nil || !strings.Contains(err.Error(), "did not stabilize after 3 attempts") {
 		t.Fatalf("expected inconsistent-total error, got %v", err)
 	}
 }

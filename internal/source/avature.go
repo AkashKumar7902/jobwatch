@@ -10,6 +10,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"net/url"
@@ -28,6 +29,9 @@ const avaturePageSize = 20
 var (
 	avatureSpanRE       = regexp.MustCompile(`(?is)<span\b[^>]*>.*?</span>`)
 	avatureTotalRE      = regexp.MustCompile(`(?i)\bof\s+([0-9][0-9,]*)\s*(?:<|$)`)
+	avatureLegendTagRE  = regexp.MustCompile(`(?is)<(?:div|span)\b[^>]*>`)
+	avatureAriaLabelRE  = regexp.MustCompile(`(?i)\baria-label\s*=`)
+	avatureAriaTotalRE  = regexp.MustCompile(`(?i)^\s*([0-9][0-9,]*)\s+results?\s*$`)
 	avatureRoleIDRE     = regexp.MustCompile(`(?i)\bRole\s+ID\s*([0-9]+)\b`)
 	avatureLocationRE   = regexp.MustCompile(`(?is)<strong>\s*Locations?\s*</strong>\s*:\s*(.*?)<br\b`)
 	avatureDetailIDRE   = regexp.MustCompile(`(?is)article__content__view__field__label[^>]*>\s*Role\s+ID\s*</div>.*?article__content__view__field__value[^>]*>\s*([0-9]+)\s*</div>`)
@@ -172,13 +176,44 @@ func (s *avature) Fetch(ctx context.Context) ([]model.Job, error) {
 }
 
 func parseAvatureTotal(body []byte) (int, error) {
-	match := avatureTotalRE.FindSubmatch(body)
-	if match == nil {
+	var trusted []string
+	for _, tag := range avatureLegendTagRE.FindAll(body, -1) {
+		tagText := string(tag)
+		if !hasHTMLClass(tagText, "list-controls__text__legend") || !avatureAriaLabelRE.MatchString(tagText) {
+			continue
+		}
+		label := html.UnescapeString(htmlAttribute(tagText, "aria-label"))
+		match := avatureAriaTotalRE.FindStringSubmatch(label)
+		if match == nil {
+			return 0, fmt.Errorf("invalid total result aria-label %q", label)
+		}
+		trusted = append(trusted, match[1])
+	}
+	if len(trusted) > 0 {
+		return parseAvatureTotalCandidates(trusted)
+	}
+
+	var fallback []string
+	for _, match := range avatureTotalRE.FindAllSubmatch(body, -1) {
+		fallback = append(fallback, string(match[1]))
+	}
+	return parseAvatureTotalCandidates(fallback)
+}
+
+func parseAvatureTotalCandidates(candidates []string) (int, error) {
+	if len(candidates) == 0 {
 		return 0, fmt.Errorf("search page omitted total result count")
 	}
-	total, err := strconv.Atoi(strings.ReplaceAll(string(match[1]), ",", ""))
-	if err != nil || total < 0 {
-		return 0, fmt.Errorf("invalid total result count %q", match[1])
+	total := -1
+	for _, candidate := range candidates {
+		parsed, err := strconv.Atoi(strings.ReplaceAll(candidate, ",", ""))
+		if err != nil || parsed < 0 {
+			return 0, fmt.Errorf("invalid total result count %q", candidate)
+		}
+		if total >= 0 && parsed != total {
+			return 0, fmt.Errorf("conflicting total result counts %d and %d", total, parsed)
+		}
+		total = parsed
 	}
 	return total, nil
 }
