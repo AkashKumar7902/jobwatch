@@ -29,10 +29,12 @@ type Source interface {
 // existing board look new.
 type identifiedSource struct {
 	Source
+	adapter     string
 	identity    string
 	statePrefix string
 }
 
+func (s *identifiedSource) Adapter() string     { return s.adapter }
 func (s *identifiedSource) Identity() string    { return s.identity }
 func (s *identifiedSource) StatePrefix() string { return s.statePrefix }
 
@@ -57,6 +59,16 @@ func Identity(s Source) string {
 		return identified.Identity()
 	}
 	return "custom/" + s.Company()
+}
+
+// Adapter returns the registered source kind without exposing any board
+// coordinates. Hand-written and third-party Source implementations are
+// deliberately reported as "custom" rather than reflecting their Go type.
+func Adapter(s Source) string {
+	if identified, ok := s.(*identifiedSource); ok {
+		return identified.adapter
+	}
+	return "custom"
 }
 
 // StatePrefix returns the prefix used by this source's stable model.Job IDs.
@@ -94,7 +106,7 @@ func New(name, company string, p params.Map, client *http.Client) (Source, error
 		return nil, err
 	}
 	return &identifiedSource{
-		Source: s, identity: identityFor(name, p), statePrefix: statePrefixFor(name, p),
+		Source: s, adapter: name, identity: identityFor(name, p), statePrefix: statePrefixFor(name, p),
 	}, nil
 }
 

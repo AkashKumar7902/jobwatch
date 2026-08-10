@@ -1,17 +1,16 @@
 package source
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/model"
 )
 
@@ -112,7 +111,7 @@ func TestWorkdayPagination(t *testing.T) {
 		laterTotalsZero bool
 		alwaysTotalZero bool
 		ignoreLimit     bool
-		wantLog         string
+		wantCap         bool
 		wantCalls       []workdayTestCall
 	}{
 		{
@@ -128,6 +127,7 @@ func TestWorkdayPagination(t *testing.T) {
 			maxPostings:     25,
 			laterTotalsZero: true,
 			ignoreLimit:     true,
+			wantCap:         true,
 			wantCalls:       []workdayTestCall{{20, 0}, {5, 20}},
 		},
 		{
@@ -135,7 +135,7 @@ func TestWorkdayPagination(t *testing.T) {
 			jobCount:        45,
 			maxPostings:     25,
 			alwaysTotalZero: true,
-			wantLog:         "max_postings cap; total unknown",
+			wantCap:         true,
 			wantCalls:       []workdayTestCall{{20, 0}, {5, 20}},
 		},
 		{
@@ -188,12 +188,8 @@ func TestWorkdayPagination(t *testing.T) {
 				maxPostings: tt.maxPostings,
 				client:      srv.Client(),
 			}
-			var logs bytes.Buffer
-			oldLogWriter := log.Writer()
-			log.SetOutput(&logs)
-			defer log.SetOutput(oldLogWriter)
-
-			jobs, err := wd.Fetch(context.Background())
+			ctx, collector := diagnostic.WithCollector(context.Background())
+			jobs, err := wd.Fetch(ctx)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -204,8 +200,8 @@ func TestWorkdayPagination(t *testing.T) {
 			if !reflect.DeepEqual(calls, tt.wantCalls) {
 				t.Errorf("requests = %#v, want %#v", calls, tt.wantCalls)
 			}
-			if tt.wantLog != "" && !strings.Contains(logs.String(), tt.wantLog) {
-				t.Errorf("log = %q, want substring %q", logs.String(), tt.wantLog)
+			if got := collector.Snapshot().Caps > 0; got != tt.wantCap {
+				t.Errorf("cap diagnostic = %t, want %t", got, tt.wantCap)
 			}
 		})
 	}
@@ -402,12 +398,8 @@ func TestWorkdayRawPositionCapWithSkippedRows(t *testing.T) {
 		maxPostings: 25,
 		client:      srv.Client(),
 	}
-	var logs bytes.Buffer
-	oldLogWriter := log.Writer()
-	log.SetOutput(&logs)
-	defer log.SetOutput(oldLogWriter)
-
-	jobs, err := wd.Fetch(context.Background())
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err := wd.Fetch(ctx)
 	if err == nil || !strings.Contains(err.Error(), "skipped 1 malformed") ||
 		!strings.Contains(err.Error(), "skipped 1 duplicate") {
 		t.Fatalf("Fetch error = %v, want malformed and duplicate warnings", err)
@@ -418,9 +410,8 @@ func TestWorkdayRawPositionCapWithSkippedRows(t *testing.T) {
 	if want := []workdayTestCall{{20, 0}, {5, 20}}; !reflect.DeepEqual(calls, want) {
 		t.Errorf("requests = %#v, want %#v", calls, want)
 	}
-	wantLog := "scanned 25 of 45 raw postings, listing 23 usable postings (max_postings cap)"
-	if !strings.Contains(logs.String(), wantLog) {
-		t.Errorf("log = %q, want substring %q", logs.String(), wantLog)
+	if got := collector.Snapshot().Caps; got != 1 {
+		t.Errorf("cap diagnostics = %d, want 1", got)
 	}
 }
 

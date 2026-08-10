@@ -242,7 +242,7 @@ func (r *Runner) census(now time.Time) []reportCommit {
 			// and once the postings have moved, HasPostingPrefix alone answers
 			// "do we know this board?" correctly.
 			r.Store.Delete(sourceMarkerPrefix + o.identity)
-			r.Log.Printf("census: forgetting board %q — no longer configured and no records under %q", o.identity, o.prefix)
+			r.Log.Printf("CENSUS action=forgot_empty records=0")
 		case overlapsAny(o.prefix, livePrefixes):
 			// Its records are not orphaned: a board that is STILL configured
 			// owns that namespace. This is what deleting one of two scoped views
@@ -258,8 +258,7 @@ func (r *Runner) census(now time.Time) []reportCommit {
 			// marker is kept rather than swept for the mirror-image reason —
 			// the state-branch gate refuses to drop a marker while records
 			// still live under its prefix.
-			r.Log.Printf("census: board %q is no longer configured; its %d record(s) under %q stay with a configured board that shares the prefix",
-				o.identity, o.records, o.prefix)
+			r.Log.Printf("CENSUS action=shared_history records=%d", o.records)
 		case !o.announcedAt.IsZero():
 			// Already reported once. The condition is permanent (an orphan
 			// stays an orphan), so re-raising it would mail every cycle
@@ -290,8 +289,7 @@ func (r *Runner) census(now time.Time) []reportCommit {
 				// unrelated addition can be paired with it.
 				r.markOrphaned(o.identity, now)
 			}
-			r.Log.Printf("census: board %q is no longer configured but still owns %d record(s); keeping them",
-				o.identity, o.records)
+			r.Log.Printf("CENSUS action=kept_orphan records=%d", o.records)
 		}
 	}
 	if len(announcements) == 0 {
@@ -451,7 +449,7 @@ func (r *Runner) applyPreviousStatePrefixes() (moved, merged int) {
 		}
 		rec, ok := r.Store.Get(sourceMarkerPrefix + identity)
 		if !ok || rec.Marker == nil || rec.Marker.PreviousStatePrefix != from {
-			r.Log.Printf("previous_state_prefix %q for %s: board not adopted yet, deferring the move to the next run", from, identity)
+			r.Log.Printf("MIGRATION kind=previous_state_prefix status=deferred records=0")
 			continue
 		}
 		n, m := r.Store.Rekey(func(id string) string {
@@ -461,8 +459,7 @@ func (r *Runner) applyPreviousStatePrefixes() (moved, merged int) {
 			return to + strings.TrimPrefix(id, from)
 		})
 		if n > 0 {
-			r.Log.Printf("previous_state_prefix: moved %d record(s) from %q to %q for %s (%d merged into existing records)",
-				n, from, to, identity, m)
+			r.Log.Printf("MIGRATION kind=previous_state_prefix status=committed records=%d merged=%d", n, m)
 		}
 		moved, merged = moved+n, merged+m
 	}
@@ -565,7 +562,7 @@ func (r *Runner) prePass() ([]reportCommit, error) {
 	}
 	if moved > 0 || dropped > 0 {
 		if err := r.Store.Save(); err != nil {
-			return nil, fmt.Errorf("saving migrated state keys: %w", err)
+			return nil, markRunFailure(errPersistence, fmt.Errorf("saving migrated state keys: %w", err))
 		}
 	}
 	return r.census(r.clock()), nil

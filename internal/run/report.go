@@ -280,7 +280,7 @@ func (r *Runner) deliverReports(ctx context.Context, reports []reportCommit) (in
 	if len(targets) == 0 {
 		// Logged every cycle, not once: this is a silent-failure mode, and a
 		// warning printed only at startup is one nobody will be looking at.
-		r.Log.Printf("board health: %d report(s) undeliverable — no configured notifier implements notify.Reporter", len(reports))
+		r.Log.Printf("WARN scope=run index=0 step=report code=no_reporter count=%d", len(reports))
 		return 0, nil
 	}
 	committed := 0
@@ -290,7 +290,7 @@ func (r *Runner) deliverReports(ctx context.Context, reports []reportCommit) (in
 			if err := target.rep.Report(ctx, pending.report); err != nil {
 				return committed, fmt.Errorf("reporter %s failed (report stays pending, retried next run): %w", target.name, err)
 			}
-			r.Log.Printf("report %s: delivered %q in %s", target.name, pending.report.Subject, time.Since(start).Round(time.Millisecond))
+			r.Log.Printf("REPORT status=accepted channel=%s duration_ms=%d", quoteLogField(target.name), millis(time.Since(start)))
 		}
 		pending.commit()
 		committed++

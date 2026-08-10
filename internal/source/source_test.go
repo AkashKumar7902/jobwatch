@@ -1,11 +1,96 @@
 package source
 
 import (
+	"context"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"jobwatch/internal/model"
 	"jobwatch/internal/params"
 )
+
+type adapterSpoofSource struct{}
+
+func (adapterSpoofSource) Company() string                            { return "Acme" }
+func (adapterSpoofSource) Fetch(context.Context) ([]model.Job, error) { return nil, nil }
+func (adapterSpoofSource) Adapter() string                            { return "secret/query?token=value" }
+
+func TestAdapterOnlyExposesRegisteredWrapperType(t *testing.T) {
+	if got := Adapter(adapterSpoofSource{}); got != "custom" {
+		t.Fatalf("Adapter(third-party source) = %q, want custom", got)
+	}
+	src, err := New("atlassian", "Atlassian", nil, &http.Client{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := Adapter(src); got != "atlassian" {
+		t.Fatalf("Adapter(registered source) = %q, want atlassian", got)
+	}
+}
+
+func TestSourcesAndMatchersDoNotUsePackageGlobalLogging(t *testing.T) {
+	sourceDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	internal := filepath.Dir(sourceDir)
+	for _, directory := range []string{filepath.Join(internal, "source"), filepath.Join(internal, "match")} {
+		err := filepath.WalkDir(directory, func(path string, entry os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if entry.IsDir() || filepath.Ext(path) != ".go" || strings.HasSuffix(path, "_test.go") {
+				return nil
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			if strings.Contains(string(data), "log.Printf(") {
+				t.Errorf("%s uses package-global log.Printf; emit a sealed diagnostic instead", path)
+			}
+			return nil
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestOperationalSignalPathsStayConnected(t *testing.T) {
+	sourceDir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"amazon", "atlassian", "avature", "deshaw", "eightfold", "kula", "smartrecruiters", "workday"} {
+		data, err := os.ReadFile(filepath.Join(sourceDir, name+".go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), "diagnostic.Cap(") {
+			t.Errorf("%s cap path is not connected to the runner diagnostic", name)
+		}
+	}
+	for _, name := range []string{"enphase", "google"} {
+		data, err := os.ReadFile(filepath.Join(sourceDir, name+".go"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(data), "diagnostic.Retry(") {
+			t.Errorf("%s retry path is not connected to the runner diagnostic", name)
+		}
+	}
+	matchData, err := os.ReadFile(filepath.Join(filepath.Dir(sourceDir), "match", "llm.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(matchData), "diagnostic.Retry("); got != 2 {
+		t.Errorf("llm retry signals = %d, want 2", got)
+	}
+}
 
 func TestIdentityUsesBoardParamsNotOperationalLimits(t *testing.T) {
 	a, err := New("workday", "Acme", params.Map{

@@ -31,12 +31,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
 )
@@ -176,7 +176,7 @@ func (l *llm) ask(ctx context.Context, job model.Job) (llmVerdict, error) {
 			if attempt >= 4 {
 				return llmVerdict{}, fmt.Errorf("calling %s: %w", l.endpoint, err)
 			}
-			log.Printf("llm matcher: %v, retrying in 5s (attempt %d/4)", err, attempt)
+			diagnostic.Retry(ctx, diagnostic.RetryTransport, attempt, 4, 5*time.Second)
 			if err := waitForRetry(ctx, 5*time.Second); err != nil {
 				return llmVerdict{}, err
 			}
@@ -206,7 +206,11 @@ func (l *llm) ask(ctx context.Context, job model.Job) (llmVerdict, error) {
 				wait = secs
 			}
 		}
-		log.Printf("llm matcher: %s, retrying in %s (attempt %d/4)", resp.Status, wait, attempt)
+		kind := diagnostic.RetryServer
+		if resp.StatusCode == http.StatusTooManyRequests {
+			kind = diagnostic.RetryRateLimit
+		}
+		diagnostic.Retry(ctx, kind, attempt, 4, wait)
 		if err := waitForRetry(ctx, wait); err != nil {
 			return llmVerdict{}, err
 		}

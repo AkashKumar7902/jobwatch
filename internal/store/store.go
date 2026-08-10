@@ -215,9 +215,26 @@ type Run struct {
 // double-notify or clobber each other. It is not safe for concurrent use
 // within a process; the runner accesses it from one goroutine only.
 type Store struct {
-	path    string
-	recs    map[string]Record
-	release func()
+	path            string
+	recs            map[string]Record
+	release         func()
+	revision        uint64
+	savedRevision   uint64
+	successfulSaves uint64
+}
+
+// Persistence reports whether the current in-memory snapshot is durable and
+// how many successful saves this Store instance has completed. The runner
+// snapshots it at cycle start so a save from an earlier cycle cannot make a
+// failed current cycle look persisted.
+type Persistence struct {
+	Revision        uint64
+	SavedRevision   uint64
+	SuccessfulSaves uint64
+}
+
+func (s *Store) Persistence() Persistence {
+	return Persistence{s.revision, s.savedRevision, s.successfulSaves}
 }
 
 // Open loads the store at path, creating parent directories as needed.
@@ -291,7 +308,10 @@ func (s *Store) HasPostingPrefix(prefix string) bool {
 // push that drops a previously recorded ID for exactly that reason. If a
 // future change needs to retire reserved marker keys, it should add a
 // narrowly scoped deletion for markers only, never a general one.
-func (s *Store) Add(id string, r Record) { s.recs[id] = r }
+func (s *Store) Add(id string, r Record) {
+	s.recs[id] = r
+	s.revision++
+}
 
 // CountPostingPrefix returns how many posting records live under prefix.
 // Runner metadata is excluded, exactly as in HasPostingPrefix.
@@ -323,7 +343,12 @@ func (s *Store) CountPostingPrefix(prefix string) int {
 // was told about: retiring a reserved marker key, and dropping a record no
 // adapter can produce any more (see source.IsJunkStateKey). Callers outside
 // those two cases are bugs.
-func (s *Store) Delete(id string) { delete(s.recs, id) }
+func (s *Store) Delete(id string) {
+	if _, ok := s.recs[id]; ok {
+		delete(s.recs, id)
+		s.revision++
+	}
+}
 
 // Rekey moves records to the keys fn returns, and reports how many moved and
 // how many of those landed on a key that was already occupied.
@@ -379,6 +404,9 @@ func (s *Store) Rekey(fn func(id string) string) (moved, merged int) {
 			rec = mergeRecords(existing, rec)
 		}
 		s.recs[target] = rec
+	}
+	if moved > 0 {
+		s.revision++
 	}
 	return moved, merged
 }
@@ -477,6 +505,8 @@ func (s *Store) Save() error {
 	if err := os.Rename(tmp.Name(), s.path); err != nil {
 		return err
 	}
+	s.savedRevision = s.revision
+	s.successfulSaves++
 	if d, err := os.Open(dir); err == nil {
 		d.Sync() // best-effort: makes the rename itself durable
 		d.Close()

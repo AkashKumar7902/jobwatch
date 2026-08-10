@@ -18,6 +18,7 @@ import (
 	"sort"
 	"strings"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -127,6 +128,9 @@ func (e *enphase) Fetch(ctx context.Context) ([]model.Job, error) {
 			if !retryable {
 				return nil, err
 			}
+			if attempt < enphaseSnapshotAttempts {
+				diagnostic.Retry(ctx, diagnostic.RetrySnapshot, attempt, enphaseSnapshotAttempts, 0)
+			}
 			requireStable = true
 			previous = nil
 			lastReason = err.Error()
@@ -138,6 +142,9 @@ func (e *enphase) Fetch(ctx context.Context) ([]model.Job, error) {
 		requireStable = true
 		if previous != nil && previous.sameContent(snapshot) {
 			return snapshot.jobs, nil
+		}
+		if attempt < enphaseSnapshotAttempts {
+			diagnostic.Retry(ctx, diagnostic.RetrySnapshot, attempt, enphaseSnapshotAttempts, 0)
 		}
 		current := snapshot
 		previous = &current

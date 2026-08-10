@@ -9,13 +9,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -116,7 +116,7 @@ func (s *deshaw) Fetch(ctx context.Context) ([]model.Job, error) {
 		return nil, fmt.Errorf("deshaw: regularJobs and internships are both empty")
 	}
 	if len(postings) > s.maxPostings {
-		log.Printf("deshaw: listing %d of %d postings (max_postings cap)", s.maxPostings, len(postings))
+		diagnostic.Cap(ctx, s.maxPostings, len(postings))
 		postings = postings[:s.maxPostings]
 	}
 

@@ -25,6 +25,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
 )
@@ -211,6 +212,7 @@ func (s *googleIndia) fetchPage(ctx context.Context, pageNumber int) (googleRPCP
 		if transient.retryAfter > delay {
 			delay = transient.retryAfter
 		}
+		diagnostic.Retry(ctx, diagnostic.RetryPage, attempt, googleMaxPageAttempts, delay)
 		if err := googleWait(ctx, delay); err != nil {
 			return googleRPCPage{}, err
 		}

@@ -21,11 +21,11 @@ package source
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"time"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -91,7 +91,7 @@ func (s *smartRecruiters) Fetch(ctx context.Context) ([]model.Job, error) {
 		postings = postings[:s.maxPostings]
 	}
 	if total > len(postings) {
-		log.Printf("smartrecruiters %s: listing %d of %d postings (max_postings cap)", s.company, len(postings), total)
+		diagnostic.Cap(ctx, len(postings), total)
 	}
 
 	jobs := make([]model.Job, 0, len(postings))
