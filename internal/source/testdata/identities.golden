@@ -74,6 +74,7 @@ Harness	greenhouse	greenhouse/us/harnessinc	greenhouse/harnessinc/
 Tekion	greenhouse	greenhouse/us/tekion	greenhouse/tekion/
 Zynga	greenhouse	greenhouse/us/zyngacareers	greenhouse/zyngacareers/
 Envato	lever	lever/us/envato-2	lever/envato-2/
+HighLevel	lever	lever/us/gohighlevel	lever/gohighlevel/
 JumpCloud	lever	lever/us/jumpcloud	lever/jumpcloud/
 Redox	lever	lever/us/redoxengine	lever/redoxengine/
 Sonatype	lever	lever/us/sonatype	lever/sonatype/
@@ -136,7 +137,9 @@ Dribbble	bamboohr	bamboohr/dribbble	bamboohr/dribbble/
 Lullabot	bamboohr	bamboohr/lullabot	bamboohr/lullabot/
 Wayfair	wayfair	wayfair	wayfair/
 Moody's	talentbrew	talentbrew/careers.moodys.com	talentbrew/careers.moodys.com/
+Cohesity	workday	workday/cohesity/Cohesity_Careers	workday/cohesity/Cohesity_Careers/
 DataRobot	workday	workday/datarobot/DataRobot_External_Careers	workday/datarobot/DataRobot_External_Careers/
+Proofpoint	workday	workday/proofpoint/ProofpointCareers	workday/proofpoint/ProofpointCareers/
 RedHat	workday	workday/redhat/jobs	workday/redhat/jobs/
 Accenture	workday	workday/accenture/AccentureCareers	workday/accenture/AccentureCareers/
 Adobe	workday	workday/adobe/external_experienced	workday/adobe/external_experienced/

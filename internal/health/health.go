@@ -3,7 +3,7 @@
 // The problem it exists to solve: roughly 41 of ~50 ATS adapters answer a
 // renamed slug, token or tenant with HTTP 200 and an empty list. That is
 // byte-identical to a company with genuinely no openings, and the runner only
-// reports an error when EVERY board fails — so 259 of 260 boards can be dead
+// reports an error when EVERY board fails — so 262 of 263 boards can be dead
 // while CI stays green. The user reads email only; a red check or a step
 // summary never reaches them.
 //
@@ -162,7 +162,7 @@ func Key(s source.Source) string { return KeyPrefix + source.Identity(s) }
 
 // SrcType extracts the adapter type from a board identity ("greenhouse" from
 // "greenhouse/us/hubspot"). Reports group by it because a single vendor
-// change explains many boards at once — 193 of 260 boards sit behind five
+// change explains many boards at once — 196 of 263 boards sit behind five
 // vendors, so "47 Greenhouse boards" is one incident, not 47.
 func SrcType(identity string) string {
 	if i := strings.IndexByte(identity, '/'); i >= 0 {

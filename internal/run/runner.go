@@ -314,7 +314,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		//
 		// Deliberately NOT counted as dirty. Every board writes a health
 		// record every cycle, so counting them would make checkpoint() fire
-		// once per board — 260 full marshals and fsyncs of a 70,000-record
+		// once per board — 263 full marshals and fsyncs of a 70,000-record
 		// state file per run, to protect counters that are approximate by
 		// design. Health rides along with saves that happen anyway and is
 		// always persisted by the final Save below; a run killed mid-sweep

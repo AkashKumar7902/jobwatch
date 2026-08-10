@@ -24,7 +24,7 @@ const identitiesGolden = "testdata/identities.golden"
 // switches produced for every adapter whose params did not change meaning.
 // A drifting adapter does not look like a bug at runtime — it looks like a
 // board that quietly re-baselines and stops emailing — so the only place it
-// can be caught is here, against the real 260-company catalog rather than a
+// can be caught is here, against the real 263-company catalog rather than a
 // hand-picked sample.
 //
 // A deliberate change (a new company, or another param declared transport)

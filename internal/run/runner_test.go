@@ -1495,7 +1495,7 @@ func TestNonReporterNotifierIsSkipped(t *testing.T) {
 	})
 }
 
-// 193 of 260 boards sit behind five vendors, so one vendor change trips a
+// 196 of 263 boards sit behind five vendors, so one vendor change trips a
 // whole cohort in the same cycle. Forty-seven emails about one incident is
 // indistinguishable from spam, and a monitoring channel that gets filtered
 // takes the next real alert with it.

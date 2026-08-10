@@ -55,7 +55,7 @@ package run
 // stamps marker.orphaned_at and no later census may pair it with anything.
 // Without both, the rule decays into "a board was EVER removed AND one appeared
 // now" — which a plain deletion and, months later, a plain addition satisfy
-// between them, and with 193 of 260 boards behind five vendors they collide on
+// between them, and with 196 of 263 boards behind five vendors they collide on
 // ATS type more often than not.
 //
 // Everything here runs before any fetch: it is pure state arithmetic, so a
@@ -276,7 +276,7 @@ func (r *Runner) census(now time.Time) []reportCommit {
 			// of its own or the conjunction degrades to "a board was EVER
 			// removed AND one appeared now", which a plain deletion followed
 			// months later by a plain addition of the same ATS type satisfies.
-			// 193 of 260 boards sit behind five vendors, so that collision is
+			// 196 of 263 boards sit behind five vendors, so that collision is
 			// the common case rather than the exotic one.
 			fresh := freshByType[health.SrcType(o.identity)]
 			if o.orphanedAt.IsZero() && len(fresh) > 0 {
@@ -424,7 +424,7 @@ func (r *Runner) writeMarker(src source.Source) bool {
 	}
 	title := "source: " + src.Company()
 	if existed && rec.Title == title && rec.Marker != nil && *rec.Marker == want {
-		return false // nothing to write; 260 identical records per run is pure noise
+		return false // nothing to write; 263 identical records per run is pure noise
 	}
 	rec.Title, rec.Marker = title, &want
 	r.Store.Add(id, rec)
