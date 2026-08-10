@@ -1,13 +1,75 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"io"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
+
+func TestDetailedErrorsUseHumanOutputWriter(t *testing.T) {
+	var out bytes.Buffer
+	writeErrorDetail(&out, "run", errors.New("GET https://private.example?token=secret failed"))
+	if got := out.String(); !strings.Contains(got, "private.example?token=secret") {
+		t.Fatalf("local detail missing: %q", got)
+	}
+	writeErrorDetail(nil, "run", errors.New("ignored"))
+}
+
+func TestBuildNoReporterWarningHasPositiveOccurrenceCount(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "config.yaml")
+	config := `companies:
+  - {name: Acme, source: greenhouse, params: {board_token: acme}}
+notifiers:
+  - {name: webhook, params: {url: "https://example.com"}}
+`
+	if err := os.WriteFile(configPath, []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var logs bytes.Buffer
+	runner, err := build(configPath, filepath.Join(t.TempDir(), "state.json"), log.New(&logs, "", 0), false, false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer runner.Store.Close()
+	if !strings.Contains(logs.String(), "WARN scope=run index=0 step=report code=no_reporter count=1") ||
+		strings.Contains(logs.String(), "code=no_reporter count=0") {
+		t.Fatalf("no-reporter warning is not a positive occurrence:\n%s", logs.String())
+	}
+}
+
+func TestCLIConfigurationFailureSeparatesHumanAndProtocolOutput(t *testing.T) {
+	temp := t.TempDir()
+	binary := filepath.Join(temp, "jobwatch")
+	if runtime.GOOS == "windows" {
+		binary += ".exe"
+	}
+	buildCmd := exec.Command("go", "build", "-o", binary, ".")
+	if output, err := buildCmd.CombinedOutput(); err != nil {
+		t.Fatalf("building CLI: %v\n%s", err, output)
+	}
+	missing := filepath.Join(temp, "missing-config.yaml")
+	cmd := exec.Command(binary, "-config", missing)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err := cmd.Run()
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+		t.Fatalf("CLI error = %v, want exit 1", err)
+	}
+	if !strings.Contains(stdout.String(), missing) {
+		t.Fatalf("human stdout lost configuration detail: %q", stdout.String())
+	}
+	if !strings.Contains(stderr.String(), "STARTUP status=failed problem=configuration") || strings.Contains(stderr.String(), missing) {
+		t.Fatalf("protocol stderr is wrong: %q", stderr.String())
+	}
+}
 
 func TestBuildRejectsDuplicateATSBoards(t *testing.T) {
 	configPath := filepath.Join(t.TempDir(), "config.yaml")

@@ -12,11 +12,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"sort"
 	"sync"
 	"time"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/match"
 	"jobwatch/internal/model"
 	"jobwatch/internal/notify"
@@ -33,11 +35,14 @@ const (
 
 // Runner wires the pluggable pieces together for one or more cycles.
 type Runner struct {
-	Sources     []source.Source
-	Matcher     match.Matcher
-	Notifiers   []notify.Notifier
-	Store       *store.Store
-	Log         *log.Logger
+	Sources   []source.Source
+	Matcher   match.Matcher
+	Notifiers []notify.Notifier
+	Store     *store.Store
+	Log       *log.Logger
+	// Errors receives detailed human diagnostics. The scheduled workflow
+	// discards stdout and captures only Log's closed stderr protocol.
+	Errors      io.Writer
 	Concurrency int
 
 	// SeedOnly records every current posting as seen WITHOUT notifying.
@@ -139,7 +144,15 @@ func (r *Runner) inheritsHistory(src source.Source, adoptedPrefixes map[string]b
 
 // RunOnce performs a single poll cycle. One company failing to fetch is
 // logged and skipped — it must not block alerts from the others.
-func (r *Runner) RunOnce(ctx context.Context) error {
+func (r *Runner) RunOnce(ctx context.Context) (runErr error) {
+	started := time.Now()
+	persistenceStart := r.Store.Persistence()
+	outcomes := make([]boardOutcome, len(r.Sources))
+	for i, src := range r.Sources {
+		outcomes[i] = boardOutcome{ordinal: i + 1, src: src}
+	}
+	defer func() { r.finishRun(ctx, outcomes, started, persistenceStart, r.DryRun, runErr) }()
+
 	stateWasEmpty := r.Store.Len() == 0
 
 	// Repair keys that baked a vendor's transport coordinate into a board's
@@ -206,7 +219,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			// makes the census's own decisions (a swept marker, a raised
 			// announcement) durable before anything can be delivered.
 			if err := r.Store.Save(); err != nil {
-				return fmt.Errorf("saving watched-source registry: %w", err)
+				return markRunFailure(errPersistence, fmt.Errorf("saving watched-source registry: %w", err))
 			}
 		}
 
@@ -215,7 +228,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		// that record to authorize the removals the move produces.
 		if moved, _ := r.applyPreviousStatePrefixes(); moved > 0 {
 			if err := r.Store.Save(); err != nil {
-				return fmt.Errorf("saving state after previous_state_prefix move: %w", err)
+				return markRunFailure(errPersistence, fmt.Errorf("saving state after previous_state_prefix move: %w", err))
 			}
 		}
 	}
@@ -228,10 +241,10 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			}
 			postingPrefix := source.StatePrefix(src)
 			if postingPrefix == "" && r.Store.Len() > 0 {
-				return fmt.Errorf("cannot seed new source %q: existing state has no exact marker and this source has no posting prefix to prove it is new; run the unchanged source list once without -seed-new-sources, or seed this source explicitly", identity)
+				return markRunFailure(errRunSeed, fmt.Errorf("cannot seed new source %q: existing state has no exact marker and this source has no posting prefix to prove it is new; run the unchanged source list once without -seed-new-sources, or seed this source explicitly", identity))
 			}
 			if r.Store.HasPostingPrefix(postingPrefix) {
-				return fmt.Errorf("cannot seed new source %q: existing posting records share its prefix but no exact source marker exists; run the unchanged source list once without -seed-new-sources, or seed this source explicitly", identity)
+				return markRunFailure(errRunSeed, fmt.Errorf("cannot seed new source %q: existing posting records share its prefix but no exact source marker exists; run the unchanged source list once without -seed-new-sources, or seed this source explicitly", identity))
 			}
 		}
 		// Every markerless configured source is now proven to have no legacy
@@ -242,15 +255,17 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			Title:     "exact source registry v2",
 		})
 		if err := r.Store.Save(); err != nil {
-			return fmt.Errorf("saving exact source registry: %w", err)
+			return markRunFailure(errPersistence, fmt.Errorf("saving exact source registry: %w", err))
 		}
 	}
 
 	type fetched struct {
-		src  source.Source
-		jobs []model.Job
-		err  error
-		dur  time.Duration
+		src         source.Source
+		ctx         context.Context
+		jobs        []model.Job
+		err         error
+		dur         time.Duration
+		diagnostics *diagnostic.Collector
 	}
 	results := make([]fetched, len(r.Sources))
 
@@ -262,12 +277,39 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
+			boardCtx, collector := diagnostic.WithCollector(ctx)
 			start := time.Now()
-			jobs, err := s.Fetch(ctx)
-			results[i] = fetched{src: s, jobs: jobs, err: err, dur: time.Since(start).Round(time.Millisecond)}
+			jobs, err := s.Fetch(boardCtx)
+			duration := time.Since(start).Round(time.Millisecond)
+			results[i] = fetched{
+				src: s, ctx: boardCtx, jobs: jobs, err: err,
+				dur: duration, diagnostics: collector,
+			}
+			status := "ok"
+			if err != nil && len(jobs) > 0 {
+				status = "partial"
+			} else if err != nil {
+				status = "failed"
+			}
+			// Fetches run concurrently, so this closed record is deliberately
+			// independent of the config-ordered BOARD terminal. It makes a fast
+			// board visible while a different request is still blocked without
+			// exposing source identity or error text.
+			r.Log.Printf("FETCH index=%d status=%s open=%d duration_ms=%d",
+				i+1, status, nonnegative(len(jobs)), millis(duration))
 		}(i, s)
 	}
 	wg.Wait()
+	// Freeze every fetch result before sequential processing. If cancellation
+	// interrupts board N, the deferred outcomes for N+1 still report the work
+	// their completed fetches actually did instead of zeros.
+	for i, res := range results {
+		outcomes[i].fetched = true
+		outcomes[i].open = len(res.jobs)
+		outcomes[i].fetchErr = res.err
+		outcomes[i].fetchDuration = res.dur
+		outcomes[i].diagnostics = res.diagnostics
+	}
 	// One instant for every board's observation, taken once the fetches are
 	// in: they ran concurrently, so pretending they landed at different
 	// moments would be less accurate, not more.
@@ -275,7 +317,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 
 	var matches []notify.Match
 	var matchedIDs []string
-	totalJobs, newJobs, retries, failures, partials, deferred := 0, 0, 0, 0, 0, 0
+	failures, partials, deferred := 0, 0, 0
 	newSources, seededJobs, evaluated := 0, 0, 0
 	var matchFailures deferredErrors
 	var seedFailures seedErrors
@@ -297,16 +339,17 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		}
 		lastSave = time.Now() // set even on failure so a bad disk isn't retried every job
 		if err := r.Store.Save(); err != nil {
-			r.Log.Printf("checkpoint save failed: %v", err)
+			r.detailf("checkpoint save failed: %v", err)
+			r.Log.Printf("WARN scope=run index=0 step=checkpoint code=save_failed count=1")
 			return err
 		}
 		dirty = 0
 		return nil
 	}
 
-	for _, res := range results {
-		totalJobs += len(res.jobs)
-
+	for i, res := range results {
+		outcome := &outcomes[i]
+		outcome.processStart = time.Now()
 		// Observe FIRST, above every `continue` below. A board that hard-fails
 		// is exactly the board worth reporting, and the failure path returns
 		// early — observing anywhere further down would cover only the boards
@@ -361,10 +404,10 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		if res.err != nil {
 			if len(res.jobs) == 0 {
 				failures++
-				r.Log.Printf("fetch %s: %v", res.src.Company(), res.err)
+				r.detailf("fetch %s: %v", res.src.Company(), res.err)
 			} else {
 				partials++
-				r.Log.Printf("fetch %s (partial; returned %d jobs): %v", res.src.Company(), len(res.jobs), res.err)
+				r.detailf("fetch %s (partial; returned %d jobs): %v", res.src.Company(), len(res.jobs), res.err)
 			}
 
 			// A partial response is useful during ordinary polling, but it cannot
@@ -374,17 +417,20 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			if r.SeedOnly || seedNewSource {
 				seedFailures.add(res.src, res.err)
 				if len(res.jobs) > 0 {
-					r.Log.Printf("seed %s incomplete: ignoring %d jobs from partial fetch", res.src.Company(), len(res.jobs))
+					r.detailf("seed %s incomplete: ignoring %d jobs from partial fetch", res.src.Company(), len(res.jobs))
 				}
 				checkpoint()
+				outcome.finish()
+				r.emitBoard(ctx, outcome)
 				continue
 			}
 			if len(res.jobs) == 0 {
+				outcome.finish()
+				r.emitBoard(ctx, outcome)
 				continue
 			}
 		}
 
-		srcNew, srcMatched := 0, 0
 		for _, job := range res.jobs {
 			// Matching can be slow (the llm matcher makes an API call per
 			// job); honor cancellation between jobs so Ctrl-C actually
@@ -396,7 +442,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				// starting over. This is the last chance to persist — a
 				// failed save here must not masquerade as a clean interrupt.
 				if err := checkpoint(); err != nil {
-					return errors.Join(ctx.Err(), fmt.Errorf("checkpoint at interruption: %w", err))
+					return errors.Join(ctx.Err(), errPersistence, fmt.Errorf("checkpoint at interruption: %w", err))
 				}
 				return ctx.Err()
 			default:
@@ -413,11 +459,9 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 					continue
 				}
 			}
-			if seen {
-				retries++ // matched earlier but delivery was never confirmed
-			} else {
-				newJobs++
-				srcNew++
+			pendingDelivery := seen && rec.Matched && !rec.Notified
+			if !seen {
+				outcome.new++
 				rec.FirstSeen = time.Now()
 			}
 
@@ -439,42 +483,56 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 				}
 				continue
 			}
+			if pendingDelivery {
+				outcome.retries++ // an actual delivery retry starts below
+			}
 
 			// Sources with lazy details (SmartRecruiters, BambooHR) list
 			// whole boards cheaply; fetch the full posting only now that
 			// we know this job actually needs evaluating.
 			if job.Description == "" {
 				if det, ok := res.src.(source.Detailer); ok {
-					if err := det.Detail(ctx, &job); err != nil {
+					if err := det.Detail(res.ctx, &job); err != nil {
 						// Not recorded as seen, so the next run retries it.
-						r.Log.Printf("detail %s — %s: %v (retried next run)", job.Company, job.Title, err)
+						outcome.detailFailed++
+						r.detailf("detail %s — %s: %v (retried next run)", job.Company, job.Title, err)
 						continue
 					}
 				}
 			}
 
 			evaluated++
-			verdict, err := r.Matcher.Match(ctx, job)
+			verdict, err := r.Matcher.Match(res.ctx, job)
 			if err != nil {
 				if ctx.Err() != nil {
 					if saveErr := checkpoint(); saveErr != nil {
-						return errors.Join(ctx.Err(), fmt.Errorf("checkpoint at interruption: %w", saveErr))
+						return errors.Join(ctx.Err(), errPersistence, fmt.Errorf("checkpoint at interruption: %w", saveErr))
 					}
 					return ctx.Err()
 				}
 				deferred++
+				outcome.deferred++
 				matchFailures.add(job, err)
-				r.Log.Printf("match deferred %s — %s: %s (retried next run)",
+				r.detailf("match deferred %s — %s: %s (retried next run)",
 					job.Company, job.Title, clip(err.Error(), 300))
 				continue
 			}
 			if verdict.Matched {
-				srcMatched++
+				outcome.matched++
 				matches = append(matches, notify.Match{Job: job, Reason: verdict.Reason})
 				matchedIDs = append(matchedIDs, job.ID)
-				r.Log.Printf("MATCH   %s — %s (%s): %s", job.Company, job.Title, job.Location, clip(verdict.Reason, 300))
-			} else {
-				r.Log.Printf("no-match %s — %s: %s", job.Company, job.Title, clip(verdict.Reason, 180))
+			}
+			if r.DryRun {
+				// Per-job fields are intentionally local-only. Remote titles,
+				// locations, and matcher reasons are arbitrary text and cannot be
+				// made safe for public Actions logs with a finite credential list.
+				label := "NO_MATCH"
+				if verdict.Matched {
+					label = "MATCH"
+				}
+				r.localf("%s %s — %s (%s): %s", label,
+					sanitizeLogField(job.Company), sanitizeLogField(job.Title), sanitizeLogField(job.Location),
+					sanitizeLogField(verdict.Reason))
 			}
 			if !r.DryRun {
 				r.Store.Add(job.ID, store.Record{
@@ -509,21 +567,19 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 			// with an empty board) gets caught in one run instead of a month.
 			r.markBaselined(res.src)
 		}
-		// One line per board keeps CI logs scannable: what was fetched,
-		// how long it took, and whether anything new turned up.
-		r.Log.Printf("fetch %s: %d open jobs in %s (%d new, %d matched)",
-			res.src.Company(), len(res.jobs), res.dur, srcNew, srcMatched)
 		// A board's work is durable the moment the board is done; the
 		// in-loop interval save covers long boards, this covers short ones.
 		checkpoint()
+		outcome.finish()
+		r.emitBoard(ctx, outcome)
 	}
 	if ctx.Err() != nil {
 		if err := checkpoint(); err != nil {
-			return errors.Join(ctx.Err(), fmt.Errorf("checkpoint at interruption: %w", err))
+			return errors.Join(ctx.Err(), errPersistence, fmt.Errorf("checkpoint at interruption: %w", err))
 		}
 		return ctx.Err()
 	}
-	seedErr := seedFailures.err()
+	seedErr := markRunFailure(errRunSeed, seedFailures.err())
 	if !r.DryRun && r.SeedOnly && stateWasEmpty && !r.Store.Seen(sourceRegistryV2ID) && seedErr == nil {
 		// Only a complete bootstrap from an empty state can establish the global
 		// registry through SeedOnly. Seeding one source inside an existing state
@@ -534,7 +590,7 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		})
 		dirty++
 		if err := checkpoint(); err != nil {
-			return fmt.Errorf("saving exact source registry: %w", err)
+			return markRunFailure(errPersistence, fmt.Errorf("saving exact source registry: %w", err))
 		}
 	}
 
@@ -546,12 +602,10 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		return a.Title < b.Title
 	})
 
-	r.Log.Printf("run complete: %d sources (%d failed, %d partial), %d open jobs, %d new, %d matched, %d deferred (%d retried)",
-		len(r.Sources), failures, partials, totalJobs, newJobs, len(matches), deferred, retries)
 	if newSources > 0 {
-		r.Log.Printf("seeded %d new sources (%d previously unseen postings) without notifying", newSources, seededJobs)
+		r.Log.Printf("SEED sources=%d postings=%d status=accepted", newSources, seededJobs)
 	}
-	deferredErr := matchFailures.err()
+	deferredErr := markRunFailure(errRunMatch, matchFailures.err())
 	allFailed := len(r.Sources) > 0 && failures == len(r.Sources)
 	if allFailed {
 		// This used to return early for ordinary polling, on the grounds that
@@ -560,15 +614,15 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 		// turn a total outage into an email, and every board's health
 		// observation was just recorded. Returning here would throw both away
 		// and leave the outage visible solely as a red CI check.
-		seedErr = errors.Join(fmt.Errorf("all %d sources failed to fetch", failures), seedErr)
+		seedErr = errors.Join(markRunFailure(errRunFetch, fmt.Errorf("all %d sources failed to fetch", failures)), seedErr)
 	}
 
 	if r.DryRun {
 		var deliverErr error
 		if len(matches) > 0 {
-			deliverErr = r.deliver(ctx, matches)
+			deliverErr = markRunFailure(errRunNotify, r.deliver(ctx, matches))
 		}
-		r.Log.Printf("dry run: state not saved")
+		r.Log.Printf("STATE status=dry_run records=%d", r.Store.Len())
 		return errors.Join(deliverErr, deferredErr, seedErr)
 	}
 
@@ -586,9 +640,9 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 	// Persist first: matches are now on disk as pending (Notified=false),
 	// so a crash below retries them instead of losing them.
 	if err := r.Store.Save(); err != nil {
-		return errors.Join(fmt.Errorf("saving state: %w", err), deferredErr, seedErr)
+		return errors.Join(markRunFailure(errPersistence, fmt.Errorf("saving state: %w", err)), deferredErr, seedErr)
 	}
-	r.Log.Printf("state saved: %d records", r.Store.Len())
+	r.Log.Printf("STATE status=committed stage=pending records=%d", r.Store.Len())
 
 	// Reports go out here — above the seed and zero-match returns below. A
 	// board that stopped answering is precisely a board with nothing to
@@ -598,19 +652,27 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 	// standing for the next cycle to raise again.
 	var reportErr error
 	if committed, err := r.deliverReports(ctx, reports); err != nil {
-		reportErr = err
+		reportErr = markRunFailure(errRunReport, err)
 		if committed > 0 {
-			reportErr = errors.Join(reportErr, r.Store.Save())
+			if saveErr := r.Store.Save(); saveErr != nil {
+				reportErr = errors.Join(reportErr, markRunFailure(errPersistence, fmt.Errorf("saving accepted report state: %w", saveErr)))
+			} else {
+				r.Log.Printf("REPORT status=committed reports=%d", committed)
+			}
 		}
 	} else if committed > 0 {
-		reportErr = r.Store.Save()
+		if saveErr := r.Store.Save(); saveErr != nil {
+			reportErr = markRunFailure(errPersistence, fmt.Errorf("saving accepted report state: %w", saveErr))
+		} else {
+			r.Log.Printf("REPORT status=committed reports=%d", committed)
+		}
 	}
 
 	if r.SeedOnly {
 		if seedErr != nil {
-			r.Log.Printf("seed incomplete: saved %d postings from complete sources; retry before enabling alerts", seededJobs)
+			r.Log.Printf("SEED status=incomplete postings=%d", seededJobs)
 		} else {
-			r.Log.Printf("seeded %d postings without notifying; future runs alert on new ones", seededJobs)
+			r.Log.Printf("SEED status=committed postings=%d", seededJobs)
 		}
 		return errors.Join(reportErr, deferredErr, seedErr)
 	}
@@ -620,14 +682,18 @@ func (r *Runner) RunOnce(ctx context.Context) error {
 
 	if err := r.deliver(ctx, matches); err != nil {
 		// Leave the matches pending; the next cycle re-delivers them.
-		return errors.Join(err, reportErr, deferredErr, seedErr)
+		return errors.Join(markRunFailure(errRunNotify, err), reportErr, deferredErr, seedErr)
 	}
 	for _, id := range matchedIDs {
 		rec, _ := r.Store.Get(id)
 		rec.Notified = true
 		r.Store.Add(id, rec)
 	}
-	return errors.Join(r.Store.Save(), reportErr, deferredErr, seedErr)
+	if err := r.Store.Save(); err != nil {
+		return errors.Join(markRunFailure(errPersistence, fmt.Errorf("saving notification delivery state: %w", err)), reportErr, deferredErr, seedErr)
+	}
+	r.Log.Printf("NOTIFY status=committed matches=%d channels=%d", len(matches), len(r.Notifiers))
+	return errors.Join(reportErr, deferredErr, seedErr)
 }
 
 const deferredErrorSampleLimit = 5
@@ -698,7 +764,8 @@ func (r *Runner) deliver(ctx context.Context, matches []notify.Match) error {
 		if err := n.Notify(ctx, matches); err != nil {
 			return fmt.Errorf("notifier %s failed (matches stay pending, retried next run): %w", n.Name(), err)
 		}
-		r.Log.Printf("notify %s: delivered %d match(es) in %s", n.Name(), len(matches), time.Since(start).Round(time.Millisecond))
+		r.Log.Printf("NOTIFY status=accepted channel=%s matches=%d duration_ms=%d",
+			quoteLogField(n.Name()), len(matches), millis(time.Since(start)))
 	}
 	return nil
 }
@@ -711,6 +778,29 @@ func clip(s string, n int) string {
 	return s[:n] + "…"
 }
 
+// detailf preserves actionable diagnostics for local callers without putting
+// remote error text in the sealed public logger protocol. main wires Errors to
+// stdout, which the scheduled workflow discards. Direct embedders retain the
+// pre-protocol behavior through the logger fallback.
+func (r *Runner) detailf(format string, args ...any) {
+	if r.Errors != nil {
+		fmt.Fprintf(r.Errors, format+"\n", args...)
+		return
+	}
+	if r.Log != nil {
+		r.Log.Printf(format, args...)
+	}
+}
+
+// localf writes information that can contain job or profile text only to the
+// caller's local detail stream. It deliberately has no logger fallback: the
+// logger may be captured by a public Actions run.
+func (r *Runner) localf(format string, args ...any) {
+	if r.Errors != nil {
+		fmt.Fprintf(r.Errors, format+"\n", args...)
+	}
+}
+
 // RunEvery calls RunOnce immediately and then repeatedly, waiting interval
 // between the END of one cycle and the start of the next, until ctx is
 // cancelled. Cycle errors are logged, not fatal — a watcher should survive
@@ -718,7 +808,14 @@ func clip(s string, n int) string {
 func (r *Runner) RunEvery(ctx context.Context, interval time.Duration) {
 	for {
 		if err := r.RunOnce(ctx); err != nil {
-			r.Log.Printf("run failed: %v", err)
+			if r.Errors != nil {
+				fmt.Fprintf(r.Errors, "jobwatch run: %v\n", err)
+			} else {
+				// Compatibility fallback for embedders that construct Runner
+				// directly. main always supplies stdout here, so the scheduled
+				// stderr protocol never takes this raw-detail path.
+				r.Log.Printf("jobwatch run: %v", err)
+			}
 		}
 		timer := time.NewTimer(interval)
 		select {

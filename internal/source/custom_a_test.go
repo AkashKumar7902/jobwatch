@@ -10,9 +10,23 @@ import (
 	"strings"
 	"testing"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
 )
+
+type customARoundTripper func(*http.Request) (*http.Response, error)
+
+func (f customARoundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
+	return f(req)
+}
+
+func requireSingleCap(t *testing.T, collector *diagnostic.Collector) {
+	t.Helper()
+	if got := collector.Snapshot().Caps; got != 1 {
+		t.Fatalf("cap diagnostics = %d, want 1", got)
+	}
+}
 
 func TestCustomASourceNamesAndFactories(t *testing.T) {
 	tests := []struct {
@@ -114,6 +128,13 @@ func TestEightfoldPaginationAndLazyDetail(t *testing.T) {
 		jobs[0].EmploymentType != "Full-Time" || jobs[0].Location != "Bengaluru, India" {
 		t.Fatalf("detail did not normalize job: %+v, calls=%d", jobs[0], detailCalls)
 	}
+	src.maxPostings = 10
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err = src.Fetch(ctx)
+	if err != nil || len(jobs) != 10 {
+		t.Fatalf("capped Fetch = %d jobs, %v", len(jobs), err)
+	}
+	requireSingleCap(t, collector)
 }
 
 func TestKulaPaginationAndNormalization(t *testing.T) {
@@ -161,6 +182,13 @@ func TestKulaPaginationAndNormalization(t *testing.T) {
 		jobs[0].URL != server.URL+"/acme/1" {
 		t.Fatalf("unexpected first job: %+v", jobs[0])
 	}
+	src.maxPostings = 99
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err = src.Fetch(ctx)
+	if err != nil || len(jobs) != 99 {
+		t.Fatalf("capped Fetch = %d jobs, %v", len(jobs), err)
+	}
+	requireSingleCap(t, collector)
 }
 
 func TestAmazonCountryPaginationAndFullDescription(t *testing.T) {
@@ -201,6 +229,13 @@ func TestAmazonCountryPaginationAndFullDescription(t *testing.T) {
 		jobs[0].PostedAt.IsZero() || jobs[0].URL != server.URL+"/en/jobs/1000/amazon-role" {
 		t.Fatalf("unexpected first job: %+v", jobs[0])
 	}
+	src.maxPostings = 100
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err = src.Fetch(ctx)
+	if err != nil || len(jobs) != 100 {
+		t.Fatalf("capped Fetch = %d jobs, %v", len(jobs), err)
+	}
+	requireSingleCap(t, collector)
 }
 
 func TestAtlassianBulkNormalization(t *testing.T) {
@@ -291,6 +326,18 @@ func TestAtlassianDuplicateReconciliation(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("cap emits diagnostic", func(t *testing.T) {
+		ctx, collector := diagnostic.WithCollector(context.Background())
+		jobs, err := fetchAtlassianFixtureContext(t, ctx, []map[string]any{
+			atlassianFixturePosting(1, "One"),
+			atlassianFixturePosting(2, "Two"),
+		}, 1)
+		if err != nil || len(jobs) != 1 {
+			t.Fatalf("capped Fetch = %d jobs, %v", len(jobs), err)
+		}
+		requireSingleCap(t, collector)
+	})
 }
 
 func atlassianFixturePosting(id int64, title string) map[string]any {
@@ -306,6 +353,10 @@ func atlassianFixturePosting(id int64, title string) map[string]any {
 }
 
 func fetchAtlassianFixture(t *testing.T, postings []map[string]any, cap int) ([]model.Job, error) {
+	return fetchAtlassianFixtureContext(t, context.Background(), postings, cap)
+}
+
+func fetchAtlassianFixtureContext(t *testing.T, ctx context.Context, postings []map[string]any, cap int) ([]model.Job, error) {
 	t.Helper()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if err := json.NewEncoder(w).Encode(postings); err != nil {
@@ -317,7 +368,7 @@ func fetchAtlassianFixture(t *testing.T, postings []map[string]any, cap int) ([]
 		company: "Atlassian", endpoint: server.URL, detailBase: server.URL + "/details",
 		maxPostings: cap, client: server.Client(),
 	}
-	return src.Fetch(context.Background())
+	return src.Fetch(ctx)
 }
 
 func TestDEShawNextDataRegularAndInternships(t *testing.T) {
@@ -355,6 +406,13 @@ func TestDEShawNextDataRegularAndInternships(t *testing.T) {
 		!strings.Contains(jobs[0].Description, "Detail oriented") {
 		t.Fatalf("unexpected jobs: %+v", jobs)
 	}
+	src.maxPostings = 1
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err = src.Fetch(ctx)
+	if err != nil || len(jobs) != 1 {
+		t.Fatalf("capped Fetch = %d jobs, %v", len(jobs), err)
+	}
+	requireSingleCap(t, collector)
 }
 
 func TestAvatureSSRPaginationAndLazyDetail(t *testing.T) {
@@ -412,6 +470,41 @@ func TestAvatureSSRPaginationAndLazyDetail(t *testing.T) {
 		jobs[0].Location != "Austin, USA" || jobs[0].EmploymentType != "Contract" {
 		t.Fatalf("unexpected detailed job: %+v calls=%d", jobs[0], detailCalls)
 	}
+	src.maxPostings = 20
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err = src.Fetch(ctx)
+	if err != nil || len(jobs) != 20 {
+		t.Fatalf("capped Fetch = %d jobs, %v", len(jobs), err)
+	}
+	requireSingleCap(t, collector)
+}
+
+func TestSmartRecruitersCapEmitsDiagnostic(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		postings := make([]map[string]any, 0, 2)
+		for i := 1; i <= 2; i++ {
+			postings = append(postings, map[string]any{
+				"id": strconv.Itoa(i), "name": fmt.Sprintf("Role %d", i),
+				"releasedDate": "2026-08-11T00:00:00Z",
+				"location":     map[string]any{"city": "Pune", "country": "in", "remote": false},
+			})
+		}
+		json.NewEncoder(w).Encode(map[string]any{"totalFound": 2, "content": postings})
+	}))
+	defer server.Close()
+	client := &http.Client{Transport: customARoundTripper(func(req *http.Request) (*http.Response, error) {
+		clone := req.Clone(req.Context())
+		clone.URL.Scheme = "http"
+		clone.URL.Host = strings.TrimPrefix(server.URL, "http://")
+		return server.Client().Transport.RoundTrip(clone)
+	})}
+	src := &smartRecruiters{company: "Acme", id: "Acme", maxPostings: 1, client: client}
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err := src.Fetch(ctx)
+	if err != nil || len(jobs) != 1 {
+		t.Fatalf("capped Fetch = %d jobs, %v", len(jobs), err)
+	}
+	requireSingleCap(t, collector)
 }
 
 func TestParseAvatureTotalMarkers(t *testing.T) {

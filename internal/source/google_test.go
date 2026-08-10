@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/params"
 )
 
@@ -439,12 +440,16 @@ func TestGoogleRetriesTransientPageFailure(t *testing.T) {
 	defer server.Close()
 
 	src := &googleIndia{company: "Google India", endpoint: server.URL + googleTestRPCQuery(), client: server.Client()}
-	jobs, err := src.Fetch(context.Background())
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err := src.Fetch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(jobs) != 1 || calls.Load() != 3 {
 		t.Fatalf("jobs/calls = %d/%d, want 1/3", len(jobs), calls.Load())
+	}
+	if got := collector.Snapshot().Retries; got != 1 {
+		t.Fatalf("retry diagnostics = %d, want 1", got)
 	}
 }
 

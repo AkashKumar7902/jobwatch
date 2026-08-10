@@ -26,10 +26,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -212,15 +212,9 @@ func (w *workday) Fetch(ctx context.Context) ([]model.Job, error) {
 	if rawScanned >= w.maxPostings {
 		switch {
 		case total > rawScanned:
-			log.Printf(
-				"workday %s: scanned %d of %d raw postings, listing %d usable postings (max_postings cap)",
-				w.company, rawScanned, total, len(postings),
-			)
+			diagnostic.Cap(ctx, rawScanned, total)
 		case total == 0:
-			log.Printf(
-				"workday %s: scanned %d raw postings, listing %d usable postings (max_postings cap; total unknown)",
-				w.company, rawScanned, len(postings),
-			)
+			diagnostic.Cap(ctx, rawScanned, rawScanned+1)
 		}
 	}
 

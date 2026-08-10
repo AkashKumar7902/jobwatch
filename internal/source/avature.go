@@ -11,7 +11,6 @@ import (
 	"context"
 	"fmt"
 	"html"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -19,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -170,7 +170,7 @@ func (s *avature) Fetch(ctx context.Context) ([]model.Job, error) {
 		offset = scanned
 	}
 	if expectedTotal > s.maxPostings {
-		log.Printf("avature %s: listing %d of %d postings (max_postings cap)", s.host, len(jobs), expectedTotal)
+		diagnostic.Cap(ctx, len(jobs), expectedTotal)
 	}
 	return jobs, nil
 }

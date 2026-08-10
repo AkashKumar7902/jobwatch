@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+
+	"jobwatch/internal/diagnostic"
 )
 
 func TestOracleCESparseCursorWindows(t *testing.T) {
@@ -134,12 +136,16 @@ func TestEnphaseCanonicalAliasesConvergeAndAggregate(t *testing.T) {
 		)
 	}))
 	defer server.Close()
-	jobs, err := (&enphase{company: "Enphase", base: server.URL, maxPages: 3, client: server.Client()}).Fetch(context.Background())
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	jobs, err := (&enphase{company: "Enphase", base: server.URL, maxPages: 3, client: server.Client()}).Fetch(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if requests.Load() != 2 || len(jobs) != 1 || jobs[0].ID != "enphase/oOne" || jobs[0].Location != "Austin; Zurich" {
 		t.Fatalf("requests=%d jobs=%+v", requests.Load(), jobs)
+	}
+	if got := collector.Snapshot().Retries; got != 1 {
+		t.Fatalf("retry diagnostics = %d, want 1", got)
 	}
 }
 
@@ -195,9 +201,13 @@ func TestEnphaseRejectsThreeDifferentDuplicateSnapshots(t *testing.T) {
 		)
 	}))
 	defer server.Close()
-	_, err := (&enphase{company: "Enphase", base: server.URL, maxPages: 3, client: server.Client()}).Fetch(context.Background())
+	ctx, collector := diagnostic.WithCollector(context.Background())
+	_, err := (&enphase{company: "Enphase", base: server.URL, maxPages: 3, client: server.Client()}).Fetch(ctx)
 	if err == nil || !strings.Contains(err.Error(), "did not stabilize after 3 attempts") || requests.Load() != 3 {
 		t.Fatalf("requests=%d err=%v", requests.Load(), err)
+	}
+	if got := collector.Snapshot().Retries; got != enphaseSnapshotAttempts-1 {
+		t.Fatalf("retry diagnostics = %d, want %d actual retries", got, enphaseSnapshotAttempts-1)
 	}
 }
 

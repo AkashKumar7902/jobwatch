@@ -11,13 +11,13 @@ package source
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -172,7 +172,7 @@ func (s *eightfold) Fetch(ctx context.Context) ([]model.Job, error) {
 	}
 
 	if expectedTotal > s.maxPostings {
-		log.Printf("eightfold %s: listing %d of %d postings (max_postings cap)", s.host, len(jobs), expectedTotal)
+		diagnostic.Cap(ctx, len(jobs), expectedTotal)
 	}
 	if expectedTotal > 0 && len(jobs) == 0 {
 		return nil, fmt.Errorf("eightfold %s: reported %d postings but produced none", s.host, expectedTotal)

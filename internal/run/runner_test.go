@@ -383,6 +383,8 @@ func TestSeedPreservesPendingDelivery(t *testing.T) {
 	n := &flakyNotifier{}
 	r, st := newRunner(t, n, true, false)
 	r.Sources = testSources()
+	var logs strings.Builder
+	r.Log = log.New(&logs, "", 0)
 	st.Add(testJob.ID, store.Record{Matched: true})
 
 	if err := r.RunOnce(context.Background()); err != nil {
@@ -391,6 +393,9 @@ func TestSeedPreservesPendingDelivery(t *testing.T) {
 	rec, _ := st.Get(testJob.ID)
 	if !rec.Matched || rec.Notified {
 		t.Fatalf("seed must preserve pending delivery, got %+v", rec)
+	}
+	if !strings.Contains(logs.String(), "retries=0 caps=0") || strings.Contains(logs.String(), "status=recovered") {
+		t.Fatalf("seed-only pass claimed a delivery retry:\n%s", logs.String())
 	}
 
 	r.SeedOnly = false
@@ -455,7 +460,7 @@ func TestSeedOnlyIncompleteFetchReturnsErrorAfterSaving(t *testing.T) {
 			if len(evaluated) != 0 || len(n.batches) != 0 {
 				t.Fatalf("incomplete seed evaluated %v or notified %v", evaluated, n.batches)
 			}
-			if !strings.Contains(logs.String(), "seed incomplete: saved 1 postings from complete sources") {
+			if !strings.Contains(logs.String(), "SEED status=incomplete postings=1") {
 				t.Fatalf("seed log did not report the safe saved count:\n%s", logs.String())
 			}
 
@@ -1489,7 +1494,7 @@ func TestNonReporterNotifierIsSkipped(t *testing.T) {
 		if err := r.RunOnce(context.Background()); err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(logs.String(), "no configured notifier implements notify.Reporter") {
+		if !strings.Contains(logs.String(), "WARN scope=run index=0 step=report code=no_reporter count=1") {
 			t.Fatalf("undeliverable report was dropped silently:\n%s", logs.String())
 		}
 	})
@@ -1650,13 +1655,14 @@ func TestCancelledRunCheckpointsProgress(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	var logs strings.Builder
 	job2 := model.Job{ID: "test/acme/2", Company: "Acme", Title: "Backend Dev", URL: "https://x/2"}
 	r := &Runner{
 		Sources:     []source.Source{&fakeSource{jobs: []model.Job{testJob, job2}}},
 		Matcher:     cancellingMatcher{cancel: cancel},
 		Notifiers:   []notify.Notifier{&flakyNotifier{}},
 		Store:       st,
-		Log:         log.New(io.Discard, "", 0),
+		Log:         log.New(&logs, "", 0),
 		Concurrency: 1,
 	}
 
@@ -1672,6 +1678,10 @@ func TestCancelledRunCheckpointsProgress(t *testing.T) {
 	}
 	if strings.Contains(string(data), job2.ID) {
 		t.Errorf("job %s was never evaluated and should not be in state", job2.ID)
+	}
+	if strings.Count(logs.String(), "BOARD index=") != 1 ||
+		!strings.Contains(logs.String(), "RUN status=cancelled local_state=saved code=cancelled") {
+		t.Fatalf("cancellation outcome is incomplete:\n%s", logs.String())
 	}
 }
 

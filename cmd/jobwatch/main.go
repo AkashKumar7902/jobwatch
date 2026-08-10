@@ -14,11 +14,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"sort"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -62,7 +64,9 @@ func main() {
 
 	runner, err := build(*configPath, *statePath, logger, *seed, *seedNew, *dryRun)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Printf("STARTUP status=failed problem=configuration")
+		writeErrorDetail(os.Stdout, "startup", err)
+		os.Exit(1)
 	}
 	runner.Rescan = *rescan
 	defer runner.Store.Close()
@@ -82,7 +86,9 @@ func main() {
 		return
 	}
 	if err := runner.RunOnce(ctx); err != nil {
-		logger.Fatal(err)
+		writeErrorDetail(os.Stdout, "run", err)
+		runner.Store.Close()
+		os.Exit(1)
 	}
 }
 
@@ -265,25 +271,23 @@ func build(configPath, statePath string, logger *log.Logger, seed, seedNew, dryR
 			reporters++
 		}
 	}
-	logger.Printf("starting: %d companies | matcher %s | notifiers %v | state %s (%d records)",
-		len(sources), describeMatcher(cfg.Matcher), notifierNames, cfg.Store.Path, st.Len())
+	logger.Printf("STARTUP status=ready boards=%d matcher=%s notifiers=%d state_records=%d",
+		len(sources), strconv.Quote(sanitizeStartupField(describeMatcher(cfg.Matcher))), len(notifierNames), st.Len())
 	if reporters == 0 {
 		// The whole point of board-health reporting is that a broken adapter
 		// stops being invisible. A configuration where no channel can carry
 		// those reports puts it right back to invisible, so say so out loud
 		// rather than letting the gap be discovered during an incident.
-		logger.Printf("warning: none of the configured notifiers %v can deliver board-health reports "+
-			"(no notify.Reporter); a board that stops answering will go unreported — add the console or email notifier",
-			notifierNames)
+		logger.Printf("WARN scope=run index=0 step=report code=no_reporter count=1")
 	}
 
-	for identity, previous := range previousStatePrefixes {
+	for range previousStatePrefixes {
 		// Said out loud because it is the one config line that MOVES existing
 		// records rather than describing how to fetch new ones. After the first
 		// run it is a no-op (nothing is left under the old prefix), so seeing it
 		// logged run after run with no "moved N record(s)" line is how the user
 		// learns the prefix they pasted was not the one holding the history.
-		logger.Printf("previous_state_prefix: %s will absorb any records still under %q", identity, previous)
+		logger.Printf("MIGRATION kind=previous_state_prefix status=configured records=0")
 	}
 
 	return &run.Runner{
@@ -292,10 +296,26 @@ func build(configPath, statePath string, logger *log.Logger, seed, seedNew, dryR
 		Notifiers:             notifiers,
 		Store:                 st,
 		Log:                   logger,
+		Errors:                os.Stdout,
 		Concurrency:           cfg.Poll.Concurrency,
 		SeedOnly:              seed,
 		SeedNewSources:        seedNew,
 		DryRun:                dryRun,
 		PreviousStatePrefixes: previousStatePrefixes,
 	}, nil
+}
+
+func writeErrorDetail(w io.Writer, stage string, err error) {
+	if w == nil || err == nil {
+		return
+	}
+	fmt.Fprintf(w, "jobwatch %s: %v\n", stage, err)
+}
+
+func sanitizeStartupField(s string) string {
+	runes := []rune(strings.ToValidUTF8(s, "�"))
+	if len(runes) > 120 {
+		runes = append(runes[:120], '…')
+	}
+	return string(runes)
 }

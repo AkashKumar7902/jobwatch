@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
 )
@@ -41,6 +42,10 @@ func newLLM(t *testing.T, baseURL string, extra params.Map) *llm {
 	}
 	return m.(*llm)
 }
+
+type llmRoundTripper func(*http.Request) (*http.Response, error)
+
+func (f llmRoundTripper) RoundTrip(req *http.Request) (*http.Response, error) { return f(req) }
 
 func matchLLM(t *testing.T, m Matcher) Result {
 	t.Helper()
@@ -203,11 +208,66 @@ func TestLLMRetriesCurrentTransientStatuses(t *testing.T) {
 			}))
 			defer srv.Close()
 
-			result := matchLLM(t, newLLM(t, srv.URL, nil))
+			ctx, collector := diagnostic.WithCollector(context.Background())
+			result, err := newLLM(t, srv.URL, nil).Match(ctx, llmJob)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if !result.Matched || attempts != 2 {
 				t.Errorf("success after retry = %+v after %d attempts", result, attempts)
 			}
+			if got := collector.Snapshot().Retries; got != 1 {
+				t.Errorf("retry diagnostics = %d, want 1", got)
+			}
 		})
+	}
+}
+
+func TestLLMTransportRetryEmitsDiagnostic(t *testing.T) {
+	m := newLLM(t, "https://llm.invalid", nil)
+	attempts := 0
+	base, collector := diagnostic.WithCollector(context.Background())
+	ctx, cancel := context.WithCancel(base)
+	defer cancel()
+	retryObserved := make(chan bool, 1)
+	m.client.Transport = llmRoundTripper(func(*http.Request) (*http.Response, error) {
+		attempts++
+		go func() {
+			// Cancellation begins only after the sealed retry event appears,
+			// guaranteeing ask has passed its pre-retry ctx check. The active
+			// retry wait then exits immediately without a timing-based timeout.
+			deadline := time.NewTimer(2 * time.Second)
+			defer deadline.Stop()
+			ticker := time.NewTicker(time.Millisecond)
+			defer ticker.Stop()
+			for {
+				if collector.Snapshot().Retries > 0 {
+					cancel()
+					retryObserved <- true
+					return
+				}
+				select {
+				case <-ticker.C:
+				case <-deadline.C:
+					cancel()
+					retryObserved <- false
+					return
+				}
+			}
+		}()
+		return nil, errors.New("connection reset")
+	})
+	if _, err := m.Match(ctx, llmJob); !errors.Is(err, context.Canceled) {
+		t.Fatalf("Match() error = %v, want interrupted retry wait", err)
+	}
+	if observed := <-retryObserved; !observed {
+		t.Fatal("transport retry diagnostic was not observed before safety deadline")
+	}
+	if attempts != 1 {
+		t.Fatalf("transport attempts = %d, want one failed attempt before interrupted retry", attempts)
+	}
+	if got := collector.Snapshot().Retries; got != 1 {
+		t.Fatalf("transport retry diagnostics = %d, want 1", got)
 	}
 }
 

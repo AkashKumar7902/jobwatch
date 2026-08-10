@@ -3,6 +3,8 @@ config.yaml
 
 # built binary
 /jobwatch
+__pycache__/
+*.pyc
 
 # runtime state & logs
 state.json

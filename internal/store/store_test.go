@@ -251,6 +251,77 @@ func newStore(t *testing.T) *Store {
 	return st
 }
 
+func TestPersistenceTracksSavedAndDirtySnapshots(t *testing.T) {
+	st := newStore(t)
+	if got := st.Persistence(); got != (Persistence{}) {
+		t.Fatalf("new store persistence = %+v", got)
+	}
+	st.Add("one", Record{Title: "one"})
+	if got := st.Persistence(); got.Revision != 1 || got.SavedRevision != 0 || got.SuccessfulSaves != 0 {
+		t.Fatalf("dirty persistence = %+v", got)
+	}
+	if err := st.Save(); err != nil {
+		t.Fatal(err)
+	}
+	if got := st.Persistence(); got.Revision != 1 || got.SavedRevision != 1 || got.SuccessfulSaves != 1 {
+		t.Fatalf("saved persistence = %+v", got)
+	}
+	st.Add("two", Record{Title: "two"})
+	if err := os.Remove(st.path); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(st.path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := st.Save(); err == nil {
+		t.Fatal("Save succeeded with a directory at the state path")
+	}
+	if got := st.Persistence(); got.Revision != 2 || got.SavedRevision != 1 || got.SuccessfulSaves != 1 {
+		t.Fatalf("failed save changed persistence = %+v", got)
+	}
+}
+
+func TestDeleteMarksOnlyARealRemovalDirty(t *testing.T) {
+	st := newStore(t)
+	st.Add("one", Record{Title: "one"})
+	if err := st.Save(); err != nil {
+		t.Fatal(err)
+	}
+	clean := st.Persistence()
+	st.Delete("missing")
+	if got := st.Persistence(); got != clean {
+		t.Fatalf("missing Delete dirtied store: before=%+v after=%+v", clean, got)
+	}
+	st.Delete("one")
+	got := st.Persistence()
+	if got.Revision != clean.Revision+1 || got.SavedRevision != clean.SavedRevision || got.SuccessfulSaves != clean.SuccessfulSaves {
+		t.Fatalf("real Delete persistence = %+v, before %+v", got, clean)
+	}
+}
+
+func TestRekeyMarksOnlyARealMoveDirty(t *testing.T) {
+	st := newStore(t)
+	st.Add("old/one", Record{Title: "one"})
+	st.Add("old/two", Record{Title: "two"})
+	if err := st.Save(); err != nil {
+		t.Fatal(err)
+	}
+	clean := st.Persistence()
+	if moved, merged := st.Rekey(func(id string) string { return id }); moved != 0 || merged != 0 {
+		t.Fatalf("no-op Rekey moved=%d merged=%d", moved, merged)
+	}
+	if got := st.Persistence(); got != clean {
+		t.Fatalf("no-op Rekey dirtied store: before=%+v after=%+v", clean, got)
+	}
+	if moved, merged := st.Rekey(func(id string) string { return strings.Replace(id, "old/", "new/", 1) }); moved != 2 || merged != 0 {
+		t.Fatalf("Rekey moved=%d merged=%d, want 2/0", moved, merged)
+	}
+	got := st.Persistence()
+	if got.Revision != clean.Revision+1 || got.SavedRevision != clean.SavedRevision || got.SuccessfulSaves != clean.SuccessfulSaves {
+		t.Fatalf("real Rekey persistence = %+v, before %+v", got, clean)
+	}
+}
+
 func TestRekeyMovesAndCounts(t *testing.T) {
 	st := newStore(t)
 	for id, rec := range realWorldRecords(t) {

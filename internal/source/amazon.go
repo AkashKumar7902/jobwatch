@@ -10,7 +10,6 @@ package source
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -18,6 +17,7 @@ import (
 	"strings"
 	"time"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -135,7 +135,7 @@ func (s *amazon) Fetch(ctx context.Context) ([]model.Job, error) {
 		offset = scanned
 	}
 	if expectedHits > s.maxPostings {
-		log.Printf("amazon %s: listing %d of %d postings (max_postings cap)", s.country, len(jobs), expectedHits)
+		diagnostic.Cap(ctx, len(jobs), expectedHits)
 	}
 	if expectedHits > 0 && len(jobs) == 0 {
 		return nil, fmt.Errorf("amazon %s: reported %d hits but produced none", s.country, expectedHits)

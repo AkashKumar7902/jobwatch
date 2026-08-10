@@ -9,12 +9,12 @@ package source
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -77,7 +77,7 @@ func (s *atlassian) Fetch(ctx context.Context) ([]model.Job, error) {
 		return nil, fmt.Errorf("atlassian listings returned no jobs (endpoint or schema may have changed)")
 	}
 	if len(postings) > s.maxPostings {
-		log.Printf("atlassian: listing %d of %d postings (max_postings cap)", s.maxPostings, len(postings))
+		diagnostic.Cap(ctx, s.maxPostings, len(postings))
 		postings = postings[:s.maxPostings]
 	}
 

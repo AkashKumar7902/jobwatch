@@ -10,13 +10,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 
+	"jobwatch/internal/diagnostic"
 	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
@@ -174,7 +174,7 @@ func (s *kula) Fetch(ctx context.Context) ([]model.Job, error) {
 		}
 	}
 	if expectedCount > s.maxPostings {
-		log.Printf("kula %s: listing %d of %d postings (max_postings cap)", s.account, len(jobs), expectedCount)
+		diagnostic.Cap(ctx, len(jobs), expectedCount)
 	}
 	if expectedCount > 0 && len(jobs) == 0 {
 		return nil, fmt.Errorf("kula %s: %d postings produced no public jobs", s.account, expectedCount)

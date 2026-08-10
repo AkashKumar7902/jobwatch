@@ -59,6 +59,7 @@ jobs:
       - name: Build
         id: build
         run: |
+          python3 -m unittest scripts/test_run_summary.py
           go test ./...
           go vet ./...
           go build -o jobwatch ./cmd/jobwatch
@@ -85,39 +86,21 @@ jobs:
           set -o pipefail
           case "${{ steps.restore.outputs.mode }}" in
             restored)
-              ./jobwatch -config config.example.yaml -state state.json -seed-new-sources 2>&1 | tee run.log
+              # The console notifier writes human match bodies and URLs to
+              # stdout. Scheduled logs retain only the sanitized logger
+              # protocol on stderr; email notification behavior is unchanged.
+              ./jobwatch -config config.example.yaml -state state.json -seed-new-sources \
+                2>&1 > /dev/null | tee run.log
               ;;
             bootstrap)
-              ./jobwatch -config config.example.yaml -state state.json -seed 2>&1 | tee run.log
+              ./jobwatch -config config.example.yaml -state state.json -seed \
+                2>&1 > /dev/null | tee run.log
               ;;
             *)
               echo "invalid state restore mode: ${{ steps.restore.outputs.mode }}" >&2
               exit 1
               ;;
           esac
-
-      - name: Publish run summary
-        if: always()
-        run: |
-          [ -f run.log ] || exit 0
-          {
-            echo "### jobwatch run"
-            echo '```'
-            grep -E "^jobwatch .*(starting|run complete|seeded|state saved|notify )" run.log | sed 's/^jobwatch //' | tail -8
-            echo '```'
-            if grep -q "MATCH " run.log; then
-              echo "### Matches"
-              grep "MATCH " run.log | sed -E 's/^jobwatch [0-9\/]+ [0-9:]+ MATCH +/- /' | head -40
-            else
-              echo "_No new matches this run._"
-            fi
-            if grep -qE "fetch .+\([1-9][0-9]* new" run.log; then
-              echo "### Boards with new postings"
-              echo '```'
-              grep -E "fetch .+\([1-9][0-9]* new" run.log | sed -E 's/^jobwatch [0-9\/]+ [0-9:]+ //' | head -30
-              echo '```'
-            fi
-          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Publish state
         id: publish
@@ -140,3 +123,25 @@ jobs:
             --base-sha "${{ steps.restore.outputs.base_sha }}" \
             --source-sha "$GITHUB_SHA" \
             --github-output "$GITHUB_OUTPUT"
+
+      - name: Publish run summary
+        if: always()
+        env:
+          RESTORE_OUTCOME: ${{ steps.restore.outcome }}
+          RESTORE_MODE: ${{ steps.restore.outputs.mode }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          POLL_OUTCOME: ${{ steps.poll.outcome }}
+          PUBLISH_OUTCOME: ${{ steps.publish.outcome }}
+          PUBLISH_CHANGED: ${{ steps.publish.outputs.changed }}
+          PUBLISH_SHA: ${{ steps.publish.outputs.publish_sha }}
+        run: |
+          python3 scripts/run_summary.py \
+            --log run.log \
+            --restore "$RESTORE_OUTCOME" \
+            --restore-mode "$RESTORE_MODE" \
+            --build "$BUILD_OUTCOME" \
+            --poll "$POLL_OUTCOME" \
+            --publish "$PUBLISH_OUTCOME" \
+            --publish-changed "$PUBLISH_CHANGED" \
+            --publish-sha "$PUBLISH_SHA" \
+            >> "$GITHUB_STEP_SUMMARY"
