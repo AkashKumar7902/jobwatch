@@ -206,8 +206,8 @@ func TestEveryValidatedBoardIsConfiguredOnce(t *testing.T) {
 		}
 		configured[id] = company.Name
 	}
-	if len(configured) != 260 {
-		t.Fatalf("configured source count = %d, want 260", len(configured))
+	if len(configured) != 263 {
+		t.Fatalf("configured source count = %d, want 263", len(configured))
 	}
 
 	validatedSets := map[string]map[string]struct{}{}
@@ -257,7 +257,7 @@ func TestEveryValidatedBoardIsConfiguredOnce(t *testing.T) {
 			configuredOutsideAudits++
 		}
 	}
-	if configuredOutsideAudits != 52 {
-		t.Errorf("configured identities outside audits = %d, want 52", configuredOutsideAudits)
+	if configuredOutsideAudits != 55 {
+		t.Errorf("configured identities outside audits = %d, want 55", configuredOutsideAudits)
 	}
 }
