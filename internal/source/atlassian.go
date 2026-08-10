@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -81,15 +82,11 @@ func (s *atlassian) Fetch(ctx context.Context) ([]model.Job, error) {
 	}
 
 	jobs := make([]model.Job, 0, len(postings))
-	seen := make(map[int64]struct{}, len(postings))
+	seen := make(map[int64]atlassianPosting, len(postings))
 	for i, posting := range postings {
 		if posting.ID <= 0 {
 			return nil, fmt.Errorf("atlassian item %d has invalid id %d", i, posting.ID)
 		}
-		if _, duplicate := seen[posting.ID]; duplicate {
-			return nil, fmt.Errorf("atlassian duplicate posting id %d", posting.ID)
-		}
-		seen[posting.ID] = struct{}{}
 		if posting.PortalJobPost == nil {
 			return nil, fmt.Errorf("atlassian posting %d omitted portalJobPost", posting.ID)
 		}
@@ -110,14 +107,22 @@ func (s *atlassian) Fetch(ctx context.Context) ([]model.Job, error) {
 			return nil, fmt.Errorf("atlassian posting %d has no description fields", posting.ID)
 		}
 		id := strconv.FormatInt(posting.ID, 10)
-		jobs = append(jobs, model.Job{
+		job := model.Job{
 			ID:          "atlassian/" + id,
 			Company:     s.company,
 			Title:       title,
 			Location:    strings.Join(distinctStrings(posting.Locations), "; "),
 			URL:         strings.TrimRight(s.detailBase, "/") + "/" + id,
 			Description: description,
-		})
+		}
+		if previous, duplicate := seen[posting.ID]; duplicate {
+			if !reflect.DeepEqual(previous, posting) {
+				return nil, fmt.Errorf("atlassian conflicting duplicate posting id %d", posting.ID)
+			}
+			continue
+		}
+		seen[posting.ID] = posting
+		jobs = append(jobs, job)
 	}
 	return jobs, nil
 }

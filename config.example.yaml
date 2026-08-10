@@ -194,7 +194,6 @@ companies:
   # Imported from List_OF_Companies; see catalog/list-of-companies-audit.tsv.
   - {name: "Arcesium", source: greenhouse, params: {board_token: "arcesiumllc"}}
   - {name: "Harness", source: greenhouse, params: {board_token: "harnessinc"}}
-  - {name: "Tekion", source: greenhouse, params: {board_token: "tekion"}}
   - {name: "Zynga", source: greenhouse, params: {board_token: "zyngacareers"}}
 
   # ---- Lever ----
@@ -219,6 +218,9 @@ companies:
   - {name: "Turvo", source: lever, params: {site: "turvo"}}
   - {name: "Zeta", source: lever, params: {site: "zeta"}}
 
+  # Imported from List_OF_Companies; see catalog/list-of-companies-audit.tsv.
+  - {name: "PayU", source: lever, params: {site: "payugpo"}, previous_state_prefix: "payu/"}
+
   # ---- Ashby ----
   - {name: "Buffer", source: ashby, params: {board_name: buffer}}
   - {name: "Help Scout", source: ashby, params: {board_name: helpscout}}
@@ -241,6 +243,7 @@ companies:
   - {name: "Ramp", source: ashby, params: {board_name: "ramp"}}
   - {name: "Reprise", source: ashby, params: {board_name: "reprise"}}
   - {name: "SearchApi", source: ashby, params: {board_name: "SearchApi"}}
+  - {name: "Tekion", source: ashby, params: {board_name: "tekion"}}
   - {name: "Timely (Memory.ai)", source: ashby, params: {board_name: "timely"}}
 
   # ---- Workable ----
@@ -431,7 +434,6 @@ companies:
   - {name: "Siemens EDA", source: siemensjobs}
   - {name: "Nykaa", source: nykaa}
   - {name: "Airoha Technology", source: airoha}
-  - {name: "PayU", source: payu}
   - {name: "42Gears", source: forty2gears}
   - {name: "Walmart Global Tech India", source: walmart}
   - {name: "AppLogic Networks (formerly Sandvine)", source: ukg, params: {host: "recruiting2.ultipro.com", tenant: "PRO1053PROC", board: "d6eed263-4950-420d-b9f8-5b1a441c931e"}}

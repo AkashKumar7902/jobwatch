@@ -71,7 +71,6 @@ xAI	greenhouse	greenhouse/us/xai	greenhouse/xai/
 Yugabyte	greenhouse	greenhouse/us/yugabyte	greenhouse/yugabyte/
 Arcesium	greenhouse	greenhouse/us/arcesiumllc	greenhouse/arcesiumllc/
 Harness	greenhouse	greenhouse/us/harnessinc	greenhouse/harnessinc/
-Tekion	greenhouse	greenhouse/us/tekion	greenhouse/tekion/
 Zynga	greenhouse	greenhouse/us/zyngacareers	greenhouse/zyngacareers/
 Envato	lever	lever/us/envato-2	lever/envato-2/
 HighLevel	lever	lever/us/gohighlevel	lever/gohighlevel/
@@ -91,6 +90,7 @@ Mindtickle	lever	lever/us/mindtickle	lever/mindtickle/
 Paytm	lever	lever/us/paytm	lever/paytm/
 Turvo	lever	lever/us/turvo	lever/turvo/
 Zeta	lever	lever/us/zeta	lever/zeta/
+PayU	lever	lever/us/payugpo	lever/payugpo/
 Buffer	ashby	ashby/buffer	ashby/buffer/
 Help Scout	ashby	ashby/helpscout	ashby/helpscout/
 Hubstaff	ashby	ashby/hubstaff	ashby/hubstaff/
@@ -110,6 +110,7 @@ Quora	ashby	ashby/quora	ashby/quora/
 Ramp	ashby	ashby/ramp	ashby/ramp/
 Reprise	ashby	ashby/reprise	ashby/reprise/
 SearchApi	ashby	ashby/SearchApi	ashby/SearchApi/
+Tekion	ashby	ashby/tekion	ashby/tekion/
 Timely (Memory.ai)	ashby	ashby/timely	ashby/timely/
 AwesomeMotive	workable	workable/awesomemotive	workable/awesomemotive/
 Olark	workable	workable/olark	workable/olark/
@@ -249,7 +250,6 @@ Fastenal	fastenal	fastenal	fastenal/
 Siemens EDA	siemensjobs	siemensjobs	siemensjobs/
 Nykaa	nykaa	nykaa	nykaa/
 Airoha Technology	airoha	airoha	airoha/
-PayU	payu	payu	payu/
 42Gears	forty2gears	forty2gears	forty2gears/
 Walmart Global Tech India	walmart	walmart/IN	walmart/
 AppLogic Networks (formerly Sandvine)	ukg	ukg/PRO1053PROC/d6eed263-4950-420d-b9f8-5b1a441c931e	ukg/PRO1053PROC/d6eed263-4950-420d-b9f8-5b1a441c931e/

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"jobwatch/internal/model"
 	"jobwatch/internal/params"
 )
 
@@ -229,6 +230,96 @@ func TestAtlassianBulkNormalization(t *testing.T) {
 	}
 }
 
+func TestAtlassianDuplicateReconciliation(t *testing.T) {
+	t.Run("identical triple", func(t *testing.T) {
+		jobs, err := fetchAtlassianFixture(t, []map[string]any{
+			atlassianFixturePosting(1, "One"),
+			atlassianFixturePosting(1, "One"),
+			atlassianFixturePosting(1, "One"),
+		}, 10)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(jobs) != 1 || jobs[0].ID != "atlassian/1" {
+			t.Fatalf("jobs = %+v", jobs)
+		}
+	})
+
+	t.Run("unused field conflict", func(t *testing.T) {
+		first := atlassianFixturePosting(1, "One")
+		second := atlassianFixturePosting(1, "One")
+		second["category"] = "Different unused category"
+		_, err := fetchAtlassianFixture(t, []map[string]any{first, second}, 10)
+		if err == nil || !strings.Contains(err.Error(), "conflicting duplicate posting id 1") {
+			t.Fatalf("error = %v", err)
+		}
+	})
+
+	t.Run("invalid duplicate is validated", func(t *testing.T) {
+		first := atlassianFixturePosting(1, "One")
+		second := atlassianFixturePosting(1, "One")
+		second["overview"] = ""
+		_, err := fetchAtlassianFixture(t, []map[string]any{first, second}, 10)
+		if err == nil || !strings.Contains(err.Error(), "has no description fields") {
+			t.Fatalf("error = %v", err)
+		}
+	})
+
+	for _, test := range []struct {
+		name string
+		cap  int
+		want string
+	}{
+		{name: "duplicate consumes raw cap", cap: 2, want: "atlassian/1"},
+		{name: "third raw row admitted", cap: 3, want: "atlassian/1,atlassian/2"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			jobs, err := fetchAtlassianFixture(t, []map[string]any{
+				atlassianFixturePosting(1, "One"),
+				atlassianFixturePosting(1, "One"),
+				atlassianFixturePosting(2, "Two"),
+			}, test.cap)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ids := make([]string, len(jobs))
+			for index := range jobs {
+				ids[index] = jobs[index].ID
+			}
+			if got := strings.Join(ids, ","); got != test.want {
+				t.Fatalf("IDs = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func atlassianFixturePosting(id int64, title string) map[string]any {
+	return map[string]any{
+		"id": id, "portalId": 242, "title": title, "locations": []string{"Remote"},
+		"category": "Engineering", "overview": "<p>Description</p>",
+		"responsibilities": "", "qualifications": "", "compensation": "",
+		"applyUrl": "https://apply.example/job",
+		"portalJobPost": map[string]any{
+			"portalId": 242, "portalUrl": "https://portal.example/job", "id": id, "updatedDate": "2026-08-10",
+		},
+	}
+}
+
+func fetchAtlassianFixture(t *testing.T, postings []map[string]any, cap int) ([]model.Job, error) {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		if err := json.NewEncoder(w).Encode(postings); err != nil {
+			t.Error(err)
+		}
+	}))
+	defer server.Close()
+	src := &atlassian{
+		company: "Atlassian", endpoint: server.URL, detailBase: server.URL + "/details",
+		maxPostings: cap, client: server.Client(),
+	}
+	return src.Fetch(context.Background())
+}
+
 func TestDEShawNextDataRegularAndInternships(t *testing.T) {
 	payload := `{
 		"props":{"pageProps":{"jobsFetchingError":false,
@@ -323,24 +414,100 @@ func TestAvatureSSRPaginationAndLazyDetail(t *testing.T) {
 	}
 }
 
+func TestParseAvatureTotalMarkers(t *testing.T) {
+	tests := []struct {
+		name    string
+		body    string
+		want    int
+		wantErr string
+	}{
+		{
+			name: "live shaped aria only",
+			body: `<div class="list-controls__text__legend" aria-label="337 results">Jobs</div>`,
+			want: 337,
+		},
+		{
+			name: "decoded comma aria",
+			body: `<span data-x="1" class="other list-controls__text__legend" aria-label="1&#44;234 result">Jobs</span>`,
+			want: 1234,
+		},
+		{
+			name: "legacy and aria agree",
+			body: `<div>Showing jobs of 337</div><div class="list-controls__text__legend" aria-label="337 results"></div>`,
+			want: 337,
+		},
+		{
+			name: "trusted aria overrides legacy candidate",
+			body: `<div>Showing jobs of 336</div><div class="list-controls__text__legend" aria-label="337 results"></div>`,
+			want: 337,
+		},
+		{
+			name: "trusted aria ignores unrelated class year",
+			body: `<p>Class of 2027</p><div class="list-controls__text__legend" aria-label="337 results"></div>`,
+			want: 337,
+		},
+		{
+			name:    "trusted markers conflict",
+			body:    `<div class="list-controls__text__legend" aria-label="336 results"></div><span class="list-controls__text__legend" aria-label="337 results"></span>`,
+			wantErr: "conflicting total result counts",
+		},
+		{
+			name:    "legacy fallback markers conflict",
+			body:    `<div>Showing jobs of 336</div><p>Class of 2027</p>`,
+			wantErr: "conflicting total result counts",
+		},
+		{
+			name:    "trusted aria marker is malformed",
+			body:    `<div>Showing jobs of 337</div><div class="list-controls__text__legend" aria-label="about 337 jobs"></div>`,
+			wantErr: "invalid total result aria-label",
+		},
+		{
+			name:    "untrusted aria marker is ignored",
+			body:    `<p class="list-controls__text__legend" aria-label="337 results"></p><div class="not-list-controls__text__legend" aria-label="337 results"></div>`,
+			wantErr: "omitted total result count",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseAvatureTotal([]byte(test.body))
+			if test.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+					t.Fatalf("error = %v, want %q", err, test.wantErr)
+				}
+				return
+			}
+			if err != nil || got != test.want {
+				t.Fatalf("total = %d, error = %v, want %d", got, err, test.want)
+			}
+		})
+	}
+}
+
 func pathLast(value string) string {
 	value = strings.TrimRight(value, "/")
 	return value[strings.LastIndexByte(value, '/')+1:]
 }
 
-func TestMediaNetDepartmentsDetailsAndStablePostID(t *testing.T) {
+func TestMediaNetDepartmentsDetailsAndStablePath(t *testing.T) {
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/":
 			w.Write([]byte(`<a class="flex-btn-link" href="/engineering/">1 Position</a>
-				<a class="flex-btn-link" href="/design/">0 Position</a>`))
+				<a class="flex-btn-link" href="/design/">1 Position</a>`))
 		case "/engineering/":
-			fmt.Fprintf(w, `<ul class="openings-list"><li><a href="%s/engineering/engineer-builder/">Engineer &amp; Builder</a></li></ul>`, server.URL)
-		case "/engineering/engineer-builder/":
+			fmt.Fprintf(w, `<ul class="openings-list"><li><a href="%s/engineering/shared-role/">Engineer &amp; Builder</a></li></ul>`, server.URL)
+		case "/design/":
+			fmt.Fprint(w, `<ul class="openings-list"><li><a href="/design/shared-role/">Product Designer</a></li></ul>`)
+		case "/engineering/shared-role/":
 			w.Write([]byte(`<h2 id="jobProfile">Engineer &amp; Builder</h2>
 				<input type="hidden" name="post_id" value="8420">
 				<div class="post-body"><p>Build <strong>ad systems</strong>.</p><p>3+ years.</p></div>
+				<div class="social-share-wrapper">Apply</div>`))
+		case "/design/shared-role/":
+			w.Write([]byte(`<h2 id="jobProfile">Product Designer</h2>
+				<input type="hidden" name="post_id" value="8420">
+				<div class="post-body"><p>Design ad systems.</p></div>
 				<div class="social-share-wrapper">Apply</div>`))
 		default:
 			http.NotFound(w, r)
@@ -355,10 +522,79 @@ func TestMediaNetDepartmentsDetailsAndStablePostID(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(jobs) != 1 || jobs[0].ID != "medianet/8420" ||
+	if len(jobs) != 2 || jobs[0].ID != "medianet/engineering/shared-role" ||
+		jobs[1].ID != "medianet/design/shared-role" ||
 		jobs[0].Title != "Engineer & Builder" ||
 		!strings.Contains(jobs[0].Description, "ad systems") {
 		t.Fatalf("unexpected jobs: %+v", jobs)
+	}
+}
+
+func TestMediaNetRejectsDuplicateCanonicalPathBeforeDetails(t *testing.T) {
+	detailCalls := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/":
+			fmt.Fprint(w, `<a class="flex-btn-link" href="/engineering/">1 Position</a><a class="flex-btn-link" href="/design/">1 Position</a>`)
+		case "/engineering/", "/design/":
+			fmt.Fprint(w, `<ul class="openings-list"><li><a href="/roles/shared/">Shared</a></li></ul>`)
+		case "/roles/shared/":
+			detailCalls++
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	src := &mediaNet{company: "Media.net", baseURL: server.URL + "/", maxPostings: 10, client: server.Client()}
+	_, err := src.Fetch(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "duplicate detail path") {
+		t.Fatalf("error = %v", err)
+	}
+	if detailCalls != 0 {
+		t.Fatalf("made %d detail requests before rejecting duplicate path", detailCalls)
+	}
+}
+
+func TestMediaNetSameSiteURLSafety(t *testing.T) {
+	src := &mediaNet{baseURL: "https://careers.media.net/"}
+	for _, valid := range []string{"/engineering/role/", "https://careers.media.net/design/role"} {
+		if _, err := src.sameSiteURL(valid); err != nil {
+			t.Errorf("valid URL %q: %v", valid, err)
+		}
+	}
+	for _, unsafe := range []string{
+		"http://careers.media.net/engineering/role/",
+		"https://CAREERS.media.net/engineering/role/",
+		"https://user@careers.media.net/engineering/role/",
+		"/engineering/role/?query=1",
+		"/engineering/role/?",
+		"/engineering/role/#fragment",
+		"/engineering/%72ole/",
+		"/engineering/../role/",
+		"/engineering//role/",
+	} {
+		if _, err := src.sameSiteURL(unsafe); err == nil {
+			t.Errorf("unsafe URL %q was accepted", unsafe)
+		}
+	}
+}
+
+func TestMediaNetRejectsMalformedPostIDMarker(t *testing.T) {
+	validTail := `<h2 id="jobProfile">Engineer</h2><div class="post-body"><p>Build.</p></div><div class="social-share-wrapper">Apply</div>`
+	for _, test := range []struct {
+		name   string
+		marker string
+	}{
+		{name: "missing"},
+		{name: "zero", marker: `<input name="post_id" value="0">`},
+		{name: "not numeric", marker: `<input name="post_id" value="job">`},
+		{name: "conflicting", marker: `<input name="post_id" value="8420"><input name="post_id" value="8421">`},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if _, _, _, err := parseMediaNetDetail([]byte(test.marker + validTail)); err == nil {
+				t.Fatal("expected malformed post_id error")
+			}
+		})
 	}
 }
 

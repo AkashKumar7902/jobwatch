@@ -2,14 +2,16 @@ package source
 
 // Media.net's small first-party WordPress careers site is fully
 // server-rendered. The home page enumerates departments and counts, each
-// department page lists detail links, and each detail page exposes a stable
-// hidden post_id plus the complete description.
+// department page lists detail links, and each detail page exposes a required
+// hidden form marker plus the complete description. The normalized detail path
+// is the stable posting identity.
 
 import (
 	"context"
 	"fmt"
 	"net/http"
 	"net/url"
+	"path"
 	"regexp"
 	"strconv"
 	"strings"
@@ -58,6 +60,7 @@ type mediaNetDepartment struct {
 }
 
 type mediaNetLink struct {
+	ID    string
 	Title string
 	URL   string
 }
@@ -78,7 +81,7 @@ func (s *mediaNet) Fetch(ctx context.Context) ([]model.Job, error) {
 	}
 
 	var links []mediaNetLink
-	seenURLs := make(map[string]struct{})
+	seenIDs := make(map[string]struct{})
 	for _, department := range departments {
 		body, err := fetchHTML(ctx, s.client, department.URL, customListBodyLimit)
 		if err != nil {
@@ -92,10 +95,10 @@ func (s *mediaNet) Fetch(ctx context.Context) ([]model.Job, error) {
 			return nil, fmt.Errorf("medianet department %s listed %d jobs, homepage reported %d", department.URL, len(departmentLinks), department.Count)
 		}
 		for _, link := range departmentLinks {
-			if _, duplicate := seenURLs[link.URL]; duplicate {
-				return nil, fmt.Errorf("medianet: duplicate detail URL %q", link.URL)
+			if _, duplicate := seenIDs[link.ID]; duplicate {
+				return nil, fmt.Errorf("medianet: duplicate detail path %q", link.ID)
 			}
-			seenURLs[link.URL] = struct{}{}
+			seenIDs[link.ID] = struct{}{}
 			links = append(links, link)
 		}
 	}
@@ -107,25 +110,20 @@ func (s *mediaNet) Fetch(ctx context.Context) ([]model.Job, error) {
 	}
 
 	jobs := make([]model.Job, 0, len(links))
-	seenIDs := make(map[int64]struct{}, len(links))
 	for _, link := range links {
 		body, err := fetchHTML(ctx, s.client, link.URL, customDetailBodyLimit)
 		if err != nil {
 			return nil, fmt.Errorf("medianet detail %s: %w", link.URL, err)
 		}
-		id, title, description, err := parseMediaNetDetail(body)
+		_, title, description, err := parseMediaNetDetail(body)
 		if err != nil {
 			return nil, fmt.Errorf("medianet detail %s: %w", link.URL, err)
 		}
 		if !strings.EqualFold(title, link.Title) {
 			return nil, fmt.Errorf("medianet detail %s title %q does not match list title %q", link.URL, title, link.Title)
 		}
-		if _, duplicate := seenIDs[id]; duplicate {
-			return nil, fmt.Errorf("medianet: duplicate post_id %d", id)
-		}
-		seenIDs[id] = struct{}{}
 		jobs = append(jobs, model.Job{
-			ID:          "medianet/" + strconv.FormatInt(id, 10),
+			ID:          link.ID,
 			Company:     s.company,
 			Title:       title,
 			URL:         link.URL,
@@ -182,22 +180,76 @@ func (s *mediaNet) parseDepartment(body []byte) ([]mediaNetLink, error) {
 		if err != nil {
 			return nil, err
 		}
-		links = append(links, mediaNetLink{Title: title, URL: publicURL})
+		parsed, _ := url.Parse(publicURL)
+		relativePath, err := mediaNetRelativePath(parsed)
+		if err != nil {
+			return nil, err
+		}
+		links = append(links, mediaNetLink{ID: "medianet/" + relativePath, Title: title, URL: publicURL})
 	}
 	return links, nil
 }
 
 func (s *mediaNet) sameSiteURL(ref string) (string, error) {
-	publicURL, err := resolveReference(s.baseURL, ref)
+	if ref != strings.TrimSpace(ref) {
+		return "", fmt.Errorf("URL %q is not canonical", ref)
+	}
+	reference, err := url.Parse(ref)
 	if err != nil {
 		return "", err
 	}
-	base, _ := url.Parse(s.baseURL)
-	parsed, err := url.Parse(publicURL)
-	if err != nil || parsed.Host != base.Host {
-		return "", fmt.Errorf("URL %q is not on %s", publicURL, base.Host)
+	if err := validateMediaNetURL(reference, false); err != nil {
+		return "", fmt.Errorf("URL %q: %w", ref, err)
 	}
-	return publicURL, nil
+	if mediaNetHasDotSegment(reference.Path) {
+		return "", fmt.Errorf("URL %q has a dot path segment", ref)
+	}
+	base, err := url.Parse(s.baseURL)
+	if err != nil {
+		return "", err
+	}
+	parsed := base.ResolveReference(reference)
+	if parsed.Scheme != base.Scheme || parsed.Host != base.Host {
+		return "", fmt.Errorf("URL %q does not match %s://%s", parsed.String(), base.Scheme, base.Host)
+	}
+	if err := validateMediaNetURL(parsed, true); err != nil {
+		return "", fmt.Errorf("URL %q: %w", parsed.String(), err)
+	}
+	return parsed.String(), nil
+}
+
+func validateMediaNetURL(parsed *url.URL, requirePath bool) error {
+	if parsed.Opaque != "" || parsed.User != nil {
+		return fmt.Errorf("userinfo or opaque URLs are not allowed")
+	}
+	if parsed.RawQuery != "" || parsed.ForceQuery || parsed.Fragment != "" || parsed.RawFragment != "" {
+		return fmt.Errorf("query strings and fragments are not allowed")
+	}
+	if parsed.RawPath != "" || parsed.EscapedPath() != parsed.Path {
+		return fmt.Errorf("encoded paths are not allowed")
+	}
+	if requirePath {
+		_, err := mediaNetRelativePath(parsed)
+		return err
+	}
+	return nil
+}
+
+func mediaNetRelativePath(parsed *url.URL) (string, error) {
+	trimmed := strings.TrimSuffix(parsed.Path, "/")
+	if trimmed == "" || !strings.HasPrefix(trimmed, "/") || path.Clean(trimmed) != trimmed {
+		return "", fmt.Errorf("path %q is not canonical", parsed.Path)
+	}
+	return strings.TrimPrefix(trimmed, "/"), nil
+}
+
+func mediaNetHasDotSegment(value string) bool {
+	for _, segment := range strings.Split(value, "/") {
+		if segment == "." || segment == ".." {
+			return true
+		}
+	}
+	return false
 }
 
 func parseMediaNetDetail(body []byte) (int64, string, string, error) {
