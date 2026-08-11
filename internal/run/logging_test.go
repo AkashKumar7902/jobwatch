@@ -58,6 +58,25 @@ func TestFetchClassifierDoesNotMistakeNumericPostingIDForHTTPStatus(t *testing.T
 	}
 }
 
+func TestFetchClassifierMakesContractFailuresActionable(t *testing.T) {
+	tests := []struct {
+		err  string
+		want string
+	}{
+		{"posting is missing externalPath", "missing_field"},
+		{"response omitted total count", "missing_field"},
+		{"detail title mismatched list title", "mismatch"},
+		{"JobPosting data disagrees with visible details", "mismatch"},
+		{"total changed from 10 to 11", "contract"},
+		{"response schema changed", "contract"},
+	}
+	for _, test := range tests {
+		if got := classifyFetchError(context.Background(), errors.New(test.err)); got != test.want {
+			t.Errorf("classifyFetchError(%q) = %q, want %q", test.err, got, test.want)
+		}
+	}
+}
+
 func TestRunClassifierUsesOnlyExplicitMarkersWithStablePriority(t *testing.T) {
 	spoof := errors.New("saving notifier reporter matcher source baseline")
 	if got := classifyRunError(context.Background(), spoof); got != "unknown" {

@@ -187,7 +187,7 @@ func TestOperationalLogHasOneOrderedOutcomePerBoard(t *testing.T) {
 		`BOARD index=1 adapter=custom company="Okay" status=ok`,
 		`BOARD index=2 adapter=custom company="Partial" status=partial`,
 		`BOARD index=3 adapter=custom company="Failed" status=failed`,
-		`WARN scope=board index=2 step=fetch code=contract count=1`,
+		`WARN scope=board index=2 step=fetch code=missing_field count=1`,
 		`WARN scope=board index=3 step=fetch code=duplicate count=1`,
 		`RUN status=degraded local_state=saved code=none`,
 	} {
