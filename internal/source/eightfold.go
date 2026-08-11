@@ -104,8 +104,8 @@ type eightfoldSearchResponse struct {
 		Body    string `json:"body"`
 	} `json:"error"`
 	Data struct {
-		Count     *int                 `json:"count"`
-		Positions *[]eightfoldPosition `json:"positions"`
+		Count     *int               `json:"count"`
+		Positions *[]json.RawMessage `json:"positions"`
 	} `json:"data"`
 }
 
@@ -200,7 +200,7 @@ func (s *eightfold) fetchSnapshot(ctx context.Context) (eightfoldSnapshot, error
 	expectedTotal := -1
 	jobs := make([]model.Job, 0)
 	seen := make(map[int64][]byte)
-	rawPositions := make([]eightfoldPosition, 0)
+	rawPositions := make([]json.RawMessage, 0)
 	hadExactDuplicate := false
 
 	for start := 0; start < s.maxPostings; {
@@ -256,15 +256,17 @@ func (s *eightfold) fetchSnapshot(ctx context.Context) (eightfoldSnapshot, error
 			break
 		}
 
-		for _, posting := range positions {
+		for index, rawPosting := range positions {
 			if len(jobs) >= s.maxPostings {
 				break
 			}
-			encoded, err := json.Marshal(posting)
+			posting, encoded, err := decodeEightfoldPosition(rawPosting)
 			if err != nil {
-				return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: encode position %d for consistency: %w", s.host, posting.ID, err)
+				return eightfoldSnapshot{}, fmt.Errorf(
+					"eightfold %s: item at raw offset %d: %w", s.host, start+index, err,
+				)
 			}
-			rawPositions = append(rawPositions, posting)
+			rawPositions = append(rawPositions, json.RawMessage(encoded))
 			if prior, duplicate := seen[posting.ID]; duplicate {
 				if !bytes.Equal(prior, encoded) {
 					return eightfoldSnapshot{}, eightfoldRetryable(fmt.Errorf(
@@ -306,8 +308,8 @@ func (s *eightfold) fetchSnapshot(ctx context.Context) (eightfoldSnapshot, error
 		return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: reported %d postings but produced none", s.host, expectedTotal)
 	}
 	fingerprint, err := json.Marshal(struct {
-		Total     int                 `json:"total"`
-		Positions []eightfoldPosition `json:"positions"`
+		Total     int               `json:"total"`
+		Positions []json.RawMessage `json:"positions"`
 	}{Total: expectedTotal, Positions: rawPositions})
 	if err != nil {
 		return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: encode snapshot for consistency: %w", s.host, err)
@@ -316,6 +318,97 @@ func (s *eightfold) fetchSnapshot(ctx context.Context) (eightfoldSnapshot, error
 		jobs: jobs, fingerprint: fingerprint, expectedTotal: expectedTotal,
 		hadExactDuplicate: hadExactDuplicate,
 	}, nil
+}
+
+// decodeEightfoldPosition keeps normalization deliberately separate from the
+// consistency proof. The typed record below drives model.Job output, while the
+// canonical object retains every live field (including fields jobwatch does
+// not consume yet) for duplicate and whole-snapshot equality.
+func decodeEightfoldPosition(raw json.RawMessage) (eightfoldPosition, []byte, error) {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	value, err := decodeEightfoldJSONValue(decoder)
+	if err != nil {
+		return eightfoldPosition{}, nil, fmt.Errorf("decode complete position object: %w", err)
+	}
+	if _, ok := value.(map[string]any); !ok {
+		return eightfoldPosition{}, nil, fmt.Errorf("position is not a JSON object")
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		if err == nil {
+			return eightfoldPosition{}, nil, fmt.Errorf("position has trailing JSON data")
+		}
+		return eightfoldPosition{}, nil, fmt.Errorf("position trailing data: %w", err)
+	}
+	canonical, err := json.Marshal(value)
+	if err != nil {
+		return eightfoldPosition{}, nil, fmt.Errorf("canonicalize complete position object: %w", err)
+	}
+	var posting eightfoldPosition
+	if err := json.Unmarshal(canonical, &posting); err != nil {
+		return eightfoldPosition{}, nil, fmt.Errorf("decode typed position fields: %w", err)
+	}
+	return posting, canonical, nil
+}
+
+func decodeEightfoldJSONValue(decoder *json.Decoder) (any, error) {
+	token, err := decoder.Token()
+	if err != nil {
+		return nil, err
+	}
+	delimiter, isDelimiter := token.(json.Delim)
+	if !isDelimiter {
+		return token, nil
+	}
+	switch delimiter {
+	case '{':
+		object := make(map[string]any)
+		for decoder.More() {
+			keyToken, err := decoder.Token()
+			if err != nil {
+				return nil, err
+			}
+			key, ok := keyToken.(string)
+			if !ok {
+				return nil, fmt.Errorf("object key is not a string")
+			}
+			if _, duplicate := object[key]; duplicate {
+				return nil, fmt.Errorf("duplicate object field %q", key)
+			}
+			value, err := decodeEightfoldJSONValue(decoder)
+			if err != nil {
+				return nil, err
+			}
+			object[key] = value
+		}
+		end, err := decoder.Token()
+		if err != nil {
+			return nil, err
+		}
+		if end != json.Delim('}') {
+			return nil, fmt.Errorf("object has invalid closing delimiter")
+		}
+		return object, nil
+	case '[':
+		array := make([]any, 0)
+		for decoder.More() {
+			value, err := decodeEightfoldJSONValue(decoder)
+			if err != nil {
+				return nil, err
+			}
+			array = append(array, value)
+		}
+		end, err := decoder.Token()
+		if err != nil {
+			return nil, err
+		}
+		if end != json.Delim(']') {
+			return nil, fmt.Errorf("array has invalid closing delimiter")
+		}
+		return array, nil
+	default:
+		return nil, fmt.Errorf("unexpected closing delimiter %q", delimiter)
+	}
 }
 
 func (s *eightfold) fetchSearchPage(ctx context.Context, endpoint string, page *eightfoldSearchResponse) error {

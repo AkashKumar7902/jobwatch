@@ -86,6 +86,81 @@ func TestEightfoldExactDuplicateRequiresIdenticalTraversalBeforeDedup(t *testing
 	}
 }
 
+func TestEightfoldUnknownFieldDifferenceMakesDuplicateConflicting(t *testing.T) {
+	// Adjacent integers above 2^53 ensure canonicalization cannot pass through
+	// float64 without collapsing two genuinely different raw records.
+	const (
+		id    = int64(9007199254740991)
+		first = `{"id":9007199254740991,"name":"Platform engineer","locations":["India"],` +
+			`"postedTs":1785237164,"positionUrl":"/careers/job/9007199254740991",` +
+			`"creationTs":9007199254740992}`
+		second = `{"id":9007199254740991,"name":"Platform engineer","locations":["India"],` +
+			`"postedTs":1785237164,"positionUrl":"/careers/job/9007199254740991",` +
+			`"creationTs":9007199254740993}`
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		eightfoldWriteRawSearch(t, w, 2, first, second)
+	}))
+	defer server.Close()
+
+	_, err := eightfoldRetrySource(server).fetchSnapshot(context.Background())
+	var retryable *eightfoldRetryableError
+	if !errors.As(err, &retryable) || retryable.kind != diagnostic.RetrySnapshot ||
+		!strings.Contains(err.Error(), "conflicting duplicate position id "+strconv.FormatInt(id, 10)) {
+		t.Fatalf("fetchSnapshot error = %v (%T), want unknown-field conflict", err, err)
+	}
+}
+
+func TestEightfoldCanonicalDuplicateIgnoresObjectKeyOrder(t *testing.T) {
+	const (
+		first = `{"id":42,"name":"Platform engineer","locations":["India"],` +
+			`"positionUrl":"/careers/job/42","creationTs":9007199254740993}`
+		second = `{"creationTs":9007199254740993,"positionUrl":"/careers/job/42",` +
+			`"locations":["India"],"name":"Platform engineer","id":42}`
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		eightfoldWriteRawSearch(t, w, 2, first, second)
+	}))
+	defer server.Close()
+
+	snapshot, err := eightfoldRetrySource(server).fetchSnapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !snapshot.hadExactDuplicate || len(snapshot.jobs) != 1 ||
+		snapshot.jobs[0].ID != "eightfold/acme.com/42" {
+		t.Fatalf("snapshot = %+v, want one canonical exact duplicate", snapshot)
+	}
+}
+
+func TestEightfoldUnknownFieldChangesWholeSnapshotFingerprint(t *testing.T) {
+	var traversal atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("start") == "0" {
+			traversal.Add(1)
+		}
+		score := 1
+		if traversal.Load() >= 2 {
+			score = 2
+		}
+		position := fmt.Sprintf(
+			`{"id":42,"name":"Platform engineer","locations":["India"],`+
+				`"positionUrl":"/careers/job/42","solrScore":%d}`,
+			score,
+		)
+		eightfoldWriteRawSearch(t, w, 2, position, position)
+	}))
+	defer server.Close()
+
+	jobs, err := eightfoldRetrySource(server).Fetch(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if traversal.Load() != 3 || len(jobs) != 1 || jobs[0].ID != "eightfold/acme.com/42" {
+		t.Fatalf("traversals/jobs = %d/%+v, want changed unknown field to require a third traversal", traversal.Load(), jobs)
+	}
+}
+
 func TestEightfoldChangedSnapshotNeedsTwoConsecutiveMatches(t *testing.T) {
 	var traversal atomic.Int32
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -301,4 +376,13 @@ func eightfoldWriteSearch(t *testing.T, w http.ResponseWriter, count int, positi
 	}); err != nil {
 		t.Error(err)
 	}
+}
+
+func eightfoldWriteRawSearch(t *testing.T, w http.ResponseWriter, count int, positions ...string) {
+	t.Helper()
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(
+		w, `{"status":200,"data":{"count":%d,"positions":[%s]}}`,
+		count, strings.Join(positions, ","),
+	)
 }
