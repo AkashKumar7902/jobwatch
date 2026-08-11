@@ -189,6 +189,7 @@ func TestOperationalLogHasOneOrderedOutcomePerBoard(t *testing.T) {
 		`BOARD index=3 adapter=custom company="Failed" status=failed`,
 		`WARN scope=board index=2 step=fetch code=missing_field count=1`,
 		`WARN scope=board index=3 step=fetch code=duplicate count=1`,
+		`POLL boards=3 ok=1 recovered=0 capped=0 degraded=0 partial=1 failed=1 open=2 new=2 matched=1 deferred=0`,
 		`RUN status=degraded local_state=saved code=none`,
 	} {
 		if !strings.Contains(got, want) {
