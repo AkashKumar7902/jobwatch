@@ -147,8 +147,12 @@ def complete(
     board_count: int | None = None,
     poll_overrides: dict | None = None,
     terminal_warning: bool = True,
+    canonicalize: bool = True,
 ) -> list[str]:
     records = list(lines)
+    if canonicalize:
+        fetch_records = [record for record in records if record.startswith(PREFIX + "FETCH ")]
+        records = fetch_records + [record for record in records if not record.startswith(PREFIX + "FETCH ")]
     counts, _ = _board_aggregates(records)
     count = sum(counts.values()) if board_count is None else board_count
     if status is None:
@@ -363,19 +367,58 @@ class RunSummaryTest(unittest.TestCase):
             [*records, valid_poll + " trailing=1", run],
             [valid_poll, *records, run],
         ]
-        for field, wrong in (
-            ("boards", 0),
-            ("degraded", 0),
-            ("ok", 1),
-            ("open", 3),
-            ("new", 2),
-            ("matched", 0),
-            ("deferred", 0),
-        ):
+        for field, wrong in {
+            "boards": 0,
+            "ok": 1,
+            "recovered": 1,
+            "capped": 1,
+            "degraded": 0,
+            "partial": 1,
+            "failed": 1,
+            "open": 3,
+            "new": 2,
+            "matched": 0,
+            "deferred": 0,
+        }.items():
             cases.append([*records, poll_for(records, **{field: wrong}), run])
         for lines in cases:
             with self.subTest(last=lines[-2]):
                 self.assertEqual(self.parse(lines), EMPTY)
+
+    def test_fetch_board_and_board_warning_records_follow_producer_order(self):
+        interleaved_run_warning = prefixed("WARN scope=run index=0 step=report code=no_reporter count=1")
+        valid = [
+            fetch(2),
+            fetch(1),
+            prefixed(board(1)),
+            interleaved_run_warning,
+            prefixed(board(2)),
+        ]
+        boards, warnings, poll, terminal = self.parse(complete(valid))
+        self.assertEqual(
+            ([record.index for record in boards], warnings[0].scope, poll.boards, terminal.status),
+            ([1, 2], "run", 2, "ok"),
+        )
+
+        cases = [
+            [prefixed(board(1)), fetch(1)],
+            [fetch(1), fetch(2), prefixed(board(2)), prefixed(board(1))],
+            [
+                fetch(1, "failed", 0),
+                prefixed("WARN scope=board index=1 step=fetch code=duplicate count=1"),
+                prefixed(board(1, "failed")),
+            ],
+            [
+                fetch(1, "failed", 0),
+                fetch(2),
+                prefixed(board(1, "failed")),
+                prefixed(board(2)),
+                prefixed("WARN scope=board index=1 step=fetch code=duplicate count=1"),
+            ],
+        ]
+        for records in cases:
+            with self.subTest(records=records):
+                self.assertEqual(self.parse(complete(records, canonicalize=False)), EMPTY)
 
     def test_poll_phase_accepts_only_terminal_warning_then_run(self):
         empty_poll = poll_for([])
@@ -401,16 +444,27 @@ class RunSummaryTest(unittest.TestCase):
                 self.assertEqual(self.parse(lines), EMPTY)
 
     def test_poll_additive_totals_use_producer_clamping(self):
-        records = []
-        for index in (1, 2):
-            records.extend(board_records(index, open=MAX_NUMBER, new=MAX_NUMBER, matched=MAX_NUMBER))
-        boards, _, poll, terminal = self.parse(complete(records))
-        self.assertEqual((len(boards), terminal.status), (2, "ok"))
-        self.assertEqual((poll.open, poll.new, poll.matched, poll.deferred), (MAX_NUMBER, MAX_NUMBER, MAX_NUMBER, 0))
-        self.assertEqual(
-            self.parse(complete(records, poll_overrides={"open": MAX_NUMBER - 1})),
-            EMPTY,
-        )
+        for field in ("open", "new", "matched", "deferred"):
+            records = []
+            for index in (1, 2):
+                overrides = {"open": MAX_NUMBER}
+                status = "ok"
+                if field == "new":
+                    overrides["new"] = MAX_NUMBER
+                elif field == "matched":
+                    overrides["matched"] = MAX_NUMBER
+                elif field == "deferred":
+                    status = "degraded"
+                    overrides["deferred"] = MAX_NUMBER
+                records.extend(board_records(index, status, **overrides))
+            with self.subTest(field=field):
+                boards, _, poll, _ = self.parse(complete(records))
+                self.assertEqual(len(boards), 2)
+                self.assertEqual(getattr(poll, field), MAX_NUMBER)
+                self.assertEqual(
+                    self.parse(complete(records, poll_overrides={field: MAX_NUMBER - 1})),
+                    EMPTY,
+                )
 
     def test_company_length_matches_go_producer_envelope(self):
         valid_companies = ["a" * 120, "b" * 120 + "…"]

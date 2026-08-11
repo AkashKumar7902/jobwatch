@@ -216,6 +216,25 @@ func TestOperationalLogHasOneOrderedOutcomePerBoard(t *testing.T) {
 	}
 }
 
+func TestPublicMetricClampBoundaries(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		in   int
+		want int
+	}{
+		{name: "negative", in: -1, want: 0},
+		{name: "zero", in: 0, want: 0},
+		{name: "maximum", in: 1_000_000_000, want: 1_000_000_000},
+		{name: "over maximum", in: 1_000_000_001, want: 1_000_000_000},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := nonnegative(test.in); got != test.want {
+				t.Fatalf("nonnegative(%d) = %d, want %d", test.in, got, test.want)
+			}
+		})
+	}
+}
+
 func TestHostileFetchTextCannotSpoofRunOwnership(t *testing.T) {
 	st, _ := openLoggingStore(t)
 	var logs strings.Builder

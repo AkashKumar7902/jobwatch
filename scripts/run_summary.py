@@ -207,7 +207,7 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
             index, open_jobs, duration = (_number(match.group(position)) for position in (1, 3, 4))
             status = match.group(2)
             if (
-                poll is not None or index is None or open_jobs is None or duration is None or
+                poll is not None or boards or index is None or open_jobs is None or duration is None or
                 duration > MAX_DURATION_MS or index == 0 or
                 index > MAX_BOARDS or index in fetches or len(fetches) >= MAX_BOARDS or
                 (status == "partial" and open_jobs == 0) or (status == "failed" and open_jobs != 0)
@@ -228,7 +228,7 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
             board = Board(numbers[0], match.group(2), company, match.group(4), "", *numbers[1:])
             if (
                 poll is not None or board.index == 0 or board.index > MAX_BOARDS or
-                board.index in boards or len(boards) >= MAX_BOARDS or
+                board.index != len(boards) + 1 or board.index in boards or len(boards) >= MAX_BOARDS or
                 not (len(board.company) <= 120 or (len(board.company) == 121 and board.company.endswith("…"))) or
                 board.new > board.open or board.matched > board.open or board.deferred > board.open or
                 board.detail_failed > board.open or board.matched + board.deferred + board.detail_failed > board.open or
@@ -246,9 +246,10 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
             valid_combo = code in (RUN_WARN.get(step, set()) if scope == "run" else BOARD_WARN.get(step, set()))
             terminal_warning = scope == "run" and step == "terminal"
             wrong_phase = (terminal_warning and poll is None) or (not terminal_warning and poll is not None)
+            board_warning_out_of_order = scope == "board" and index is not None and index != len(boards)
             if (
                 index is None or count is None or count == 0 or not valid_combo or
-                (scope == "run") != (index == 0) or wrong_phase
+                (scope == "run") != (index == 0) or wrong_phase or board_warning_out_of_order
             ):
                 invalid = True
                 continue
