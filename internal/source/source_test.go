@@ -74,7 +74,7 @@ func TestOperationalSignalPathsStayConnected(t *testing.T) {
 			t.Errorf("%s cap path is not connected to the runner diagnostic", name)
 		}
 	}
-	for _, name := range []string{"enphase", "google"} {
+	for _, name := range []string{"enphase", "google", "successfactors"} {
 		data, err := os.ReadFile(filepath.Join(sourceDir, name+".go"))
 		if err != nil {
 			t.Fatal(err)
