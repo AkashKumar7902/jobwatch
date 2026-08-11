@@ -19,8 +19,9 @@ import (
 
 const maxLogFieldRunes = 120
 
-// BOARD/WARN/RUN are a public protocol consumed by the Actions summary; keep
-// their field order and closed vocabularies in sync with scripts/run_summary.py.
+// FETCH/BOARD/WARN/POLL/RUN are a public protocol consumed by the Actions
+// summary; keep their field order and closed vocabularies in sync with
+// scripts/run_summary.py.
 type boardOutcome struct {
 	ordinal int
 	src     source.Source

@@ -189,6 +189,7 @@ func TestOperationalLogHasOneOrderedOutcomePerBoard(t *testing.T) {
 		`BOARD index=3 adapter=custom company="Failed" status=failed`,
 		`WARN scope=board index=2 step=fetch code=missing_field count=1`,
 		`WARN scope=board index=3 step=fetch code=duplicate count=1`,
+		`POLL boards=3 ok=1 recovered=0 capped=0 degraded=0 partial=1 failed=1 open=2 new=2 matched=1 deferred=0`,
 		`RUN status=degraded local_state=saved code=none`,
 	} {
 		if !strings.Contains(got, want) {
@@ -212,6 +213,25 @@ func TestOperationalLogHasOneOrderedOutcomePerBoard(t *testing.T) {
 	}
 	if last := strings.TrimSpace(got); !strings.HasSuffix(last, "boards=3") || !strings.Contains(last[strings.LastIndex(last, "\n")+1:], "RUN status=") {
 		t.Fatalf("RUN is not the terminal line:\n%s", got)
+	}
+}
+
+func TestPublicMetricClampBoundaries(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		in   int
+		want int
+	}{
+		{name: "negative", in: -1, want: 0},
+		{name: "zero", in: 0, want: 0},
+		{name: "maximum", in: 1_000_000_000, want: 1_000_000_000},
+		{name: "over maximum", in: 1_000_000_001, want: 1_000_000_000},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := nonnegative(test.in); got != test.want {
+				t.Fatalf("nonnegative(%d) = %d, want %d", test.in, got, test.want)
+			}
+		})
 	}
 }
 
