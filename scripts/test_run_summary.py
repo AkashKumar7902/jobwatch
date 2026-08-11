@@ -415,6 +415,12 @@ class RunSummaryTest(unittest.TestCase):
                 prefixed(board(2)),
                 prefixed("WARN scope=board index=1 step=fetch code=duplicate count=1"),
             ],
+            [
+                fetch(1, "failed", 0),
+                prefixed(board(1, "failed")),
+                prefixed("WARN scope=run index=0 step=checkpoint code=save_failed count=1"),
+                prefixed("WARN scope=board index=1 step=fetch code=duplicate count=1"),
+            ],
         ]
         for records in cases:
             with self.subTest(records=records):

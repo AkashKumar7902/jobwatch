@@ -188,6 +188,7 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
     boards: dict[int, Board] = {}
     fetches: dict[int, tuple[str, int, int]] = {}
     warning_counts: dict[tuple[str, int, str, str], int] = {}
+    pending_board_warning: int | None = None
     poll: Poll | None = None
     terminal: Terminal | None = None
     invalid = False
@@ -201,6 +202,16 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
         if prefix is None:
             continue
         line = raw[prefix.end():]
+
+        if pending_board_warning is not None:
+            immediate = WARN_RE.fullmatch(line)
+            expected_index = pending_board_warning
+            pending_board_warning = None
+            if (
+                immediate is None or immediate.group(1) != "board" or
+                _number(immediate.group(2)) != expected_index
+            ):
+                invalid = True
 
         match = FETCH_RE.fullmatch(line)
         if match:
@@ -237,6 +248,8 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
                 invalid = True
             else:
                 boards[board.index] = board
+                if board.status in {"failed", "partial", "degraded"}:
+                    pending_board_warning = board.index
             continue
 
         match = WARN_RE.fullmatch(line)
@@ -291,7 +304,7 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
         if KNOWN_RECORD.match(line):
             invalid = True
 
-    if invalid or poll is None or terminal is None:
+    if invalid or pending_board_warning is not None or poll is None or terminal is None:
         return [], [], None, None
 
     ordered = sorted(boards.values(), key=lambda board: board.index)
