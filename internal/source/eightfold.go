@@ -9,8 +9,12 @@ package source
 // fetched lazily through Detail.
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -23,7 +27,12 @@ import (
 	"jobwatch/internal/params"
 )
 
-const eightfoldPageSize = 10
+const (
+	eightfoldPageSize        = 10
+	eightfoldMaxAttempts     = 3
+	eightfoldMaxRetryAfter   = 60 * time.Second
+	eightfoldDefaultRetryGap = 250 * time.Millisecond
+)
 
 func init() {
 	Register("eightfold", func(company string, p params.Map, client *http.Client) (Source, error) {
@@ -53,7 +62,7 @@ func init() {
 			query:       strings.TrimSpace(p.Get("query")),
 			base:        "https://" + host,
 			keyPrefix:   "eightfold/" + domain + "/",
-			maxPostings: maxPostings, client: client,
+			maxPostings: maxPostings, client: client, retryGap: eightfoldDefaultRetryGap,
 		}, nil
 	})
 }
@@ -73,6 +82,7 @@ type eightfold struct {
 	keyPrefix   string // eightfold/{domain}/
 	maxPostings int
 	client      *http.Client
+	retryGap    time.Duration
 }
 
 type eightfoldPosition struct {
@@ -94,17 +104,104 @@ type eightfoldSearchResponse struct {
 		Body    string `json:"body"`
 	} `json:"error"`
 	Data struct {
-		Count     *int                 `json:"count"`
-		Positions *[]eightfoldPosition `json:"positions"`
+		Count     *int               `json:"count"`
+		Positions *[]json.RawMessage `json:"positions"`
 	} `json:"data"`
 }
 
 func (s *eightfold) Company() string { return s.company }
 
 func (s *eightfold) Fetch(ctx context.Context) ([]model.Job, error) {
+	var previous *eightfoldSnapshot
+	var lastErr error
+	stabilizing := false
+
+	for attempt := 1; attempt <= eightfoldMaxAttempts; attempt++ {
+		snapshot, err := s.fetchSnapshot(ctx)
+		if err != nil {
+			if ctx.Err() != nil {
+				return nil, ctx.Err()
+			}
+			var retryable *eightfoldRetryableError
+			if !errors.As(err, &retryable) {
+				return nil, err
+			}
+			lastErr = err
+			stabilizing = true
+			// A failed traversal breaks consecutiveness. No records from a
+			// partial attempt are ever merged into a later snapshot.
+			previous = nil
+			if attempt == eightfoldMaxAttempts {
+				break
+			}
+			delay := s.retryDelay(attempt, retryable.retryAfter)
+			diagnostic.Retry(ctx, retryable.kind, attempt, eightfoldMaxAttempts, delay)
+			if err := eightfoldWait(ctx, delay); err != nil {
+				return nil, err
+			}
+			continue
+		}
+
+		// Preserve the fast path for a clean, internally coherent traversal.
+		// Once any instability or exact duplicate has been observed, however,
+		// only two consecutive identical full traversals are trustworthy.
+		if !stabilizing && !snapshot.hadExactDuplicate {
+			return s.finishSnapshot(ctx, snapshot), nil
+		}
+		if previous != nil && bytes.Equal(previous.fingerprint, snapshot.fingerprint) {
+			return s.finishSnapshot(ctx, snapshot), nil
+		}
+
+		if previous == nil {
+			lastErr = fmt.Errorf("eightfold %s: coherent snapshot requires a consecutive confirmation", s.host)
+		} else {
+			lastErr = fmt.Errorf("eightfold %s: coherent snapshot changed between consecutive traversals", s.host)
+		}
+		stabilizing = true
+		copyOfSnapshot := snapshot
+		previous = &copyOfSnapshot
+		if attempt == eightfoldMaxAttempts {
+			break
+		}
+		delay := s.retryDelay(attempt, 0)
+		diagnostic.Retry(ctx, diagnostic.RetrySnapshot, attempt, eightfoldMaxAttempts, delay)
+		if err := eightfoldWait(ctx, delay); err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, fmt.Errorf(
+		"eightfold %s: no stable snapshot after %d attempts: %w",
+		s.host, eightfoldMaxAttempts, lastErr,
+	)
+}
+
+type eightfoldSnapshot struct {
+	jobs              []model.Job
+	fingerprint       []byte
+	expectedTotal     int
+	hadExactDuplicate bool
+}
+
+type eightfoldRetryableError struct {
+	err        error
+	kind       diagnostic.RetryKind
+	retryAfter time.Duration
+}
+
+func (e *eightfoldRetryableError) Error() string { return e.err.Error() }
+func (e *eightfoldRetryableError) Unwrap() error { return e.err }
+
+func eightfoldRetryable(err error, kind diagnostic.RetryKind) error {
+	return &eightfoldRetryableError{err: err, kind: kind}
+}
+
+func (s *eightfold) fetchSnapshot(ctx context.Context) (eightfoldSnapshot, error) {
 	expectedTotal := -1
 	jobs := make([]model.Job, 0)
-	seen := make(map[int64]struct{})
+	seen := make(map[int64][]byte)
+	rawPositions := make([]json.RawMessage, 0)
+	hadExactDuplicate := false
 
 	for start := 0; start < s.maxPostings; {
 		query := url.Values{
@@ -117,67 +214,312 @@ func (s *eightfold) Fetch(ctx context.Context) ([]model.Job, error) {
 		}
 		var page eightfoldSearchResponse
 		endpoint := s.base + "/api/pcsx/search?" + query.Encode()
-		if err := fetchJSON(ctx, s.client, http.MethodGet, endpoint, nil, &page); err != nil {
-			return nil, fmt.Errorf("eightfold %s: page at start %d: %w", s.host, start, err)
+		if err := s.fetchSearchPage(ctx, endpoint, &page); err != nil {
+			return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: page at start %d: %w", s.host, start, err)
 		}
 		if page.Status != http.StatusOK {
-			return nil, fmt.Errorf("eightfold %s: page at start %d reported status %d (%s)", s.host, start, page.Status, page.Error.Message)
+			err := fmt.Errorf("eightfold %s: page at start %d reported status %d (%s)", s.host, start, page.Status, page.Error.Message)
+			if page.Status == http.StatusTooManyRequests {
+				return eightfoldSnapshot{}, eightfoldRetryable(err, diagnostic.RetryRateLimit)
+			}
+			if page.Status >= 500 && page.Status <= 599 {
+				return eightfoldSnapshot{}, eightfoldRetryable(err, diagnostic.RetryServer)
+			}
+			return eightfoldSnapshot{}, err
 		}
 		if page.Data.Count == nil || page.Data.Positions == nil {
-			return nil, fmt.Errorf("eightfold %s: page at start %d omitted count or positions", s.host, start)
+			return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: page at start %d omitted count or positions", s.host, start)
 		}
 		if *page.Data.Count < 0 {
-			return nil, fmt.Errorf("eightfold %s: page at start %d reported negative count", s.host, start)
+			return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: page at start %d reported negative count", s.host, start)
 		}
 		if expectedTotal < 0 {
 			expectedTotal = *page.Data.Count
 		} else if *page.Data.Count != expectedTotal {
-			return nil, fmt.Errorf("eightfold %s: count changed from %d to %d at start %d", s.host, expectedTotal, *page.Data.Count, start)
+			return eightfoldSnapshot{}, eightfoldRetryable(fmt.Errorf(
+				"eightfold %s: count changed from %d to %d at start %d",
+				s.host, expectedTotal, *page.Data.Count, start,
+			), diagnostic.RetrySnapshot)
 		}
 
 		positions := *page.Data.Positions
 		if len(positions) > eightfoldPageSize {
-			return nil, fmt.Errorf("eightfold %s: page at start %d returned %d positions, safety limit is %d", s.host, start, len(positions), eightfoldPageSize)
+			return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: page at start %d returned %d positions, safety limit is %d", s.host, start, len(positions), eightfoldPageSize)
 		}
 		if len(positions) == 0 {
 			if start < expectedTotal {
-				return nil, fmt.Errorf("eightfold %s: empty page at start %d before reported total %d", s.host, start, expectedTotal)
+				return eightfoldSnapshot{}, eightfoldRetryable(fmt.Errorf(
+					"eightfold %s: empty page at start %d before reported total %d",
+					s.host, start, expectedTotal,
+				), diagnostic.RetrySnapshot)
 			}
 			break
 		}
 
-		for _, posting := range positions {
+		for index, rawPosting := range positions {
 			if len(jobs) >= s.maxPostings {
 				break
 			}
+			posting, encoded, err := decodeEightfoldPosition(rawPosting)
+			if err != nil {
+				return eightfoldSnapshot{}, fmt.Errorf(
+					"eightfold %s: item at raw offset %d: %w", s.host, start+index, err,
+				)
+			}
+			rawPositions = append(rawPositions, json.RawMessage(encoded))
+			if prior, duplicate := seen[posting.ID]; duplicate {
+				if !bytes.Equal(prior, encoded) {
+					return eightfoldSnapshot{}, eightfoldRetryable(fmt.Errorf(
+						"eightfold %s: conflicting duplicate position id %d",
+						s.host, posting.ID,
+					), diagnostic.RetrySnapshot)
+				}
+				hadExactDuplicate = true
+				continue
+			}
 			job, err := s.normalize(posting)
 			if err != nil {
-				return nil, fmt.Errorf("eightfold %s: item at raw offset %d: %w", s.host, start, err)
+				return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: item at raw offset %d: %w", s.host, start, err)
 			}
-			if _, duplicate := seen[posting.ID]; duplicate {
-				return nil, fmt.Errorf("eightfold %s: duplicate position id %d", s.host, posting.ID)
-			}
-			seen[posting.ID] = struct{}{}
+			seen[posting.ID] = encoded
 			jobs = append(jobs, job)
 		}
 
 		scanned := start + len(positions)
+		if scanned > expectedTotal {
+			return eightfoldSnapshot{}, eightfoldRetryable(fmt.Errorf(
+				"eightfold %s: page at start %d overran reported total %d with %d positions",
+				s.host, start, expectedTotal, len(positions),
+			), diagnostic.RetrySnapshot)
+		}
+		if scanned < expectedTotal && len(positions) < eightfoldPageSize {
+			return eightfoldSnapshot{}, eightfoldRetryable(fmt.Errorf(
+				"eightfold %s: short page of %d at start %d before reported total %d",
+				s.host, len(positions), start, expectedTotal,
+			), diagnostic.RetrySnapshot)
+		}
 		if scanned >= expectedTotal || len(jobs) >= s.maxPostings {
 			break
-		}
-		if len(positions) < eightfoldPageSize {
-			return nil, fmt.Errorf("eightfold %s: short page of %d at start %d before reported total %d", s.host, len(positions), start, expectedTotal)
 		}
 		start = scanned
 	}
 
-	if expectedTotal > s.maxPostings {
-		diagnostic.Cap(ctx, len(jobs), expectedTotal)
-	}
 	if expectedTotal > 0 && len(jobs) == 0 {
-		return nil, fmt.Errorf("eightfold %s: reported %d postings but produced none", s.host, expectedTotal)
+		return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: reported %d postings but produced none", s.host, expectedTotal)
 	}
-	return jobs, nil
+	fingerprint, err := json.Marshal(struct {
+		Total     int               `json:"total"`
+		Positions []json.RawMessage `json:"positions"`
+	}{Total: expectedTotal, Positions: rawPositions})
+	if err != nil {
+		return eightfoldSnapshot{}, fmt.Errorf("eightfold %s: encode snapshot for consistency: %w", s.host, err)
+	}
+	return eightfoldSnapshot{
+		jobs: jobs, fingerprint: fingerprint, expectedTotal: expectedTotal,
+		hadExactDuplicate: hadExactDuplicate,
+	}, nil
+}
+
+// decodeEightfoldPosition keeps normalization deliberately separate from the
+// consistency proof. The typed record below drives model.Job output, while the
+// canonical object retains every live field (including fields jobwatch does
+// not consume yet) for duplicate and whole-snapshot equality.
+func decodeEightfoldPosition(raw json.RawMessage) (eightfoldPosition, []byte, error) {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	value, err := decodeEightfoldJSONValue(decoder)
+	if err != nil {
+		return eightfoldPosition{}, nil, fmt.Errorf("decode complete position object: %w", err)
+	}
+	if _, ok := value.(map[string]any); !ok {
+		return eightfoldPosition{}, nil, fmt.Errorf("position is not a JSON object")
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		if err == nil {
+			return eightfoldPosition{}, nil, fmt.Errorf("position has trailing JSON data")
+		}
+		return eightfoldPosition{}, nil, fmt.Errorf("position trailing data: %w", err)
+	}
+	canonical, err := json.Marshal(value)
+	if err != nil {
+		return eightfoldPosition{}, nil, fmt.Errorf("canonicalize complete position object: %w", err)
+	}
+	var posting eightfoldPosition
+	if err := json.Unmarshal(canonical, &posting); err != nil {
+		return eightfoldPosition{}, nil, fmt.Errorf("decode typed position fields: %w", err)
+	}
+	return posting, canonical, nil
+}
+
+func decodeEightfoldJSONValue(decoder *json.Decoder) (any, error) {
+	token, err := decoder.Token()
+	if err != nil {
+		return nil, err
+	}
+	delimiter, isDelimiter := token.(json.Delim)
+	if !isDelimiter {
+		return token, nil
+	}
+	switch delimiter {
+	case '{':
+		object := make(map[string]any)
+		for decoder.More() {
+			keyToken, err := decoder.Token()
+			if err != nil {
+				return nil, err
+			}
+			key, ok := keyToken.(string)
+			if !ok {
+				return nil, fmt.Errorf("object key is not a string")
+			}
+			if _, duplicate := object[key]; duplicate {
+				return nil, fmt.Errorf("duplicate object field %q", key)
+			}
+			value, err := decodeEightfoldJSONValue(decoder)
+			if err != nil {
+				return nil, err
+			}
+			object[key] = value
+		}
+		end, err := decoder.Token()
+		if err != nil {
+			return nil, err
+		}
+		if end != json.Delim('}') {
+			return nil, fmt.Errorf("object has invalid closing delimiter")
+		}
+		return object, nil
+	case '[':
+		array := make([]any, 0)
+		for decoder.More() {
+			value, err := decodeEightfoldJSONValue(decoder)
+			if err != nil {
+				return nil, err
+			}
+			array = append(array, value)
+		}
+		end, err := decoder.Token()
+		if err != nil {
+			return nil, err
+		}
+		if end != json.Delim(']') {
+			return nil, fmt.Errorf("array has invalid closing delimiter")
+		}
+		return array, nil
+	default:
+		return nil, fmt.Errorf("unexpected closing delimiter %q", delimiter)
+	}
+}
+
+func (s *eightfold) fetchSearchPage(ctx context.Context, endpoint string, page *eightfoldSearchResponse) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("User-Agent", userAgent)
+	req.Header.Set("Accept", "application/json")
+	client := s.client
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		return &eightfoldRetryableError{
+			err: fmt.Errorf("GET %s: %w", endpoint, err), kind: diagnostic.RetryTransport,
+		}
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		snippet, _ := io.ReadAll(io.LimitReader(resp.Body, 200))
+		statusErr := fmt.Errorf("GET %s: %s: %s", endpoint, resp.Status, bytes.TrimSpace(snippet))
+		if resp.StatusCode == http.StatusTooManyRequests {
+			return &eightfoldRetryableError{
+				err: statusErr, kind: diagnostic.RetryRateLimit,
+				retryAfter: eightfoldRetryAfter(resp.Header.Get("Retry-After"), time.Now()),
+			}
+		}
+		if resp.StatusCode >= 500 && resp.StatusCode <= 599 {
+			return &eightfoldRetryableError{
+				err: statusErr, kind: diagnostic.RetryServer,
+				retryAfter: eightfoldRetryAfter(resp.Header.Get("Retry-After"), time.Now()),
+			}
+		}
+		return statusErr
+	}
+	if err := json.NewDecoder(resp.Body).Decode(page); err != nil {
+		return fmt.Errorf("GET %s: decoding response: %w", endpoint, err)
+	}
+	return nil
+}
+
+func (s *eightfold) finishSnapshot(ctx context.Context, snapshot eightfoldSnapshot) []model.Job {
+	if snapshot.expectedTotal > s.maxPostings {
+		diagnostic.Cap(ctx, len(snapshot.jobs), snapshot.expectedTotal)
+	}
+	return snapshot.jobs
+}
+
+func (s *eightfold) retryDelay(attempt int, retryAfter time.Duration) time.Duration {
+	delay := time.Duration(attempt) * s.retryGap
+	if retryAfter > delay {
+		delay = retryAfter
+	}
+	if delay > eightfoldMaxRetryAfter {
+		return eightfoldMaxRetryAfter
+	}
+	if delay < 0 {
+		return 0
+	}
+	return delay
+}
+
+func eightfoldRetryAfter(value string, now time.Time) time.Duration {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0
+	}
+	if seconds, err := strconv.ParseInt(value, 10, 64); err == nil {
+		if seconds <= 0 {
+			return 0
+		}
+		if seconds > int64(eightfoldMaxRetryAfter/time.Second) {
+			return eightfoldMaxRetryAfter
+		}
+		delay := time.Duration(seconds) * time.Second
+		return delay
+	}
+	retryAt, err := http.ParseTime(value)
+	if err != nil {
+		return 0
+	}
+	delay := retryAt.Sub(now)
+	if delay <= 0 {
+		return 0
+	}
+	if delay > eightfoldMaxRetryAfter {
+		return eightfoldMaxRetryAfter
+	}
+	return delay
+}
+
+func eightfoldWait(ctx context.Context, delay time.Duration) error {
+	if delay <= 0 {
+		return nil
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
 
 func (s *eightfold) normalize(posting eightfoldPosition) (model.Job, error) {

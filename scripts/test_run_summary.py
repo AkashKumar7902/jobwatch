@@ -134,6 +134,18 @@ class RunSummaryTest(unittest.TestCase):
         self.assertIn("process/match", text)
         self.assertIn("Board 1 (custom): 2", text)
 
+    def test_parses_actionable_fetch_contract_codes(self):
+        for code in ("missing_field", "mismatch", "unstable_snapshot"):
+            with self.subTest(code=code):
+                lines = [
+                    fetch(1, "failed", 0),
+                    prefixed(board(1, "failed")),
+                    prefixed(f"WARN scope=board index=1 step=fetch code={code} count=1"),
+                    prefixed("RUN status=degraded local_state=saved code=none duration_ms=3 boards=1"),
+                ]
+                boards, warnings, _, terminal = self.parse(lines)
+                self.assertEqual((len(boards), len(warnings), terminal.status), (1, 1, "degraded"))
+
     def test_match_summary_uses_only_board_aggregates(self):
         boards, warnings, matches, terminal = self.parse([
             *board_records(1, "ok", open=3, matched=2),

@@ -57,12 +57,13 @@ type deshawPosting struct {
 	Header   []string `json:"header"`
 	Category []string `json:"category"`
 	Data     *struct {
-		ID             int64  `json:"id"`
-		DisplayName    string `json:"displayName"`
-		ValidFromDate  string `json:"validFromDate"`
-		IsActive       *bool  `json:"isActive"`
-		JobURL         string `json:"jobUrl"`
-		JobDescription *struct {
+		ID                  int64  `json:"id"`
+		DisplayName         string `json:"displayName"`
+		ValidFromDate       string `json:"validFromDate"`
+		ActiveOnJobsListing *bool  `json:"activeOnJobsListing"`
+		IsActive            *bool  `json:"isActive"`
+		JobURL              string `json:"jobUrl"`
+		JobDescription      *struct {
 			WebsiteDescription    string   `json:"websiteDescription"`
 			OnCampusDescription   string   `json:"onCampusDescription"`
 			ResponsibilitiesHTML  string   `json:"responsibilitiesHtml"`
@@ -141,8 +142,14 @@ func (s *deshaw) normalize(posting deshawPosting) (model.Job, error) {
 		return model.Job{}, fmt.Errorf("invalid or mismatched posting id %d", posting.ID)
 	}
 	data := posting.Data
-	if data.IsActive == nil || !*data.IsActive {
-		return model.Job{}, fmt.Errorf("posting %d is missing isActive or inactive", posting.ID)
+	if data.ActiveOnJobsListing == nil || !*data.ActiveOnJobsListing {
+		return model.Job{}, fmt.Errorf("posting %d is missing activeOnJobsListing or inactive", posting.ID)
+	}
+	// isActive was the site's previous activity flag. It is no longer emitted,
+	// but if it reappears it must not contradict the current explicit listing
+	// flag: accepting that conflict could resurrect a closed posting.
+	if data.IsActive != nil && !*data.IsActive {
+		return model.Job{}, fmt.Errorf("posting %d has conflicting legacy isActive=false", posting.ID)
 	}
 	if data.JobMetadata == nil || data.JobDescription == nil {
 		return model.Job{}, fmt.Errorf("posting %d omitted jobMetadata or jobDescription", posting.ID)

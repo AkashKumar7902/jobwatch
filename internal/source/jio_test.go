@@ -233,6 +233,63 @@ func TestJioDetailRejectsUntrustedOrDriftedJobsAtomically(t *testing.T) {
 	}
 }
 
+func TestJioDetailComparesStructuredDescriptionSemantically(t *testing.T) {
+	const (
+		title    = "Software Engineer ( 86610001 )"
+		location = "Bengaluru"
+		date     = "30 Jul 2026"
+		visible  = "Build &amp; ship.<br/>Own tests."
+	)
+	for _, test := range []struct {
+		name                  string
+		structuredDescription string
+		wantErr               bool
+	}{
+		{
+			name:                  "equivalent HTML and punctuation spacing",
+			structuredDescription: "<p>Build &amp; ship .</p><p>Own tests .</p>",
+		},
+		{
+			name:                  "empty structured description remains invalid",
+			structuredDescription: "<p> </p>",
+			wantErr:               true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "text/html; charset=utf-8")
+				fmt.Fprint(w, jioDetailFixtureWithDescriptions(
+					t, title, location, date, visible, test.structuredDescription,
+				))
+			}))
+			defer server.Close()
+			job := model.Job{
+				ID: "jio/86610001", Company: "Jio", Title: title, Location: location,
+				URL:      server.URL + "/frmjobdescription.aspx?JBTITLE=title&jbID=id&funcCode=function",
+				PostedAt: time.Date(2026, 7, 30, 0, 0, 0, 0, time.UTC),
+			}
+			before := job
+			source := &jio{company: "Jio", base: server.URL, client: server.Client()}
+			err := source.Detail(context.Background(), &job)
+			if test.wantErr {
+				if err == nil || !strings.Contains(err.Error(), "JobPosting data disagrees") {
+					t.Fatalf("Detail error = %v, want structured-data disagreement", err)
+				}
+				if job != before {
+					t.Fatalf("job mutated on failure: got %+v want %+v", job, before)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(job.Description, "Build & ship.\nOwn tests.") {
+				t.Fatalf("description = %q", job.Description)
+			}
+		})
+	}
+}
+
 func jioCategoryFixture(code, label string, count int) string {
 	return fmt.Sprintf(`<!doctype html><html><body>
 <div><ul><li class="list-cont">
@@ -298,17 +355,21 @@ func jioPageFixture(label string, page, totalPages int, jobs []model.Job) string
 }
 
 func jioDetailFixture(t *testing.T, title, location, date string) string {
+	const responsibilities = "Build &amp; ship.<br/>Own tests."
+	return jioDetailFixtureWithDescriptions(t, title, location, date, responsibilities, responsibilities)
+}
+
+func jioDetailFixtureWithDescriptions(t *testing.T, title, location, date, visible, structuredDescription string) string {
 	t.Helper()
 	parsed, err := time.Parse("02 Jan 2006", date)
 	if err != nil {
 		t.Fatal(err)
 	}
-	responsibilities := "Build &amp; ship.<br/>Own tests."
 	posting, err := json.Marshal(map[string]any{
 		"@context":    "https://schema.org",
 		"@type":       "JobPosting",
 		"title":       title,
-		"description": responsibilities,
+		"description": structuredDescription,
 		"datePosted":  parsed.Format("2006-01-02"),
 		"jobLocation": map[string]any{"address": map[string]any{"addressLocality": location, "addressCountry": "IN"}},
 	})
@@ -324,7 +385,7 @@ func jioDetailFixture(t *testing.T, title, location, date string) string {
 <span id="MainContent_lblEduReq">B.Tech</span>
 <span id="MainContent_lblExpReq">0 - 3 years</span>
 <span id="MainContent_lblSkill">Go &amp; testing</span>
-</body></html>`, posting, title, date, location, responsibilities)
+</body></html>`, posting, title, date, location, visible)
 }
 
 func TestJioURLValidationPreservesEncryptedQuery(t *testing.T) {

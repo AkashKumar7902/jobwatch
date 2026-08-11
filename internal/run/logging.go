@@ -261,7 +261,15 @@ func classifyFetchError(_ context.Context, err error) string {
 		return "server"
 	case strings.Contains(s, "duplicate"):
 		return "duplicate"
-	case strings.Contains(s, "omitted"), strings.Contains(s, "changed from"), strings.Contains(s, "does not identify"), strings.Contains(s, "schema"):
+	case strings.Contains(s, "missing"), strings.Contains(s, "omitted"):
+		return "missing_field"
+	case strings.Contains(s, "mismatch"), strings.Contains(s, "conflicting"), strings.Contains(s, "does not match"),
+		strings.Contains(s, "does not identify"), strings.Contains(s, "disagrees"):
+		return "mismatch"
+	case strings.Contains(s, "did not stabilize"), strings.Contains(s, "no stable snapshot"),
+		strings.Contains(s, "changed between consecutive"), strings.Contains(s, "changed between traversals"):
+		return "unstable_snapshot"
+	case strings.Contains(s, "changed from"), strings.Contains(s, "schema"):
 		return "contract"
 	case strings.Contains(s, "decode"), strings.Contains(s, "parsing"), strings.Contains(s, "invalid"):
 		return "invalid_response"

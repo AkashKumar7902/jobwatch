@@ -51,7 +51,8 @@ BOARD_WARN = {
     "setup": {"not_run"},
     "fetch": {
         "cancelled", "timeout", "transport", "forbidden", "unauthorized", "not_found",
-        "rate_limited", "server", "duplicate", "contract", "invalid_response", "unknown",
+        "rate_limited", "server", "duplicate", "contract", "missing_field", "mismatch",
+        "unstable_snapshot", "invalid_response", "unknown",
     },
     "process": {"cancelled", "not_run", "detail", "match", "detail_and_match"},
 }
