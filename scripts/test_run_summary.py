@@ -135,7 +135,7 @@ class RunSummaryTest(unittest.TestCase):
         self.assertIn("Board 1 (custom): 2", text)
 
     def test_parses_actionable_fetch_contract_codes(self):
-        for code in ("missing_field", "mismatch"):
+        for code in ("missing_field", "mismatch", "unstable_snapshot"):
             with self.subTest(code=code):
                 lines = [
                     fetch(1, "failed", 0),

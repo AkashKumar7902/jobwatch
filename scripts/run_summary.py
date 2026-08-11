@@ -52,7 +52,7 @@ BOARD_WARN = {
     "fetch": {
         "cancelled", "timeout", "transport", "forbidden", "unauthorized", "not_found",
         "rate_limited", "server", "duplicate", "contract", "missing_field", "mismatch",
-        "invalid_response", "unknown",
+        "unstable_snapshot", "invalid_response", "unknown",
     },
     "process": {"cancelled", "not_run", "detail", "match", "detail_and_match"},
 }

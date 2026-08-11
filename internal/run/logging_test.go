@@ -66,7 +66,10 @@ func TestFetchClassifierMakesContractFailuresActionable(t *testing.T) {
 		{"posting is missing externalPath", "missing_field"},
 		{"response omitted total count", "missing_field"},
 		{"detail title mismatched list title", "mismatch"},
+		{"posting 5874 has conflicting legacy isActive=false", "mismatch"},
 		{"JobPosting data disagrees with visible details", "mismatch"},
+		{"snapshot did not stabilize after 3 attempts", "unstable_snapshot"},
+		{"no stable snapshot after 3 attempts: changed between consecutive traversals", "unstable_snapshot"},
 		{"total changed from 10 to 11", "contract"},
 		{"response schema changed", "contract"},
 	}
