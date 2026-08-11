@@ -377,13 +377,13 @@ func TestDEShawNextDataRegularAndInternships(t *testing.T) {
 			"regularJobs":[{
 				"id":5874,"displayName":"Administrative Associate","office":[{"name":"New York","abbreviation":"NYC"}],
 				"data":{"id":5874,"displayName":"Administrative Associate","validFromDate":"2026-04-15",
-					"isActive":true,"jobUrl":"Administrative-Associate-5874",
+					"activeOnJobsListing":true,"jobUrl":"Administrative-Associate-5874",
 					"jobDescription":{"websiteDescription":"<p>Support the team.</p>","responsibilitiesHtml":"<ul><li>Plan events.</li></ul>","peopleWeAreLookingFor":["Detail oriented."]},
 					"jobMetadata":{"activeOnWebsite":true,"workStatus":"Limited Term"}}}],
 			"internships":[{
 				"id":5709,"displayName":"Research Analyst Intern","office":[{"name":"New York","abbreviation":"NYC"}],
 				"data":{"id":5709,"displayName":"Research Analyst Intern","validFromDate":"2026-01-01",
-					"isActive":true,"jobUrl":"Research-Analyst-Intern-5709",
+					"activeOnJobsListing":true,"isActive":true,"jobUrl":"Research-Analyst-Intern-5709",
 					"jobDescription":{"websiteDescription":"<p>Research companies.</p>","responsibilitiesHtml":"<p>Analyze data.</p>","peopleWeAreLookingFor":["Critical thinkers."]},
 					"jobMetadata":{"activeOnWebsite":true,"workStatus":"Intern"}}}]
 		}}}`
@@ -413,6 +413,45 @@ func TestDEShawNextDataRegularAndInternships(t *testing.T) {
 		t.Fatalf("capped Fetch = %d jobs, %v", len(jobs), err)
 	}
 	requireSingleCap(t, collector)
+}
+
+func TestDEShawRequiresCurrentListingActivityAndRejectsLegacyConflict(t *testing.T) {
+	postingJSON := func(activity string) string {
+		return fmt.Sprintf(`{
+			"id":5874,"displayName":"Administrative Associate","office":[{"name":"New York"}],
+			"data":{"id":5874,"displayName":"Administrative Associate","validFromDate":"2026-04-15",
+				%s,"jobUrl":"Administrative-Associate-5874",
+				"jobDescription":{"websiteDescription":"Support the team."},
+				"jobMetadata":{"workStatus":"Limited Term"}}}`, activity)
+	}
+	for _, test := range []struct {
+		name     string
+		activity string
+		wantErr  string
+	}{
+		{"current field only", `"activeOnJobsListing":true`, ""},
+		{"consistent legacy field", `"activeOnJobsListing":true,"isActive":true`, ""},
+		{"current field missing", `"isActive":true`, "missing activeOnJobsListing"},
+		{"current field false", `"activeOnJobsListing":false`, "missing activeOnJobsListing"},
+		{"legacy field conflicts", `"activeOnJobsListing":true,"isActive":false`, "conflicting legacy"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var posting deshawPosting
+			if err := json.Unmarshal([]byte(postingJSON(test.activity)), &posting); err != nil {
+				t.Fatal(err)
+			}
+			_, err := (&deshaw{company: "D. E. Shaw", siteBase: "https://www.deshaw.com"}).normalize(posting)
+			if test.wantErr == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf("normalize error = %v, want substring %q", err, test.wantErr)
+			}
+		})
+	}
 }
 
 func TestAvatureSSRPaginationAndLazyDetail(t *testing.T) {

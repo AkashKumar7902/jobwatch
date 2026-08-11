@@ -30,7 +30,6 @@ import (
 	"strings"
 	"time"
 
-	"jobwatch/internal/htmltext"
 	"jobwatch/internal/model"
 	"jobwatch/internal/params"
 )
@@ -722,7 +721,7 @@ func (s *jio) Detail(ctx context.Context, job *model.Job) error {
 	}
 	structuredDate, dateErr := time.Parse("2006-01-02", structured.DatePosted)
 	if structured.Title != title || dateErr != nil || !structuredDate.Equal(postedAt) ||
-		htmltext.ToText(structured.Description) != responsibilities {
+		cleanHTMLFragment(structured.Description) != responsibilities {
 		return fmt.Errorf("jio: detail %s JobPosting data disagrees with visible details", externalID)
 	}
 
