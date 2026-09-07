@@ -47,6 +47,12 @@ type all struct{ children []Matcher }
 
 func (a *all) Name() string { return "all" }
 
+func (a *all) ResetRun() {
+	for _, child := range a.children {
+		ResetRun(child)
+	}
+}
+
 func (a *all) Match(ctx context.Context, job model.Job) (Result, error) {
 	reasons := make([]string, 0, len(a.children))
 	var childErrs []error
@@ -79,6 +85,12 @@ type any_ struct{ children []Matcher }
 
 func (a *any_) Name() string { return "any" }
 
+func (a *any_) ResetRun() {
+	for _, child := range a.children {
+		ResetRun(child)
+	}
+}
+
 func (a *any_) Match(ctx context.Context, job model.Job) (Result, error) {
 	reasons := make([]string, 0, len(a.children))
 	var childErrs []error
@@ -109,6 +121,8 @@ func (a *any_) Match(ctx context.Context, job model.Job) (Result, error) {
 type not struct{ child Matcher }
 
 func (n *not) Name() string { return "not" }
+
+func (n *not) ResetRun() { ResetRun(n.child) }
 
 func (n *not) Match(ctx context.Context, job model.Job) (Result, error) {
 	if err := ctx.Err(); err != nil {

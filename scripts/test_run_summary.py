@@ -252,6 +252,61 @@ class RunSummaryTest(unittest.TestCase):
         self.assertIn("| Process ms | 2 |", text)
         self.assertIn("| 1 | Board 1 | custom | degraded | ok | process/match count=1 | 2 | 2 |", text)
 
+    def test_parses_and_renders_sealed_llm_failure_details(self):
+        records = board_records(1, "degraded", new=10, open=10, deferred=10)
+        records.extend([
+            prefixed(
+                "WARN scope=board index=1 step=match code=bad_request count=3 "
+                "http_status=400 provider_status=invalid_argument"
+            ),
+            prefixed(
+                "WARN scope=board index=1 step=match code=circuit_open count=7 "
+                "http_status=400 provider_status=invalid_argument"
+            ),
+        ])
+        parsed = self.parse(complete(records))
+        boards, warnings, poll, terminal = parsed
+        self.assertEqual((len(boards), len(warnings), poll.deferred, terminal.status), (1, 3, 10, "degraded"))
+        llm = [warning for warning in warnings if warning.step == "match"]
+        self.assertEqual(
+            [(item.code, item.count, item.http_status, item.provider_status) for item in llm],
+            [
+                ("bad_request", 3, 400, "invalid_argument"),
+                ("circuit_open", 7, 400, "invalid_argument"),
+            ],
+        )
+        text = self.rendered(parsed)
+        self.assertIn(
+            "process/match count=1; match/bad_request count=3 http=400 provider=invalid_argument; "
+            "match/circuit_open count=7 http=400 provider=invalid_argument",
+            text,
+        )
+
+    def test_rejects_unsealed_or_inconsistent_llm_failure_details(self):
+        primary = board_records(1, "degraded", open=3, deferred=3)
+        invalid_warnings = [
+            "WARN scope=board index=1 step=match code=bad_request count=3",
+            "WARN scope=board index=1 step=match code=novel count=3 http_status=400 provider_status=unknown",
+            "WARN scope=board index=1 step=match code=bad_request count=3 http_status=401 provider_status=invalid_argument",
+            "WARN scope=board index=1 step=match code=transport count=3 http_status=400 provider_status=unknown",
+            "WARN scope=board index=1 step=match code=decode count=3 http_status=0 provider_status=none",
+            "WARN scope=board index=1 step=match code=decode count=3 http_status=200 provider_status=novel",
+            "WARN scope=board index=1 step=match code=bad_request count=4 http_status=400 provider_status=invalid_argument",
+        ]
+        for warning in invalid_warnings:
+            with self.subTest(warning=warning):
+                self.assertEqual(self.parse(complete([*primary, prefixed(warning)])), EMPTY)
+
+        fields_on_legacy_warning = [
+            fetch(1, "failed", 0),
+            prefixed(board(1, "failed")),
+            prefixed(
+                "WARN scope=board index=1 step=fetch code=duplicate count=1 "
+                "http_status=400 provider_status=invalid_argument"
+            ),
+        ]
+        self.assertEqual(self.parse(complete(fields_on_legacy_warning)), EMPTY)
+
     def test_renders_every_status_bucket_and_additive_total(self):
         lines = []
         for index, status in enumerate(("ok", "recovered", "capped", "degraded", "partial", "failed"), 1):
@@ -756,6 +811,28 @@ class RunSummaryTest(unittest.TestCase):
         self.assertNotIn("omitted", text.lower())
         self.assertLessEqual(len((text + "\n").encode("utf-8")), MAX_STEP_SUMMARY_BYTES)
 
+    def test_1000_board_matcher_outage_keeps_every_warning(self):
+        lines = []
+        for index in range(1, MAX_BOARDS + 1):
+            lines.extend(board_records(index, "degraded", new=3, open=3, deferred=3))
+            lines.append(
+                prefixed(
+                    f"WARN scope=board index={index} step=match code=circuit_open count=3 "
+                    "http_status=400 provider_status=invalid_argument"
+                )
+            )
+
+        boards, warnings, poll, terminal = self.parse(complete(lines, code="match"))
+        self.assertEqual(len(boards), MAX_BOARDS)
+        self.assertEqual(len(warnings), MAX_BOARDS * 2 + 1)
+        self.assertEqual((poll.deferred, terminal.status, terminal.code), (3_000, "failed", "match"))
+
+        text = self.rendered((boards, warnings, poll, terminal), poll="failure")
+        self.assertIn("| 1 | Board 1 |", text)
+        self.assertIn(f"| {MAX_BOARDS} | Board {MAX_BOARDS} |", text)
+        self.assertIn("match/circuit_open count=3 http=400 provider=invalid_argument", text)
+        self.assertLessEqual(len((text + "\n").encode("utf-8")), MAX_STEP_SUMMARY_BYTES)
+
     def test_main_fails_loudly_instead_of_truncating_oversize_output(self):
         argv = [
             "run_summary.py",
@@ -796,6 +873,32 @@ class RunSummaryTest(unittest.TestCase):
         self.assertEqual(workflow.count("2>&1 > /dev/null | tee run.log"), 2)
         self.assertNotIn("2>&1 | tee run.log", workflow)
         self.assertLess(workflow.index("- name: Publish state"), workflow.index("- name: Publish run summary"))
+
+    def test_workflow_preflight_is_read_only_and_skips_poll(self):
+        workflow = Path(".github/workflows/jobwatch.yml").read_text(encoding="utf-8")
+        self.assertIn("llm_preflight:", workflow)
+        self.assertIn("./jobwatch -config config.example.yaml -llm-preflight", workflow)
+        self.assertIn(
+            "group: jobwatch-${{ github.event_name == 'workflow_dispatch' && inputs.llm_preflight && 'preflight' || 'state' }}",
+            workflow,
+        )
+
+        preflight = workflow[workflow.index("  preflight:"):workflow.index("  poll:")]
+        poll = workflow[workflow.index("  poll:"):]
+        self.assertIn(
+            "if: ${{ github.event_name == 'workflow_dispatch' && inputs.llm_preflight }}",
+            preflight,
+        )
+        self.assertIn(
+            "if: ${{ github.event_name != 'workflow_dispatch' || !inputs.llm_preflight }}",
+            poll,
+        )
+        self.assertIn("contents: read", preflight)
+        self.assertIn("JOBWATCH_LLM_API_KEY", preflight)
+        self.assertNotIn("statebranch", preflight)
+        self.assertNotIn("initialize_state", preflight)
+        self.assertNotIn("JOBWATCH_SMTP", preflight)
+        self.assertNotIn("JOBWATCH_EMAIL_TO", preflight)
 
 
 if __name__ == "__main__":

@@ -72,6 +72,49 @@ state is then kept on a `state` branch between runs. Later catalog additions
 are baselined per board without suppressing alerts from boards already being
 watched. Change the cadence by editing the `cron:` line (times are UTC).
 
+### Check the LLM without polling
+
+Run a production-equivalent provider preflight when diagnosing the configured
+LLM endpoint, model, key, or structured-output protocol:
+
+```sh
+gh workflow run jobwatch -f llm_preflight=true
+```
+
+This manual mode builds the configured matcher and sends exactly one fixed
+synthetic posting through its single `llm` leaf. It does not fetch any board,
+open or publish state, construct a notifier, or send email. The request uses the
+same profile/instructions, endpoint, model, authorization header, JSON schema,
+max-token setting, response parser, and timeout as normal matching, but disables
+retries so the probe is exactly one provider request. Redirects are intentionally
+not followed: a redirect is reported as `http_status`, because following it
+would make a second request and violate that safety bound. If both manual inputs
+are true, `llm_preflight` takes precedence and polling/initialization is skipped.
+
+Its only application output is one sealed stderr line:
+
+```text
+LLM_PREFLIGHT status=ok category=none http_status=200 provider_status=none
+LLM_PREFLIGHT status=failed category=unauthorized http_status=401 provider_status=unauthenticated
+```
+
+`http_status=0` means no valid HTTP response was available. Failure categories
+are closed values:
+`configuration`, `credential_missing`, `cancelled`, `unknown`, `bad_request`,
+`unauthorized`, `forbidden`, `not_found`, `rate_limited`, `server`,
+`http_status`, `transport`, `timeout`, `read`, `too_large`, `decode`,
+`no_choices`, or `invalid_verdict`. Provider status is also a closed normalized
+value such as `invalid_argument`, `unauthenticated`, `permission_denied`,
+`resource_exhausted`, `unavailable`, or `unknown`; it is never a raw provider
+value. Provider response bodies, credentials, prompts, and synthetic job text
+are never logged. A failed probe exits nonzero.
+
+The same state-free check can be run locally:
+
+```sh
+JOBWATCH_LLM_API_KEY=... ./jobwatch -config config.example.yaml -llm-preflight
+```
+
 ### State safety
 
 Scheduled runs fail closed if the `state` branch cannot be read. A missing

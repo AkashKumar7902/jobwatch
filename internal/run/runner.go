@@ -146,6 +146,10 @@ func (r *Runner) inheritsHistory(src source.Source, adoptedPrefixes map[string]b
 // logged and skipped — it must not block alerts from the others.
 func (r *Runner) RunOnce(ctx context.Context) (runErr error) {
 	started := time.Now()
+	// The LLM circuit breaker is deliberately cycle-local. Reset through
+	// combinators before any work so RunEvery and direct RunOnce callers have
+	// identical semantics, including cycles that fail during setup.
+	match.ResetRun(r.Matcher)
 	persistenceStart := r.Store.Persistence()
 	outcomes := make([]boardOutcome, len(r.Sources))
 	for i, src := range r.Sources {
@@ -512,9 +516,18 @@ func (r *Runner) RunOnce(ctx context.Context) (runErr error) {
 				}
 				deferred++
 				outcome.deferred++
-				matchFailures.add(job, err)
-				r.detailf("match deferred %s — %s: %s (retried next run)",
-					job.Company, job.Title, clip(err.Error(), 300))
+				if info, ok := match.LLMErrorInfoOf(err); ok {
+					diagnostic.RecordLLMFailure(res.ctx, info)
+					// Even the local failure stream omits the job and request. A
+					// provider or transport error must never make prompt-derived
+					// fields part of an operational failure report.
+					matchFailures.addClassified(err)
+					r.detailf("match deferred: %s (retried next run)", clip(err.Error(), 300))
+				} else {
+					matchFailures.add(job, err)
+					r.detailf("match deferred %s — %s: %s (retried next run)",
+						job.Company, job.Title, clip(err.Error(), 300))
+				}
 				continue
 			}
 			if verdict.Matched {
@@ -738,6 +751,14 @@ func (d *deferredErrors) add(job model.Job, err error) {
 	}
 	label := clip(job.Company+" — "+job.Title, 160)
 	d.samples = append(d.samples, label+": "+clip(err.Error(), 300))
+}
+
+func (d *deferredErrors) addClassified(err error) {
+	d.count++
+	if len(d.samples) >= deferredErrorSampleLimit {
+		return
+	}
+	d.samples = append(d.samples, clip(err.Error(), 300))
 }
 
 func (d *deferredErrors) err() error {

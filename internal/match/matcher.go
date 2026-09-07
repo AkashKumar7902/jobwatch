@@ -31,6 +31,20 @@ type Matcher interface {
 	Match(ctx context.Context, job model.Job) (Result, error)
 }
 
+// runResetter is optional so existing third-party and test matchers retain
+// source compatibility. Built-in stateful matchers and combinators implement
+// it to keep run-local protection from leaking into the next poll cycle.
+type runResetter interface {
+	ResetRun()
+}
+
+// ResetRun resets run-scoped matcher state throughout a built-in matcher tree.
+func ResetRun(m Matcher) {
+	if resetter, ok := m.(runResetter); ok {
+		resetter.ResetRun()
+	}
+}
+
 // Spec is a matcher configuration tree, mirroring the `matcher:` block in
 // the config file. Leaf matchers use Name+Params; combinators additionally
 // nest children under Of.

@@ -24,16 +24,45 @@ on:
         required: false
         default: false
         type: boolean
+      llm_preflight:
+        description: "Send one sealed synthetic request to the configured LLM; do not poll or touch state"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write # to push the state branch
 
 concurrency:
-  group: jobwatch-state # never let two runs race on the state branch
+  # The preflight is state-free and can diagnose the provider without waiting
+  # behind a long poll. Poll/bootstrap runs still serialize on jobwatch-state.
+  group: jobwatch-${{ github.event_name == 'workflow_dispatch' && inputs.llm_preflight && 'preflight' || 'state' }}
   cancel-in-progress: false
 
 jobs:
+  preflight:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.llm_preflight }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - name: Build preflight
+        run: go build -o jobwatch ./cmd/jobwatch
+
+      - name: Probe configured LLM once
+        env:
+          JOBWATCH_LLM_API_KEY: ${{ secrets.JOBWATCH_LLM_API_KEY }}
+        run: ./jobwatch -config config.example.yaml -llm-preflight
+
   poll:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.llm_preflight }}
     runs-on: ubuntu-latest
     # Hosted runners hard-kill jobs at 360 minutes. The poll step has its own
     # shorter timeout so summary/publication can run after an ordinary poll
