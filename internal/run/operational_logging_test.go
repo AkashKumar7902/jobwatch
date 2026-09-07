@@ -3,11 +3,15 @@ package run
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -15,9 +19,86 @@ import (
 	"jobwatch/internal/match"
 	"jobwatch/internal/model"
 	"jobwatch/internal/notify"
+	"jobwatch/internal/params"
 	"jobwatch/internal/source"
 	"jobwatch/internal/store"
 )
+
+func TestLLMFailuresEmitSealedDiagnosticsAndCircuitResetsNextRun(t *testing.T) {
+	var calls atomic.Int32
+	var recovered atomic.Bool
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		calls.Add(1)
+		if recovered.Load() {
+			fmt.Fprint(w, `{"choices":[{"message":{"content":"{\"match\":false,\"reason\":\"not a fit\"}"}}]}`)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(w, `{"error":{"status":"INVALID_ARGUMENT","message":"BODY_SECRET JOB_SECRET KEY_SECRET"}}`)
+	}))
+	defer srv.Close()
+
+	matcher, err := match.Build(match.Spec{Name: "llm", Params: params.Map{
+		"profile": "PROMPT_SECRET", "base_url": srv.URL, "model": "test",
+	}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	jobs := make([]model.Job, 10)
+	for index := range jobs {
+		jobs[index] = model.Job{
+			ID: fmt.Sprintf("test/llm/%d", index), Company: "JOB_SECRET",
+			Title: fmt.Sprintf("JOB_SECRET_%d", index), Description: "PROMPT_SECRET",
+		}
+	}
+	st, _ := openLoggingStore(t)
+	var public, human strings.Builder
+	r := &Runner{
+		Sources: []source.Source{&fakeSource{
+			company: "Board", identity: "test/llm", statePrefix: "test/llm/", jobs: jobs,
+		}},
+		Matcher: matcher, Store: st, Log: log.New(&public, "", 0), Errors: &human, Concurrency: 1,
+	}
+
+	runErr := r.RunOnce(context.Background())
+	if runErr == nil {
+		t.Fatal("first run should report deferred LLM evaluations")
+	}
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("first run HTTP calls = %d, want exactly 3", got)
+	}
+	logText := public.String()
+	for _, want := range []string{
+		`BOARD index=1 adapter=custom company="Board" status=degraded open=10 new=10 matched=0 deferred=10`,
+		`WARN scope=board index=1 step=process code=match count=1`,
+		`WARN scope=board index=1 step=match code=bad_request count=3 http_status=400 provider_status=invalid_argument`,
+		`WARN scope=board index=1 step=match code=circuit_open count=7 http_status=400 provider_status=invalid_argument`,
+	} {
+		if !strings.Contains(logText, want) {
+			t.Errorf("public log missing %q:\n%s", want, logText)
+		}
+	}
+	for _, output := range []string{logText, human.String(), runErr.Error()} {
+		for _, forbidden := range []string{"BODY_SECRET", "JOB_SECRET", "PROMPT_SECRET", "KEY_SECRET"} {
+			if strings.Contains(output, forbidden) {
+				t.Errorf("LLM failure output exposed %q: %q", forbidden, output)
+			}
+		}
+	}
+
+	recovered.Store(true)
+	public.Reset()
+	human.Reset()
+	if err := r.RunOnce(context.Background()); err != nil {
+		t.Fatalf("second run after provider recovery = %v", err)
+	}
+	if got := calls.Load(); got != 13 {
+		t.Fatalf("calls after second run = %d, want 13 (breaker reset and all 10 retried)", got)
+	}
+	if strings.Contains(public.String(), "step=match") || strings.Contains(public.String(), "deferred=10") {
+		t.Fatalf("recovered run retained prior breaker diagnostics:\n%s", public.String())
+	}
+}
 
 type diagnosticSource struct {
 	*fakeSource

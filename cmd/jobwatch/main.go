@@ -8,6 +8,7 @@
 //	jobwatch -config config.yaml              # poll once (ideal under cron)
 //	jobwatch -config config.yaml -interval 1h # keep running, poll hourly
 //	jobwatch -config config.yaml -dry-run     # print matches, change nothing
+//	jobwatch -config config.yaml -llm-preflight # one sealed provider probe
 package main
 
 import (
@@ -41,11 +42,26 @@ func main() {
 		seedNew    = flag.Bool("seed-new-sources", false, "baseline only boards not previously recorded; known boards still notify")
 		rescan     = flag.Bool("rescan", false, "re-evaluate stored postings that were never notified (seeded backlog) with the current rules")
 		dryRun     = flag.Bool("dry-run", false, "evaluate and print matches to the console; send no email, save no state")
+		preflight  = flag.Bool("llm-preflight", false, "make one sealed synthetic request through the configured LLM; access no boards, notifiers, or state")
 		statePath  = flag.String("state", "", "override the state file location from config (store.path)")
 	)
 	flag.Parse()
 
 	logger := log.New(os.Stderr, "jobwatch ", log.LstdFlags)
+	if *preflight {
+		if *interval > 0 || *seed || *seedNew || *rescan || *dryRun || *statePath != "" {
+			writeLLMPreflightResult(os.Stderr, match.PreflightSetupResult(match.PreflightConfiguration))
+			os.Exit(1)
+		}
+		ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+		defer stop()
+		result := runLLMPreflight(ctx, *configPath)
+		writeLLMPreflightResult(os.Stderr, result)
+		if !result.OK() {
+			os.Exit(1)
+		}
+		return
+	}
 	if *rescan && (*seed || *seedNew || *interval > 0) {
 		logger.Fatal("-rescan is a one-shot sweep: combine it only with -dry-run or -state")
 	}
@@ -90,6 +106,29 @@ func main() {
 		runner.Store.Close()
 		os.Exit(1)
 	}
+}
+
+// runLLMPreflight intentionally builds only the configured matcher tree. It
+// does not construct sources or notifiers and never opens the state store.
+func runLLMPreflight(ctx context.Context, configPath string) match.LLMPreflightResult {
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		return match.ClassifyPreflightSetupError(err)
+	}
+	configured, err := match.Build(matcherSpec(cfg.Matcher))
+	if err != nil {
+		return match.ClassifyPreflightSetupError(err)
+	}
+	return match.LLMPreflight(ctx, configured)
+}
+
+func writeLLMPreflightResult(w io.Writer, result match.LLMPreflightResult) {
+	status := "failed"
+	if result.OK() {
+		status = "ok"
+	}
+	fmt.Fprintf(w, "LLM_PREFLIGHT status=%s category=%s http_status=%d provider_status=%s\n",
+		status, result.CategoryToken(), result.HTTPStatus(), result.ProviderStatusToken())
 }
 
 // describeMatcher renders the configured matcher tree as e.g.

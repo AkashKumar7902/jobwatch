@@ -133,6 +133,14 @@ func (r *Runner) emitBoard(ctx context.Context, b *boardOutcome) {
 		}
 		r.Log.Printf("WARN scope=board index=%d step=%s code=%s count=1", b.ordinal, step, safeToken(code))
 	}
+	// Supplemental matcher diagnostics follow the legacy primary warning. The
+	// existing BOARD line and process/match record remain byte-for-byte
+	// compatible; only fixed taxonomy tokens and bounded counts are added.
+	for _, failure := range b.snapshot().LLMFailures() {
+		r.Log.Printf("WARN scope=board index=%d step=match code=%s count=%d http_status=%d provider_status=%s",
+			b.ordinal, failure.Kind.Token(), nonnegative(failure.Count),
+			nonnegative(failure.HTTPStatus), failure.ProviderStatus.Token())
+	}
 	b.emitted = true
 }
 

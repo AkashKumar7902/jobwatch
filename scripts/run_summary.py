@@ -17,7 +17,11 @@ MAX_LINE_BYTES = 4_096
 MAX_NUMBER = 1_000_000_000
 MAX_DURATION_MS = 86_400_000
 MAX_BOARDS = 1_000
-MAX_WARNINGS = 2_000
+# Warning records are already bounded by MAX_LINES. Keep the warning map at
+# that same ceiling so a valid maximum-board matcher outage (one primary and
+# one sealed matcher warning per board, plus the terminal warning) is not
+# rejected at 2,001 records.
+MAX_WARNINGS = MAX_LINES
 MAX_STEP_SUMMARY_BYTES = 1024 * 1024
 
 PREFIX = re.compile(r"^jobwatch \d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2} ")
@@ -35,7 +39,8 @@ FETCH_RE = re.compile(
     rf"^FETCH index=({NUMBER}) status=(ok|partial|failed) open=({NUMBER}) duration_ms=({NUMBER})$"
 )
 WARN_RE = re.compile(
-    rf"^WARN scope=(run|board) index=({NUMBER}) step=({TOKEN}) code=({TOKEN}) count=({NUMBER})$"
+    rf"^WARN scope=(run|board) index=({NUMBER}) step=({TOKEN}) code=({TOKEN}) count=({NUMBER})"
+    rf"(?: http_status=({NUMBER}) provider_status=({TOKEN}))?$"
 )
 POLL_RE = re.compile(
     rf"^POLL boards=({NUMBER}) ok=({NUMBER}) recovered=({NUMBER}) capped=({NUMBER}) "
@@ -60,6 +65,11 @@ BOARD_WARN = {
         "unstable_snapshot", "invalid_response", "unknown",
     },
     "process": {"cancelled", "not_run", "detail", "match", "detail_and_match"},
+    "match": {
+        "bad_request", "unauthorized", "forbidden", "not_found", "rate_limited",
+        "server", "http_status", "transport", "timeout", "read", "too_large",
+        "decode", "no_choices", "invalid_verdict", "circuit_open",
+    },
 }
 RUN_WARN = {
     "report": {"no_reporter"},
@@ -68,6 +78,38 @@ RUN_WARN = {
         "persistence", "notify", "report", "match", "seed", "fetch", "cancelled", "unknown",
     },
 }
+LLM_PROVIDER_STATUS = {
+    "none", "invalid_argument", "unauthenticated", "permission_denied", "not_found",
+    "resource_exhausted", "failed_precondition", "aborted", "deadline_exceeded",
+    "unavailable", "internal", "unimplemented", "policy_blocked", "unknown",
+}
+
+
+def _valid_llm_detail(code: str, http_status: int, provider_status: str) -> bool:
+    if provider_status not in LLM_PROVIDER_STATUS:
+        return False
+    if code in {"transport", "timeout"}:
+        return http_status == 0 and provider_status == "none"
+    if code in {"decode", "no_choices", "invalid_verdict"}:
+        return http_status == 200 and provider_status == "none"
+    if code in {"read", "too_large"}:
+        return 100 <= http_status <= 599 and provider_status == "none"
+    if code == "circuit_open":
+        return (http_status == 0 and provider_status == "none") or 100 <= http_status <= 599
+    if not (100 <= http_status <= 599) or provider_status == "none":
+        return False
+    expected = {
+        "bad_request": 400,
+        "unauthorized": 401,
+        "forbidden": 403,
+        "not_found": 404,
+        "rate_limited": 429,
+    }.get(code)
+    if expected is not None:
+        return http_status == expected
+    if code == "server":
+        return 500 <= http_status <= 599
+    return code == "http_status"
 
 
 @dataclass(frozen=True)
@@ -95,6 +137,8 @@ class Warning:
     code: str
     index: int
     count: int
+    http_status: int = 0
+    provider_status: str = "none"
 
 
 @dataclass(frozen=True)
@@ -187,7 +231,7 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
 
     boards: dict[int, Board] = {}
     fetches: dict[int, tuple[str, int, int]] = {}
-    warning_counts: dict[tuple[str, int, str, str], int] = {}
+    warning_counts: dict[tuple[str, int, str, str, int, str], int] = {}
     pending_board_warning: int | None = None
     poll: Poll | None = None
     terminal: Terminal | None = None
@@ -209,7 +253,8 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
             pending_board_warning = None
             if (
                 immediate is None or immediate.group(1) != "board" or
-                _number(immediate.group(2)) != expected_index
+                _number(immediate.group(2)) != expected_index or
+                immediate.group(3) not in {"setup", "fetch", "process"}
             ):
                 invalid = True
 
@@ -256,18 +301,24 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
         if match:
             index, count = _number(match.group(2)), _number(match.group(5))
             scope, step, code = match.group(1), match.group(3), match.group(4)
+            has_llm_fields = match.group(6) is not None and match.group(7) is not None
+            http_status = _number(match.group(6)) if has_llm_fields else 0
+            provider_status = match.group(7) if has_llm_fields else "none"
             valid_combo = code in (RUN_WARN.get(step, set()) if scope == "run" else BOARD_WARN.get(step, set()))
             terminal_warning = scope == "run" and step == "terminal"
             wrong_phase = (terminal_warning and poll is None) or (not terminal_warning and poll is not None)
             board_warning_out_of_order = scope == "board" and index is not None and index != len(boards)
             if (
                 index is None or count is None or count == 0 or not valid_combo or
-                (scope == "run") != (index == 0) or wrong_phase or board_warning_out_of_order
+                (scope == "run") != (index == 0) or wrong_phase or board_warning_out_of_order or
+                (step == "match") != has_llm_fields or http_status is None or
+                (has_llm_fields and not _valid_llm_detail(code, http_status, provider_status))
             ):
                 invalid = True
                 continue
-            key = (scope, index, step, code)
-            if (scope == "board" or step == "terminal") and (count != 1 or key in warning_counts):
+            key = (scope, index, step, code, http_status, provider_status)
+            singleton = (scope == "board" and step != "match") or step == "terminal"
+            if (singleton and count != 1) or (scope == "board" and key in warning_counts):
                 invalid = True
                 continue
             if key not in warning_counts and len(warning_counts) >= MAX_WARNINGS:
@@ -326,7 +377,10 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
     if poll_statuses != expected_statuses or (poll.open, poll.new, poll.matched, poll.deferred) != expected_totals:
         return [], [], None, None
 
-    warnings = [Warning(scope, step, code, index, count) for (scope, index, step, code), count in warning_counts.items()]
+    warnings = [
+        Warning(scope, step, code, index, count, http_status, provider_status)
+        for (scope, index, step, code, http_status, provider_status), count in warning_counts.items()
+    ]
     warnings.sort(key=lambda warning: (warning.scope, warning.index, warning.step, warning.code))
     board_warnings: dict[int, list[Warning]] = {}
     for warning in warnings:
@@ -338,12 +392,21 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
     validated: list[Board] = []
     for board in ordered:
         current_warnings = board_warnings.get(board.index, [])
-        if len(current_warnings) > 1:
+        primary_warnings = [warning for warning in current_warnings if warning.step != "match"]
+        match_warnings = [warning for warning in current_warnings if warning.step == "match"]
+        if len(primary_warnings) > 1:
             return [], [], None, None
-        if _canonical_status(board, current_warnings) != board.status:
+        expects_primary = board.status in {"degraded", "partial", "failed"}
+        if bool(primary_warnings) != expects_primary:
             return [], [], None, None
-        setup = any(warning.step == "setup" for warning in current_warnings)
-        fetch_warning = any(warning.step == "fetch" for warning in current_warnings)
+        if _canonical_status(board, primary_warnings) != board.status:
+            return [], [], None, None
+        if match_warnings and (
+            board.deferred == 0 or sum(warning.count for warning in match_warnings) > board.deferred
+        ):
+            return [], [], None, None
+        setup = any(warning.step == "setup" for warning in primary_warnings)
+        fetch_warning = any(warning.step == "fetch" for warning in primary_warnings)
         fetch = fetches.get(board.index)
         if setup:
             setup_metrics = (
@@ -358,7 +421,7 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
             return [], [], None, None
         if fetch[1:] != (board.open, board.fetch_ms):
             return [], [], None, None
-        warning = current_warnings[0] if current_warnings else None
+        warning = primary_warnings[0] if primary_warnings else None
         unprocessed = warning is not None and warning.step == "process" and warning.code in {"cancelled", "not_run"}
         if fetch_warning:
             expected_fetch_status = "partial" if board.open > 0 else "failed"
@@ -366,7 +429,7 @@ def parse_log(path: Path) -> tuple[list[Board], list[Warning], Poll | None, Term
                 return [], [], None, None
         elif not unprocessed and fetch[0] != "ok":
             return [], [], None, None
-        if current_warnings:
+        if warning is not None:
             if warning.step == "process" and (
                 (warning.code == "detail" and not (board.detail_failed > 0 and board.deferred == 0)) or
                 (warning.code == "match" and not (board.deferred > 0 and board.detail_failed == 0)) or
@@ -481,10 +544,12 @@ def render(
     ])
     for board in boards:
         board_warnings = warning_by_index.get(board.index, [])
-        warning = (
-            f"{board_warnings[0].step}/{board_warnings[0].code} count={board_warnings[0].count}"
-            if board_warnings else "none"
-        )
+        board_warnings.sort(key=lambda item: (item.step == "match", item.step, item.code))
+        warning = "; ".join(
+            f"{item.step}/{item.code} count={item.count}" + (
+                f" http={item.http_status} provider={item.provider_status}" if item.step == "match" else ""
+            ) for item in board_warnings
+        ) or "none"
         rows.append(
             f"| {board.index} | {safe_text(board.company)} | {board.adapter} | {board.status} | "
             f"{board.fetch_status} | {warning} | {board.open} | {board.new} | {board.matched} | "

@@ -2,15 +2,22 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync/atomic"
 	"testing"
+
+	"jobwatch/internal/match"
 )
 
 func TestDetailedErrorsUseHumanOutputWriter(t *testing.T) {
@@ -20,6 +27,120 @@ func TestDetailedErrorsUseHumanOutputWriter(t *testing.T) {
 		t.Fatalf("local detail missing: %q", got)
 	}
 	writeErrorDetail(nil, "run", errors.New("ignored"))
+}
+
+func TestLLMPreflightCLIIsSealedSingleRequestAndStateFree(t *testing.T) {
+	var requests atomic.Int32
+	const secret = "preflight-super-secret"
+	const providerDetail = "private provider body echoing prompt and preflight-super-secret"
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requests.Add(1)
+		http.Error(w, providerDetail, http.StatusUnauthorized)
+	}))
+	defer srv.Close()
+
+	temp := t.TempDir()
+	statePath := filepath.Join(temp, "must-not-exist.json")
+	configPath := filepath.Join(temp, "config.yaml")
+	configText := fmt.Sprintf(`matcher:
+  name: llm
+  params:
+    profile: private candidate profile
+    base_url: %s
+    model: test-model
+    api_key_env: JOBWATCH_PREFLIGHT_CLI_KEY
+companies:
+  - {name: Must Not Fetch, source: greenhouse, params: {board_token: must-not-fetch}}
+notifiers:
+  - {name: must-not-construct, params: {sentinel: must-not-read}}
+store: {path: %q}
+`, srv.URL, statePath)
+	if err := os.WriteFile(configPath, []byte(configText), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	binary := filepath.Join(temp, "jobwatch")
+	if runtime.GOOS == "windows" {
+		binary += ".exe"
+	}
+	buildCmd := exec.Command("go", "build", "-o", binary, ".")
+	if output, err := buildCmd.CombinedOutput(); err != nil {
+		t.Fatalf("building CLI: %v\n%s", err, output)
+	}
+	cmd := exec.Command(binary, "-config", configPath, "-llm-preflight")
+	cmd.Env = append(os.Environ(), "JOBWATCH_PREFLIGHT_CLI_KEY="+secret)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	err := cmd.Run()
+	var exitErr *exec.ExitError
+	if !errors.As(err, &exitErr) || exitErr.ExitCode() != 1 {
+		t.Fatalf("CLI error = %v, want exit 1", err)
+	}
+	if got := stdout.String(); got != "" {
+		t.Fatalf("preflight stdout = %q, want empty", got)
+	}
+	wantStderr := "LLM_PREFLIGHT status=failed category=unauthorized http_status=401 provider_status=unauthenticated\n"
+	if got := stderr.String(); got != wantStderr {
+		t.Fatalf("preflight stderr = %q, want %q", got, wantStderr)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("provider requests = %d, want exactly 1", got)
+	}
+	if _, err := os.Stat(statePath); !os.IsNotExist(err) {
+		t.Fatalf("preflight touched state path: %v", err)
+	}
+	for _, private := range []string{
+		secret, providerDetail, srv.URL, configPath, "private candidate profile",
+		"test-model", "Must Not Fetch", "must-not-construct",
+	} {
+		if strings.Contains(stdout.String()+stderr.String(), private) {
+			t.Fatalf("preflight output leaked private text %q", private)
+		}
+	}
+}
+
+func TestRunLLMPreflightOutputIsSealed(t *testing.T) {
+	missing := filepath.Join(t.TempDir(), "private-config-name.yaml")
+	got := runLLMPreflight(context.Background(), missing)
+	if got.CategoryToken() != "configuration" || got.HTTPStatus() != 0 || got.ProviderStatusToken() != "none" {
+		t.Fatalf("runLLMPreflight result = (%s, %d, %s)", got.CategoryToken(), got.HTTPStatus(), got.ProviderStatusToken())
+	}
+	var output bytes.Buffer
+	writeLLMPreflightResult(&output, got)
+	if want := "LLM_PREFLIGHT status=failed category=configuration http_status=0 provider_status=none\n"; output.String() != want {
+		t.Fatalf("sealed setup output = %q, want %q", output.String(), want)
+	}
+
+	output.Reset()
+	writeLLMPreflightResult(&output, match.LLMPreflightResult{})
+	if want := "LLM_PREFLIGHT status=failed category=unknown http_status=0 provider_status=none\n"; output.String() != want {
+		t.Fatalf("zero-value output = %q, want %q", output.String(), want)
+	}
+
+	output.Reset()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, `{"choices":[{"message":{"content":"{\"match\":false,\"reason\":\"valid synthetic verdict\"}"}}]}`)
+	}))
+	defer srv.Close()
+	t.Setenv("JOBWATCH_PREFLIGHT_OUTPUT_KEY", "private-success-key")
+	configPath := filepath.Join(t.TempDir(), "success-config.yaml")
+	configText := fmt.Sprintf(`matcher:
+  name: llm
+  params:
+    profile: private candidate profile
+    base_url: %s
+    model: test-model
+    api_key_env: JOBWATCH_PREFLIGHT_OUTPUT_KEY
+companies:
+  - {name: Never Fetched, source: greenhouse, params: {board_token: never-fetched}}
+`, srv.URL)
+	if err := os.WriteFile(configPath, []byte(configText), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	writeLLMPreflightResult(&output, runLLMPreflight(context.Background(), configPath))
+	if want := "LLM_PREFLIGHT status=ok category=none http_status=200 provider_status=none\n"; output.String() != want {
+		t.Fatalf("success output = %q, want %q", output.String(), want)
+	}
 }
 
 func TestBuildNoReporterWarningHasPositiveOccurrenceCount(t *testing.T) {
